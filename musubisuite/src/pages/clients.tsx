@@ -1,3 +1,12 @@
+/**
+ * クライアント一覧ページ
+ * 
+ * クライアントの一覧表示、検索、詳細情報を提供します。
+ * カードレイアウトでクライアント情報を視覚的に表示します。
+ * 
+ * @module pages/clients
+ */
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
@@ -5,6 +14,30 @@ import { Search, Building2, Mail, Phone, MapPin } from "lucide-react"
 import { mockClients, mockProjects } from "@/data/mockData"
 import { useState, useMemo } from "react"
 
+/**
+ * クライアント一覧ページコンポーネント
+ * 
+ * クライアントの一覧をカード形式で表示します。
+ * 以下の機能を含みます:
+ * - クライアント一覧のカード表示
+ * - キーワード検索(会社名、担当者名、メール)
+ * - 連絡先情報表示
+ * - 関連プロジェクト数表示
+ * 
+ * @component
+ * @returns {JSX.Element} クライアント一覧ページ
+ * 
+ * @example
+ * ```tsx
+ * // router.tsx
+ * { path: "clients", element: <ClientsPage /> }
+ * ```
+ * 
+ * @remarks
+ * - 現在はモックデータを使用(将来的にはDjango API連携予定)
+ * - レスポンシブグリッドレイアウト
+ * - useMemoによる検索パフォーマンス最適化
+ */
 export default function ClientsPage() {
   const [searchQuery, setSearchQuery] = useState("")
 

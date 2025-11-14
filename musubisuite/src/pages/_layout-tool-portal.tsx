@@ -11,6 +11,7 @@ import {
   ChevronRight
 } from "lucide-react"
 import AppSwitcher from "@/components/AppSwitcher"
+import { useRouteTracker } from "@/hooks/use-route-tracker"
 
 type LayoutProps = { showHeader?: boolean }
 
@@ -65,6 +66,9 @@ export default function ToolPortalLayout({ showHeader = true }: LayoutProps) {
     return saved ? JSON.parse(saved) : false
   })
   const location = useLocation()
+  
+  // ルート追跡機能を有効化
+  useRouteTracker()
 
   // サイドバーの状態が変更されたらlocalStorageに保存
   // 全アプリで共通のキーを使用して状態を共有

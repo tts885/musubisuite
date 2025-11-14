@@ -1,4 +1,5 @@
-import { Link } from "react-router-dom"
+import { useEffect } from "react"
+import { Link, useNavigate } from "react-router-dom"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { 
@@ -13,13 +14,51 @@ import {
   BarChart3,
   Clock
 } from "lucide-react"
+import { getLastVisitedPath, isExplicitHomeNavigation } from "@/hooks/use-route-tracker"
 
 /**
- * ランディングページ（ホーム画面）
- * 現代的なWebUIデザインで各ツールの紹介と主要機能を表示
- * Plane風のモダンなデザインを採用
+ * ランディングページコンポーネント
+ * 
+ * MusubiSuiteのホーム画面で、3つのメインツールを紹介します。
+ * 以下の要素を含みます:
+ * - ヒーローセクション
+ * - ツールカード(3つのアプリ)
+ * - 各ツールの主要機能リスト
+ * - ナビゲーションリンク
+ * 
+ * @component
+ * @returns {JSX.Element} ランディングページ
+ * 
+ * @example
+ * ```tsx
+ * // router.tsx
+ * { index: true, element: <LandingPage /> }
+ * ```
+ * 
+ * @remarks
+ * - ルートパス: /
+ * - 3つのアプリ: 案件管理、プロジェクト管理、ツールPortal
+ * - レスポンシブデザイン
+ * - グラデーション背景とアニメーション効果
+ * - Plane風の現代的なWebUIデザイン
+ * - 再訪問時は最後に訪問したページにリダイレクト
  */
 export default function LandingPage() {
+  const navigate = useNavigate()
+
+  useEffect(() => {
+    // 明示的なホーム遷移の場合はリダイレクトしない
+    if (isExplicitHomeNavigation()) {
+      return
+    }
+
+    // 最後に訪問したページがある場合、そこにリダイレクト
+    const lastPath = getLastVisitedPath()
+    if (lastPath && lastPath !== "/") {
+      navigate(lastPath, { replace: true })
+    }
+  }, [navigate])
+
   // 各ツールの情報
   const tools = [
     {

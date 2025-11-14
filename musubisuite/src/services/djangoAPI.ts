@@ -436,7 +436,36 @@ class DjangoAPIClient {
   // ========================================
 
   /**
-   * クライアント一覧を取得
+   * クライアント一覧を取得する
+   * 
+   * フィルタリング、検索、ページネーションをサポートします。
+   * 
+   * @param {Object} [params] - クエリパラメータ
+   * @param {string} [params.industry] - 業種フィルター
+   * @param {string} [params.search] - 検索キーワード(クライアント名、会社名で部分一致)
+   * @param {number} [params.page] - ページ番号(1始まり)
+   * @returns {Promise<{ results: Client[]; count: number; next: string | null; previous: string | null }>} クライアント一覧とページネーション情報
+   * 
+   * @throws {Error} APIリクエストが失敗した場合
+   * 
+   * @example
+   * ```typescript
+   * // 全クライアントを取得
+   * const data = await djangoAPI.getClients();
+   * 
+   * // IT業界のクライアントのみ取得
+   * const itClients = await djangoAPI.getClients({ industry: 'IT' });
+   * 
+   * // 検索とページネーション
+   * const results = await djangoAPI.getClients({
+   *   search: '株式会社',
+   *   page: 2
+   * });
+   * ```
+   * 
+   * @remarks
+   * - レスポンスはDjangoのフィールド名からフロントエンドの型に変換されます
+   * - デフォルトのページサイズは20件です
    */
   async getClients(params?: {
     industry?: string;
@@ -464,7 +493,24 @@ class DjangoAPIClient {
   }
 
   /**
-   * クライアント詳細を取得
+   * 指定されたIDのクライアント詳細情報を取得する
+   * 
+   * @param {string} id - クライアントID
+   * @returns {Promise<Client>} クライアント詳細データ
+   * 
+   * @throws {Error} クライアントが見つからない場合(404)
+   * @throws {Error} APIリクエストが失敗した場合
+   * 
+   * @example
+   * ```typescript
+   * try {
+   *   const client = await djangoAPI.getClient('123');
+   *   console.log('会社名:', client.companyName);
+   *   console.log('担当者:', client.name);
+   * } catch (error) {
+   *   console.error('クライアントの取得に失敗:', error);
+   * }
+   * ```
    */
   async getClient(id: string) {
     const response = await this.api.get(`/clients/${id}/`);
@@ -484,7 +530,33 @@ class DjangoAPIClient {
   }
 
   /**
-   * クライアントを作成
+   * 新しいクライアントを作成する
+   * 
+   * @param {Object} data - クライアント作成データ
+   * @param {string} data.name - 担当者名(必須)
+   * @param {string} data.company_name - 会社名(必須)
+   * @param {string} data.email - メールアドレス(必須)
+   * @param {string} [data.phone] - 電話番号
+   * @param {string} [data.address] - 住所
+   * @param {string} [data.industry] - 業種
+   * @param {string} [data.note] - 備考
+   * @returns {Promise<any>} 作成されたクライアントデータ
+   * 
+   * @throws {Error} バリデーションエラーが発生した場合
+   * @throws {Error} APIリクエストが失敗した場合
+   * 
+   * @example
+   * ```typescript
+   * const newClient = await djangoAPI.createClient({
+   *   name: '田中太郎',
+   *   company_name: '株式会社サンプル',
+   *   email: 'tanaka@sample.co.jp',
+   *   phone: '03-1234-5678',
+   *   industry: 'IT',
+   *   note: '新規顧客'
+   * });
+   * console.log('作成されたクライアントID:', newClient.id);
+   * ```
    */
   async createClient(data: {
     name: string;
@@ -500,7 +572,30 @@ class DjangoAPIClient {
   }
 
   /**
-   * クライアントを更新
+   * クライアント情報を更新する
+   * 
+   * 部分更新(PATCH)をサポートしており、変更したいフィールドのみ指定できます。
+   * 
+   * @param {string} id - クライアントID
+   * @param {Partial<Client>} data - 更新するフィールド
+   * @returns {Promise<any>} 更新されたクライアントデータ
+   * 
+   * @throws {Error} クライアントが見つからない場合(404)
+   * @throws {Error} バリデーションエラーが発生した場合
+   * 
+   * @example
+   * ```typescript
+   * // メールアドレスのみ更新
+   * await djangoAPI.updateClient('123', {
+   *   email: 'new-email@example.com'
+   * });
+   * 
+   * // 複数フィールドを更新
+   * await djangoAPI.updateClient('123', {
+   *   phone: '03-9876-5432',
+   *   note: '更新された備考'
+   * });
+   * ```
    */
   async updateClient(id: string, data: Partial<Client>) {
     const response = await this.api.patch(`/clients/${id}/`, data);
@@ -508,7 +603,29 @@ class DjangoAPIClient {
   }
 
   /**
-   * クライアントを削除
+   * クライアントを削除する
+   * 
+   * 指定されたIDのクライアントを削除します。
+   * この操作は元に戻せません。
+   * 
+   * @param {string} id - 削除するクライアントのID
+   * @returns {Promise<void>}
+   * 
+   * @throws {Error} クライアントが見つからない場合(404)
+   * @throws {Error} 権限がない場合(403)
+   * 
+   * @example
+   * ```typescript
+   * try {
+   *   await djangoAPI.deleteClient('123');
+   *   console.log('クライアントを削除しました');
+   * } catch (error) {
+   *   console.error('削除に失敗:', error);
+   * }
+   * ```
+   * 
+   * @remarks
+   * クライアントに紐づくプロジェクトがある場合、カスケード削除される可能性があります
    */
   async deleteClient(id: string) {
     await this.api.delete(`/clients/${id}/`);
@@ -519,7 +636,30 @@ class DjangoAPIClient {
   // ========================================
 
   /**
-   * タスク一覧を取得
+   * タスク一覧を取得する
+   * 
+   * プロジェクト、ステータス、優先度、担当者でフィルタリングできます。
+   * 
+   * @param {Object} [params] - クエリパラメータ
+   * @param {string} [params.project] - プロジェクトIDフィルター
+   * @param {string} [params.status] - ステータスフィルター
+   * @param {string} [params.priority] - 優先度フィルター
+   * @param {string} [params.assignee] - 担当者IDフィルター
+   * @param {string} [params.search] - 検索キーワード
+   * @param {number} [params.page] - ページ番号
+   * @returns {Promise<any>} タスク一覧データ
+   * 
+   * @example
+   * ```typescript
+   * // 特定プロジェクトのタスクを取得
+   * const tasks = await djangoAPI.getTasks({ project: '123' });
+   * 
+   * // 担当者とステータスでフィルタリング
+   * const myTasks = await djangoAPI.getTasks({
+   *   assignee: 'user-456',
+   *   status: 'in-progress'
+   * });
+   * ```
    */
   async getTasks(params?: {
     project?: string;
@@ -534,7 +674,34 @@ class DjangoAPIClient {
   }
 
   /**
-   * タスクを作成
+   * 新しいタスクを作成する
+   * 
+   * @param {Object} data - タスク作成データ
+   * @param {string} data.project - プロジェクトID(必須)
+   * @param {string} data.title - タスクタイトル(必須)
+   * @param {string} data.description - タスク説明(必須)
+   * @param {string} [data.status] - ステータス
+   * @param {string} [data.priority] - 優先度
+   * @param {string} [data.assignee_id] - 担当者ID
+   * @param {string} [data.due_date] - 期限(YYYY-MM-DD形式)
+   * @param {number} [data.estimated_hours] - 見積もり時間
+   * @param {string} data.created_by_id - 作成者ID(必須)
+   * @returns {Promise<any>} 作成されたタスクデータ
+   * 
+   * @example
+   * ```typescript
+   * const newTask = await djangoAPI.createTask({
+   *   project: 'project-123',
+   *   title: 'データベース設計',
+   *   description: 'テーブル構造を設計する',
+   *   status: 'todo',
+   *   priority: 'high',
+   *   assignee_id: 'user-456',
+   *   due_date: '2025-12-31',
+   *   estimated_hours: 8,
+   *   created_by_id: 'user-789'
+   * });
+   * ```
    */
   async createTask(data: {
     project: string;
@@ -552,7 +719,19 @@ class DjangoAPIClient {
   }
 
   /**
-   * タスクを更新
+   * タスク情報を更新する
+   * 
+   * @param {string} id - タスクID
+   * @param {Partial<Task>} data - 更新するフィールド
+   * @returns {Promise<any>} 更新されたタスクデータ
+   * 
+   * @example
+   * ```typescript
+   * // ステータスを完了に変更
+   * await djangoAPI.updateTask('task-123', {
+   *   status: 'completed'
+   * });
+   * ```
    */
   async updateTask(id: string, data: Partial<Task>) {
     const response = await this.api.patch(`/tasks/${id}/`, data);
@@ -560,7 +739,15 @@ class DjangoAPIClient {
   }
 
   /**
-   * タスクを削除
+   * タスクを削除する
+   * 
+   * @param {string} id - 削除するタスクのID
+   * @returns {Promise<void>}
+   * 
+   * @example
+   * ```typescript
+   * await djangoAPI.deleteTask('task-123');
+   * ```
    */
   async deleteTask(id: string) {
     await this.api.delete(`/tasks/${id}/`);
@@ -571,7 +758,30 @@ class DjangoAPIClient {
   // ========================================
 
   /**
-   * メンバー一覧を取得
+   * メンバー一覧を取得する
+   * 
+   * 役割、部署、検索キーワードでフィルタリングできます。
+   * 
+   * @param {Object} [params] - クエリパラメータ
+   * @param {string} [params.role] - 役割フィルター
+   * @param {string} [params.department] - 部署フィルター
+   * @param {string} [params.search] - 検索キーワード(名前、メールで部分一致)
+   * @param {number} [params.page] - ページ番号
+   * @returns {Promise<any>} メンバー一覧データ
+   * 
+   * @example
+   * ```typescript
+   * // 開発部のメンバーを取得
+   * const devMembers = await djangoAPI.getMembers({
+   *   department: 'development'
+   * });
+   * 
+   * // マネージャー役割のメンバーを検索
+   * const managers = await djangoAPI.getMembers({
+   *   role: 'manager',
+   *   search: '田中'
+   * });
+   * ```
    */
   async getMembers(params?: {
     role?: string;
@@ -584,7 +794,19 @@ class DjangoAPIClient {
   }
 
   /**
-   * メンバー詳細を取得
+   * 指定されたIDのメンバー詳細情報を取得する
+   * 
+   * @param {string} id - メンバーID
+   * @returns {Promise<any>} メンバー詳細データ
+   * 
+   * @throws {Error} メンバーが見つからない場合(404)
+   * 
+   * @example
+   * ```typescript
+   * const member = await djangoAPI.getMember('member-123');
+   * console.log('名前:', member.name);
+   * console.log('部署:', member.department);
+   * ```
    */
   async getMember(id: string) {
     const response = await this.api.get(`/members/${id}/`);
@@ -596,7 +818,31 @@ class DjangoAPIClient {
   // ========================================
 
   /**
-   * アクティビティログ一覧を取得
+   * アクティビティログ一覧を取得する
+   * 
+   * プロジェクトやユーザーの活動履歴を取得します。
+   * 
+   * @param {Object} [params] - クエリパラメータ
+   * @param {string} [params.project] - プロジェクトIDフィルター
+   * @param {string} [params.user] - ユーザーIDフィルター
+   * @param {number} [params.page] - ページ番号
+   * @returns {Promise<any>} アクティビティログ一覧データ
+   * 
+   * @example
+   * ```typescript
+   * // 特定プロジェクトのアクティビティを取得
+   * const activities = await djangoAPI.getActivities({
+   *   project: 'project-123'
+   * });
+   * 
+   * // 特定ユーザーの活動履歴を取得
+   * const userActivities = await djangoAPI.getActivities({
+   *   user: 'user-456'
+   * });
+   * ```
+   * 
+   * @remarks
+   * アクティビティログは時系列順(新しい順)で返されます
    */
   async getActivities(params?: {
     project?: string;

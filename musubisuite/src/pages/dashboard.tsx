@@ -1,3 +1,12 @@
+/**
+ * ダッシュボードページ
+ * 
+ * 案件管理システムのメインダッシュボードで、統計情報とチャートを表示します。
+ * Plane風の現代的なWebUIデザインを採用しています。
+ * 
+ * @module pages/dashboard
+ */
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
 import { Badge } from "@/components/ui/badge"
@@ -34,9 +43,30 @@ import {
 } from "recharts"
 
 /**
- * ダッシュボードページ
- * Plane風の現代的なWebUIデザインを採用
- * Wide表示で統計情報とチャートを表示
+ * ダッシュボードページコンポーネント
+ * 
+ * 案件管理システムの統計情報とビジュアライゼーションを提供します。
+ * 以下の情報を表示します:
+ * - 統計カード(総案件数、完了タスク数、進行中タスク数、チームメンバー数)
+ * - プロジェクトステータス別の円グラフ
+ * - タスク完了率の円グラフ
+ * - 進行中プロジェクトの一覧カード
+ * 
+ * @component
+ * @returns {JSX.Element} ダッシュボードページ
+ * 
+ * @example
+ * ```tsx
+ * // router.tsx
+ * { index: true, element: <DashboardPage /> }
+ * ```
+ * 
+ * @remarks
+ * - Plane風の現代的なWebUIデザイン
+ * - Wide表示で全幅を活用
+ * - Rechartsによるチャート表示
+ * - レスポンシブグリッドレイアウト
+ * - モックデータを使用(将来的にはAPI連携予定)
  */
 export default function DashboardPage() {
   const stats = mockDashboardStats

@@ -13,6 +13,7 @@ import {
 import { mockApplications } from "@/data/mockData"
 import type { Application } from "@/types"
 import { useTheme } from "@/hooks/use-theme"
+import { setExplicitHomeNavigation } from "@/hooks/use-route-tracker"
 
 /**
  * アイコン名とLucideIconコンポーネントのマッピング
@@ -93,6 +94,20 @@ export default function AppSwitcher() {
 
   const currentApp = getCurrentApp()
 
+  /**
+   * アプリケーションリンククリック時のハンドラー
+   * 
+   * @param {Application} app - クリックされたアプリケーション
+   * 
+   * @remarks
+   * ホーム画面への遷移時には明示的なフラグを設定します
+   */
+  const handleAppClick = (app: Application) => {
+    if (app.path === "/") {
+      setExplicitHomeNavigation()
+    }
+  }
+
   return (
     <div className="hidden lg:flex w-16 bg-sidebar border-r border-sidebar-border flex-col flex-shrink-0 relative z-50">
       {/* App Icons - Top Section - 縦中央揃え */}
@@ -105,6 +120,7 @@ export default function AppSwitcher() {
             <Link
               key={app.id}
               to={app.path}
+              onClick={() => handleAppClick(app)}
               className={`
                 group relative flex items-center justify-center
                 w-11 h-11 rounded-lg

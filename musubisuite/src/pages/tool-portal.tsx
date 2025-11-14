@@ -1,8 +1,41 @@
+/**
+ * ツールPortalページ
+ * 
+ * 開発ツール、リソース、統合サービスのハブです。
+ * 現在は開発中で、将来的な機能を紹介しています。
+ * 
+ * @module pages/tool-portal
+ */
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Wrench, ArrowLeft, Package, Settings, Zap, Database } from "lucide-react"
 import { Link } from "react-router-dom"
 
+/**
+ * ツールPortalページコンポーネント
+ * 
+ * 開発ツールとサービスの統合ハブです。
+ * 現在は「準備中」ページで、以下の将来機能を紹介しています:
+ * - パッケージ管理
+ * - 設定管理
+ * - API統合
+ * - Dataverseテーブル管理
+ * 
+ * @component
+ * @returns {JSX.Element} ツールPortalページ
+ * 
+ * @example
+ * ```tsx
+ * // router.tsx
+ * { index: true, element: <ToolPortalPage /> }
+ * ```
+ * 
+ * @remarks
+ * - ルートパス: /tool-portal
+ * - サブページ: /tool-portal/dataverse-settings
+ * - 現在はプレースホルダーページ
+ */
 export default function ToolPortalPage() {
   return (
     <div className="w-full h-full px-8 py-6 space-y-6">

@@ -1,3 +1,12 @@
+/**
+ * プロジェクト一覧ページ
+ * 
+ * プロジェクトの一覧表示、検索、フィルタリング、新規作成機能を提供します。
+ * TanStack Tableを使用した高機能なデータテーブルを実装しています。
+ * 
+ * @module pages/projects
+ */
+
 import { useState, useMemo, useEffect } from "react"
 import { Link } from "react-router-dom"
 import {
@@ -54,6 +63,32 @@ import type { Project, Client, ProjectStatus, ProjectPriority } from "@/types"
 import { djangoAPI } from "@/services/djangoAPI"
 import { toast } from "sonner"
 
+/**
+ * プロジェクト一覧ページコンポーネント
+ * 
+ * プロジェクトの一覧表示とCRUD操作を提供します。
+ * 以下の機能を含みます:
+ * - プロジェクト一覧のテーブル表示(ソート、ページネーション)
+ * - ステータスと優先度によるフィルタリング
+ * - キーワード検索
+ * - 新規プロジェクト作成ダイアログ
+ * - プロジェクト詳細へのナビゲーション
+ * 
+ * @component
+ * @returns {JSX.Element} プロジェクト一覧ページ
+ * 
+ * @example
+ * ```tsx
+ * // router.tsx
+ * { path: "projects", element: <ProjectsPage /> }
+ * ```
+ * 
+ * @remarks
+ * - Django REST API経由でプロジェクトとクライアントのデータを取得
+ * - TanStack Tableによる高機能なテーブル表示
+ * - Sonnerによるトースト通知
+ * - レスポンシブデザイン対応
+ */
 export default function ProjectsPage() {
   const [sorting, setSorting] = useState<SortingState>([])
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])

@@ -1,3 +1,12 @@
+/**
+ * Dataverse設定ページ
+ * 
+ * Dataverse接続の作成、編集、削除、アクティブ化機能を提供します。
+ * LocalStorageに接続情報を保存し、複数の環境を管理できます。
+ * 
+ * @module pages/dataverse-settings
+ */
+
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -8,6 +17,32 @@ import { Settings, Database, Plus, Trash2, CheckCircle2 } from "lucide-react";
 import { dataverseStore } from "@/lib/dataverseStore";
 import type { DataverseConnection } from "@/types/dataverse";
 
+/**
+ * Dataverse設定ページコンポーネント
+ * 
+ * Dataverse環境への接続設定を管理します。
+ * 以下の機能を含みます:
+ * - 新規接続作成フォーム
+ * - 接続一覧表示
+ * - アクティブ接続の切り替え
+ * - 接続の削除
+ * - 接続テスト機能(将来的に実装予定)
+ * 
+ * @component
+ * @returns {JSX.Element} Dataverse設定ページ
+ * 
+ * @example
+ * ```tsx
+ * // router.tsx
+ * { path: "dataverse-settings", element: <SettingsPage /> }
+ * ```
+ * 
+ * @remarks
+ * - LocalStorageへの永続化
+ * - 複数接続の管理可能
+ * - アクティブ接続は1つのみ
+ * - APIバージョンはデフォルト9.2
+ */
 export default function SettingsPage() {
   const [connections, setConnections] = useState<DataverseConnection[]>([]);
   const [activeConnectionId, setActiveConnectionId] = useState<string | null>(null);

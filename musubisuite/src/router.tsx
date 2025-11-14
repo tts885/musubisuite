@@ -1,3 +1,21 @@
+/**
+ * アプリケーションルーティング設定
+ * 
+ * React Router v6のcreateBrowserRouterを使用して、
+ * アプリケーションの全ルートを定義します。
+ * 
+ * @module router
+ * 
+ * @remarks
+ * ルート構造:
+ * - / - ランディングページ
+ * - /dashboard/* - 統合ダッシュボードと案件管理
+ * - /project-management/* - プロジェクト管理アプリ
+ * - /tool-portal/* - ツールポータルアプリ
+ * 
+ * @see {@link https://reactrouter.com/en/main/routers/create-browser-router}
+ */
+
 import { createBrowserRouter } from "react-router-dom"
 import Layout from "@/pages/_layout"
 import ProjectManagementLayout from "@/pages/_layout-project-management"

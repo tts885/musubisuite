@@ -1,3 +1,12 @@
+/**
+ * プロジェクト詳細ページ
+ * 
+ * 個別プロジェクトの詳細情報、タスク管理、編集機能を提供します。
+ * タブインターフェースで複数の情報を管理します。
+ * 
+ * @module pages/project-detail
+ */
+
 import { useState, useEffect } from "react"
 import { useParams, Link } from "react-router-dom"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -48,6 +57,33 @@ import type { Project, Client, ProjectStatus, ProjectPriority } from "@/types"
 import { djangoAPI } from "@/services/djangoAPI"
 import { toast } from "sonner"
 
+/**
+ * プロジェクト詳細ページコンポーネント
+ * 
+ * 個別プロジェクトの詳細情報を表示および管理します。
+ * 以下の機能を含みます:
+ * - プロジェクト基本情報表示
+ * - プロジェクト編集ダイアログ
+ * - タブ切り替えインターフェース(概要/タスク/メンバー/アクティビティ)
+ * - タスク一覧と新規作成
+ * - メンバーアサイン管理
+ * - アクティビティタイムライン
+ * 
+ * @component
+ * @returns {JSX.Element} プロジェクト詳細ページ
+ * 
+ * @example
+ * ```tsx
+ * // router.tsx
+ * { path: "projects/:id", element: <ProjectDetailPage /> }
+ * ```
+ * 
+ * @remarks
+ * - URLパラメータからプロジェクトIDを取得
+ * - Django REST API経由でデータ取得と更新
+ * - Sonnerによるトースト通知
+ * - レスポンシブレイアウト
+ */
 export default function ProjectDetailPage() {
   const { id } = useParams<{ id: string }>()
   const [isLoading, setIsLoading] = useState(true)

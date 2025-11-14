@@ -1,15 +1,80 @@
 import type { DataverseConnection, TableSchema, ColumnSchema } from '@/types/dataverse';
 
+/**
+ * Dataverse管理サービスクラス
+ * 
+ * Dataverse環境への管理操作(テーブル作成、カラム追加、レコード操作等)を提供します。
+ * Web API経由でDataverseのメタデータおよびデータにアクセスします。
+ * 
+ * @class DataverseAdminService
+ * 
+ * @remarks
+ * - このクラスはDataverse Web API v9.2以降をサポートします
+ * - 認証はPower Apps環境のコンテキストから自動取得されます
+ * - CORSエラーが発生する場合、Dataverse環境のCORS設定を確認してください
+ * 
+ * @example
+ * ```typescript
+ * const connection = {
+ *   baseUrl: 'https://org.crm.dynamics.com',
+ *   apiVersion: '9.2'
+ * };
+ * 
+ * const service = new DataverseAdminService(connection);
+ * 
+ * // 接続テスト
+ * const result = await service.testConnection();
+ * if (result.success) {
+ *   console.log('接続成功');
+ * }
+ * 
+ * // テーブル作成
+ * const tableId = await service.createTable(tableSchema);
+ * ```
+ */
 export class DataverseAdminService {
   private baseUrl: string;
   private apiVersion: string;
 
+  /**
+   * DataverseAdminServiceのインスタンスを作成する
+   * 
+   * @param {DataverseConnection} connection - Dataverse接続情報
+   * @param {string} connection.baseUrl - DataverseのベースURL
+   * @param {string} connection.apiVersion - APIバージョン(例: '9.2')
+   */
   constructor(connection: DataverseConnection) {
     this.baseUrl = connection.baseUrl;
     this.apiVersion = connection.apiVersion;
   }
 
-  // 接続テスト
+  /**
+   * Dataverse環境への接続をテストする
+   * 
+   * $metadataエンドポイントにアクセスして接続可能かどうかを確認します。
+   * 接続に成功した場合はsuccess: trueを返し、失敗した場合はエラー情報を返します。
+   * 
+   * @returns {Promise<{ success: boolean; error?: string; details?: any }>} 接続テスト結果
+   * @returns {boolean} success - 接続が成功した場合true
+   * @returns {string} [error] - エラーメッセージ(失敗時)
+   * @returns {any} [details] - エラー詳細情報(失敗時)
+   * 
+   * @example
+   * ```typescript
+   * const result = await service.testConnection();
+   * 
+   * if (result.success) {
+   *   console.log('接続成功');
+   * } else {
+   *   console.error('接続失敗:', result.error);
+   *   console.error('詳細:', result.details);
+   * }
+   * ```
+   * 
+   * @remarks
+   * - CORSエラーが発生する場合、Dataverse環境のCORS設定を確認してください
+   * - 認証エラーの場合、Power Apps環境で実行していることを確認してください
+   */
   async testConnection(): Promise<{ success: boolean; error?: string; details?: any }> {
     try {
       console.log('🧪 接続テストを開始:', this.baseUrl);
@@ -52,7 +117,19 @@ export class DataverseAdminService {
     }
   }
 
-  // 認証ヘッダーを取得
+  /**
+   * API呼び出し用の認証ヘッダーを取得する
+   * 
+   * Dataverse Web API呼び出しに必要なヘッダーを構築します。
+   * Power Apps環境で実行されている場合、認証トークンは自動的に処理されます。
+   * 
+   * @private
+   * @returns {Promise<HeadersInit>} 認証ヘッダーオブジェクト
+   * 
+   * @remarks
+   * - Power Apps環境外で実行する場合、認証は機能しない可能性があります
+   * - ODataバージョンヘッダーは常に含まれます
+   */
   private async getAuthHeaders(): Promise<HeadersInit> {
     const headers: HeadersInit = {
       'Accept': 'application/json',
@@ -82,7 +159,49 @@ export class DataverseAdminService {
     return headers;
   }
 
-  // テーブルを作成
+  /**
+   * Dataverseに新しいカスタムテーブルを作成する
+   * 
+   * テーブル定義に基づいて、カスタムテーブルとそのカラムをDataverseに作成します。
+   * テーブル作成後、指定された全てのカラムを順次作成します。
+   * 
+   * @param {TableSchema} schema - テーブル定義スキーマ
+   * @param {string} schema.logicalName - テーブルの論理名(例: 'cr123_project')
+   * @param {string} schema.displayName - テーブルの表示名
+   * @param {string} schema.pluralName - テーブルの複数形表示名
+   * @param {string} [schema.description] - テーブルの説明
+   * @param {ColumnSchema[]} schema.columns - カラム定義の配列
+   * 
+   * @returns {Promise<string>} 作成されたテーブルのエンティティID
+   * 
+   * @throws {Error} ネットワークエラーまたはCORSエラーの場合
+   * @throws {Error} Dataverse APIがエラーを返した場合
+   * 
+   * @example
+   * ```typescript
+   * const tableId = await service.createTable({
+   *   logicalName: 'cr123_project',
+   *   displayName: 'プロジェクト',
+   *   pluralName: 'プロジェクト',
+   *   description: '案件管理用テーブル',
+   *   columns: [
+   *     {
+   *       logicalName: 'cr123_name',
+   *       displayName: 'プロジェクト名',
+   *       type: 'string',
+   *       required: true,
+   *       maxLength: 200
+   *     }
+   *   ]
+   * });
+   * console.log('テーブルID:', tableId);
+   * ```
+   * 
+   * @remarks
+   * - テーブル作成には管理者権限が必要です
+   * - 論理名はソリューション発行者のプレフィックスを含む必要があります
+   * - カラム作成中にエラーが発生した場合、テーブルは作成されていますが一部のカラムが欠落します
+   */
   async createTable(schema: TableSchema): Promise<string> {
     const entityDefinition = {
       "@odata.type": "Microsoft.Dynamics.CRM.EntityMetadata",
@@ -218,7 +337,39 @@ export class DataverseAdminService {
     return entityId;
   }
 
-  // カラムを作成
+  /**
+   * 既存のテーブルに新しいカラムを追加する
+   * 
+   * 指定されたテーブルにカラム定義に基づいて新しいカラムを作成します。
+   * カラムタイプに応じた適切な属性定義が自動的に構築されます。
+   * 
+   * @param {string} entityLogicalName - カラムを追加するテーブルの論理名
+   * @param {ColumnSchema} column - カラム定義スキーマ
+   * @param {string} column.logicalName - カラムの論理名
+   * @param {string} column.displayName - カラムの表示名
+   * @param {string} column.type - カラムのタイプ('string', 'number', 'date'等)
+   * @param {boolean} [column.required] - 必須フィールドかどうか
+   * 
+   * @returns {Promise<void>}
+   * 
+   * @throws {Error} ネットワークエラーまたはCORSエラーの場合
+   * @throws {Error} Dataverse APIがエラーを返した場合
+   * 
+   * @example
+   * ```typescript
+   * await service.createColumn('cr123_project', {
+   *   logicalName: 'cr123_budget',
+   *   displayName: '予算',
+   *   type: 'currency',
+   *   required: false
+   * });
+   * console.log('カラム作成完了');
+   * ```
+   * 
+   * @remarks
+   * - カラム追加には管理者権限が必要です
+   * - 論理名はソリューション発行者のプレフィックスを含む必要があります
+   */
   async createColumn(entityLogicalName: string, column: ColumnSchema): Promise<void> {
     const attributeDefinition = this.createAttributeDefinition(column);
 
@@ -260,7 +411,27 @@ export class DataverseAdminService {
     }
   }
 
-  // カラム定義を作成
+  /**
+   * カラム定義からDataverse属性定義オブジェクトを作成する
+   * 
+   * カラムタイプに応じて、Dataverse Web APIで要求される
+   * 適切な属性メタデータオブジェクトを構築します。
+   * 
+   * @private
+   * @param {ColumnSchema} column - カラム定義スキーマ
+   * @returns {any} Dataverse属性定義オブジェクト
+   * 
+   * @remarks
+   * サポートされるカラムタイプ:
+   * - string: 文字列型(最大長指定可能)
+   * - number: 整数型
+   * - currency: 通貨型
+   * - date: 日付型
+   * - datetime: 日時型
+   * - boolean: 真偽値型
+   * - choice: 選択肢型(OptionSet)
+   * - lookup: 参照型(他のテーブルへの参照)
+   */
   private createAttributeDefinition(column: ColumnSchema): any {
     const baseAttribute = {
       "SchemaName": column.logicalName,
@@ -414,7 +585,29 @@ export class DataverseAdminService {
     }
   }
 
-  // テーブル一覧を取得
+  /**
+   * Dataverse環境内のカスタムテーブル一覧を取得する
+   * 
+   * カスタムテーブル(IsCustomEntity = true)のメタデータを取得して返します。
+   * 各テーブルの基本情報(論理名、表示名、スキーマ名、エンティティセット名)が含まれます。
+   * 
+   * @returns {Promise<any[]>} カスタムテーブルのメタデータ配列
+   * 
+   * @throws {Error} APIリクエストが失敗した場合
+   * 
+   * @example
+   * ```typescript
+   * const tables = await service.getTables();
+   * 
+   * tables.forEach(table => {
+   *   console.log(`${table.DisplayName.UserLocalizedLabel.Label}: ${table.LogicalName}`);
+   * });
+   * ```
+   * 
+   * @remarks
+   * - システムテーブルは含まれません(IsCustomEntity = trueのみ)
+   * - 結果にはメタデータのみが含まれ、実際のレコードデータは含まれません
+   */
   async getTables(): Promise<any[]> {
     const headers = await this.getAuthHeaders();
     const response = await fetch(
@@ -440,7 +633,33 @@ export class DataverseAdminService {
     return data.value;
   }
 
-  // テーブルのスキーマを取得
+  /**
+   * 指定されたテーブルの詳細スキーマを取得する
+   * 
+   * テーブルのメタデータと、そのテーブルに含まれる全ての属性(カラム)情報を取得します。
+   * 
+   * @param {string} logicalName - 取得するテーブルの論理名
+   * @returns {Promise<any>} テーブルスキーマオブジェクト(Attributes配列を含む)
+   * 
+   * @throws {Error} APIリクエストが失敗した場合
+   * @throws {Error} 指定されたテーブルが存在しない場合
+   * 
+   * @example
+   * ```typescript
+   * const schema = await service.getTableSchema('cr123_project');
+   * 
+   * console.log('テーブル名:', schema.DisplayName.UserLocalizedLabel.Label);
+   * console.log('カラム数:', schema.Attributes.length);
+   * 
+   * schema.Attributes.forEach(attr => {
+   *   console.log(`- ${attr.DisplayName.UserLocalizedLabel.Label} (${attr.AttributeType})`);
+   * });
+   * ```
+   * 
+   * @remarks
+   * - $expandクエリパラメータによりAttributes(カラム情報)が展開されます
+   * - システム属性も含めた全ての属性が返されます
+   */
   async getTableSchema(logicalName: string): Promise<any> {
     const headers = await this.getAuthHeaders();
     const response = await fetch(
@@ -465,7 +684,35 @@ export class DataverseAdminService {
     return response.json();
   }
 
-  // レコードを作成
+  /**
+   * Dataverseテーブルに新しいレコードを作成する
+   * 
+   * 指定されたエンティティセットに対してPOSTリクエストを送信し、
+   * 新しいレコードを作成します。作成されたレコードのIDを返します。
+   * 
+   * @param {string} entitySetName - エンティティセット名(テーブルの複数形名)
+   * @param {Record<string, any>} data - 作成するレコードのデータ
+   * @returns {Promise<string>} 作成されたレコードのID(GUID)
+   * 
+   * @throws {Error} CORSエラーまたはネットワークエラーの場合
+   * @throws {Error} Dataverse APIがエラーを返した場合
+   * 
+   * @example
+   * ```typescript
+   * const recordId = await service.createRecord('cr123_projects', {
+   *   cr123_name: '新規プロジェクト',
+   *   cr123_description: 'プロジェクトの説明',
+   *   cr123_status: 1  // 選択肢の値
+   * });
+   * console.log('作成されたレコードID:', recordId);
+   * ```
+   * 
+   * @remarks
+   * - エンティティセット名はテーブルの複数形名です(例: cr123_project → cr123_projects)
+   * - フィールド名はDataverseのカラム論理名を使用してください
+   * - 選択肢(Choice)フィールドは数値で指定します
+   * - 参照(Lookup)フィールドは「フィールド名@odata.bind」形式で指定します
+   */
   async createRecord(entitySetName: string, data: Record<string, any>): Promise<string> {
     console.log(`📝 レコード作成中: ${entitySetName}`, data);
 
@@ -536,7 +783,39 @@ export class DataverseAdminService {
     }
   }
 
-  // レコードを更新
+  /**
+   * 既存のDataverseレコードを更新する
+   * 
+   * 指定されたレコードIDのレコードに対してPATCHリクエストを送信し、
+   * データを更新します。部分更新をサポートしており、指定したフィールドのみ更新されます。
+   * 
+   * @param {string} entitySetName - エンティティセット名(テーブルの複数形名)
+   * @param {string} recordId - 更新するレコードのID(GUID)
+   * @param {Record<string, any>} data - 更新するフィールドと値
+   * @returns {Promise<void>}
+   * 
+   * @throws {Error} ネットワークエラーまたはCORSエラーの場合
+   * @throws {Error} Dataverse APIがエラーを返した場合
+   * @throws {Error} レコードが見つからない場合
+   * 
+   * @example
+   * ```typescript
+   * await service.updateRecord(
+   *   'cr123_projects',
+   *   '12345678-1234-1234-1234-123456789012',
+   *   {
+   *     cr123_name: '更新されたプロジェクト名',
+   *     cr123_status: 2
+   *   }
+   * );
+   * console.log('レコード更新完了');
+   * ```
+   * 
+   * @remarks
+   * - PATCHメソッドを使用するため、指定したフィールドのみが更新されます
+   * - 他のフィールドは変更されません
+   * - レコードIDはハイフン付きGUID形式です
+   */
   async updateRecord(entitySetName: string, recordId: string, data: Record<string, any>): Promise<void> {
     console.log(`📝 レコード更新中: ${entitySetName}/${recordId}`, data);
 
@@ -579,7 +858,38 @@ export class DataverseAdminService {
     }
   }
 
-  // レコードを削除
+  /**
+   * Dataverseレコードを削除する
+   * 
+   * 指定されたレコードIDのレコードをDataverseから完全に削除します。
+   * この操作は元に戻せません。
+   * 
+   * @param {string} entitySetName - エンティティセット名(テーブルの複数形名)
+   * @param {string} recordId - 削除するレコードのID(GUID)
+   * @returns {Promise<void>}
+   * 
+   * @throws {Error} ネットワークエラーまたはCORSエラーの場合
+   * @throws {Error} Dataverse APIがエラーを返した場合
+   * @throws {Error} レコードが見つからない場合
+   * 
+   * @example
+   * ```typescript
+   * try {
+   *   await service.deleteRecord(
+   *     'cr123_projects',
+   *     '12345678-1234-1234-1234-123456789012'
+   *   );
+   *   console.log('レコード削除完了');
+   * } catch (error) {
+   *   console.error('削除失敗:', error);
+   * }
+   * ```
+   * 
+   * @remarks
+   * - この操作は元に戻せません
+   * - 関連レコードがある場合、カスケード設定に応じて削除される可能性があります
+   * - レコードIDはハイフン付きGUID形式です
+   */
   async deleteRecord(entitySetName: string, recordId: string): Promise<void> {
     console.log(`🗑️ レコード削除中: ${entitySetName}/${recordId}`);
 
@@ -621,7 +931,46 @@ export class DataverseAdminService {
     }
   }
 
-  // レコードを取得
+  /**
+   * Dataverseテーブルからレコードを取得する
+   * 
+   * ODataクエリオプションを使用して、レコードのフィルタリング、
+   * ソート、フィールド選択、件数制限を行えます。
+   * 
+   * @param {string} entitySetName - エンティティセット名(テーブルの複数形名)
+   * @param {Object} [options] - クエリオプション
+   * @param {string[]} [options.select] - 取得するフィールド名の配列
+   * @param {string} [options.filter] - ODataフィルター式
+   * @param {string} [options.orderBy] - ソート順(例: 'cr123_name asc')
+   * @param {number} [options.top] - 取得する最大件数
+   * @returns {Promise<any[]>} 取得されたレコードの配列
+   * 
+   * @throws {Error} ネットワークエラーまたはCORSエラーの場合
+   * @throws {Error} Dataverse APIがエラーを返した場合
+   * 
+   * @example
+   * ```typescript
+   * // 全フィールドを取得
+   * const allRecords = await service.getRecords('cr123_projects');
+   * 
+   * // フィールドを指定して取得
+   * const records = await service.getRecords('cr123_projects', {
+   *   select: ['cr123_name', 'cr123_status'],
+   *   filter: "cr123_status eq 1",
+   *   orderBy: 'createdon desc',
+   *   top: 10
+   * });
+   * 
+   * records.forEach(record => {
+   *   console.log(record.cr123_name);
+   * });
+   * ```
+   * 
+   * @remarks
+   * - filterオプションはOData v4のフィルター構文を使用します
+   * - デフォルトでは全てのフィールドが返されます
+   * - 大量のレコードを取得する場合、topオプションでページング処理を検討してください
+   */
   async getRecords(entitySetName: string, options?: {
     select?: string[];
     filter?: string;

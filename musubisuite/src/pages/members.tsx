@@ -1,3 +1,12 @@
+/**
+ * メンバー一覧ページ
+ * 
+ * チームメンバーの一覧表示、検索、詳細情報を提供します。
+ * カードレイアウトでメンバー情報を視覚的に表示します。
+ * 
+ * @module pages/members
+ */
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
@@ -5,6 +14,30 @@ import { Search } from "lucide-react"
 import { mockMembers } from "@/data/mockData"
 import { useState, useMemo } from "react"
 
+/**
+ * メンバー一覧ページコンポーネント
+ * 
+ * チームメンバーの一覧をカード形式で表示します。
+ * 以下の機能を含みます:
+ * - メンバー一覧のカード表示(アバター付き)
+ * - キーワード検索(名前、メール、部署)
+ * - 役職、部署、スキル表示
+ * - ステータスバッジ(アクティブ/休中)
+ * 
+ * @component
+ * @returns {JSX.Element} メンバー一覧ページ
+ * 
+ * @example
+ * ```tsx
+ * // router.tsx
+ * { path: "members", element: <MembersPage /> }
+ * ```
+ * 
+ * @remarks
+ * - 現在はモックデータを使用(将来的にはDjango API連携予定)
+ * - レスポンシブグリッドレイアウト
+ * - useMemoによる検索パフォーマンス最適化
+ */
 export default function MembersPage() {
   const [searchQuery, setSearchQuery] = useState("")
 
