@@ -14,7 +14,15 @@ import { mockApplications } from "@/data/mockData"
 import type { Application } from "@/types"
 import { useTheme } from "@/hooks/use-theme"
 
-// アイコンマッピング
+/**
+ * アイコン名とLucideIconコンポーネントのマッピング
+ * 
+ * @constant {Record<string, LucideIcon>} iconMap
+ * 
+ * @remarks
+ * - mockApplicationsのiconプロパティに対応するアイコンコンポーネントを定義します
+ * - 新しいアイコンを追加する場合は、ここに登録する必要があります
+ */
 const iconMap: Record<string, LucideIcon> = {
   Home,
   FolderKanban,
@@ -23,16 +31,54 @@ const iconMap: Record<string, LucideIcon> = {
 }
 
 /**
- * Plane風のアプリスイッチャー
- * 左端の縦型ナビゲーションで異なるアプリケーション間を切り替え
- * 現代的なWebUIデザインを採用し、ダークモードに完全対応
- * デスクトップのみ表示、モバイルでは非表示
+ * アプリケーションスイッチャーコンポーネント
+ * 
+ * Plane風の左端に配置される縦型ナビゲーションバーで、
+ * 異なるアプリケーション間を切り替えるための機能を提供します。
+ * 
+ * @component
+ * 
+ * @description
+ * - 左端に固定幅(64px)で配置される縦型ナビゲーションバー
+ * - 各アプリケーションをアイコンで表示し、クリックで切り替え可能
+ * - 現在アクティブなアプリケーションを視覚的に強調表示
+ * - ホバー時にツールチップでアプリケーション名を表示
+ * - ダークモード・ライトモードの切り替え機能を提供
+ * - デスクトップサイズ(lg以上)でのみ表示
+ * 
+ * @returns {JSX.Element} アプリケーションスイッチャーUI
+ * 
+ * @example
+ * ```tsx
+ * // _layout.tsxなどのレイアウトコンポーネントで使用
+ * <div className="flex h-screen">
+ *   <AppSwitcher />
+ *   <div className="flex-1">
+ *     {children}
+ *   </div>
+ * </div>
+ * ```
+ * 
+ * @remarks
+ * - 現在のパスに基づいてアクティブなアプリケーションを自動判定します
+ * - ホームアプリケーションは完全一致、その他はプレフィックスマッチで判定します
+ * - アクティブなアプリケーションには左側にカラーインジケーターが表示されます
+ * - ツールチップはz-index: 9999で最前面に表示されます
  */
 export default function AppSwitcher() {
   const location = useLocation()
   const { theme, setTheme } = useTheme()
   
-  // 現在のアプリを判定
+  /**
+   * 現在アクティブなアプリケーションを取得します
+   * 
+   * @returns {Application | undefined} 現在のパスに一致するアプリケーション
+   * 
+   * @remarks
+   * - ルートパス('/')の場合はホームアプリケーションとして判定します
+   * - その他のパスはプレフィックスマッチで判定します
+   * - 例: '/project-management/projects'は'/project-management'にマッチ
+   */
   const getCurrentApp = () => {
     const currentPath = location.pathname
     return mockApplications.find(app => {

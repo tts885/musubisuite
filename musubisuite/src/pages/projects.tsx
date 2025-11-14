@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react"
+import { useState, useMemo, useEffect } from "react"
 import { Link } from "react-router-dom"
 import {
   useReactTable,
@@ -49,10 +49,10 @@ import {
   Eye,
   Plus
 } from "lucide-react"
-import { mockProjects, mockClients, getStatusLabel, getPriorityLabel } from "@/data/mockData"
-import type { Project, ProjectStatus, ProjectPriority } from "@/types"
-import { dataverseStore } from "@/lib/dataverseStore"
-import { DataverseAdminService } from "@/services/dataverseAdminService"
+import { getStatusLabel, getPriorityLabel } from "@/data/mockData"
+import type { Project, Client, ProjectStatus, ProjectPriority } from "@/types"
+import { djangoAPI } from "@/services/djangoAPI"
+import { toast } from "sonner"
 
 export default function ProjectsPage() {
   const [sorting, setSorting] = useState<SortingState>([])
@@ -62,6 +62,9 @@ export default function ProjectsPage() {
   const [priorityFilter, setPriorityFilter] = useState<ProjectPriority | "all">("all")
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
   const [isCreating, setIsCreating] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
+  const [projects, setProjects] = useState<Project[]>([])
+  const [clients, setClients] = useState<Client[]>([])
   const [newProject, setNewProject] = useState({
     name: "",
     description: "",
@@ -73,46 +76,115 @@ export default function ProjectsPage() {
     budget: "",
   })
 
+  // 初期データを取得
+  useEffect(() => {
+    const fetchData = async () => {
+      setIsLoading(true);
+      try {
+        // クライアント一覧を取得
+        const clientsData = await djangoAPI.getClients();
+        console.log('取得したクライアントデータ:', clientsData);
+        const clients = clientsData.results || clientsData;
+        console.log('設定するクライアント:', clients);
+        setClients(clients);
+
+        // プロジェクト一覧を取得
+        const projectsData = await djangoAPI.getProjects();
+        console.log('取得したプロジェクトデータ:', projectsData);
+        const projects = projectsData.results || projectsData;
+        
+        // Django APIのレスポンスをフロントエンドの型に変換
+        const transformedProjects = projects.map((p: any) => ({
+          id: String(p.id),
+          name: p.name,
+          description: p.description,
+          status: p.status,
+          priority: p.priority,
+          clientId: String(p.client.id),
+          startDate: new Date(p.start_date),
+          endDate: new Date(p.end_date),
+          budget: p.budget,
+          progress: p.progress,
+          ownerId: p.owner?.id ? String(p.owner.id) : '',
+          memberIds: p.members?.map((m: any) => String(m.id)) || [],
+          tags: p.tags || [],
+          createdAt: new Date(p.created_at),
+          updatedAt: new Date(p.updated_at),
+        }));
+        
+        console.log('設定するプロジェクト:', transformedProjects);
+        setProjects(transformedProjects);
+        
+      } catch (error) {
+        console.error('データ取得エラー:', error);
+        toast.error('データの取得に失敗しました');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
+
   // 新規案件作成ハンドラー
   const handleCreateProject = async () => {
     if (!newProject.name.trim()) {
-      alert('案件名を入力してください');
+      toast.error('案件名を入力してください');
+      return;
+    }
+
+    if (!newProject.clientId) {
+      toast.error('クライアントを選択してください');
+      return;
+    }
+
+    if (!newProject.endDate) {
+      toast.error('期限を入力してください');
       return;
     }
 
     setIsCreating(true);
 
     try {
-      // Dataverse接続を取得
-      const activeConnection = dataverseStore.getActiveConnection();
+      // Django APIにデータを送信
+      const projectData = {
+        name: newProject.name,
+        description: newProject.description,
+        status: newProject.status,
+        priority: newProject.priority,
+        client_id: newProject.clientId,
+        start_date: newProject.startDate,
+        end_date: newProject.endDate,
+        budget: newProject.budget ? parseFloat(newProject.budget) : undefined,
+        tags: [],
+      };
+
+      console.log('送信するプロジェクトデータ:', projectData);
+      const createdProject = await djangoAPI.createProject(projectData);
+      console.log('作成されたプロジェクト:', createdProject);
       
-      if (activeConnection) {
-        // Dataverseにデータを送信
-        const service = new DataverseAdminService(activeConnection);
-        
-        const projectData = {
-          cr0d2_name: newProject.name,
-          cr0d2_description: newProject.description,
-          cr0d2_status: newProject.status,
-          cr0d2_startdate: newProject.startDate,
-          cr0d2_enddate: newProject.endDate || null,
-          cr0d2_progress: 0,
-        };
-
-        try {
-          await service.createRecord('cr0d2_projects', projectData);
-          alert('案件がDataverseに正常に作成されました！');
-        } catch (dataverseError) {
-          console.error('Dataverse error:', dataverseError);
-          alert('Dataverseへの保存に失敗しました。ローカルデータとして保存します。');
-        }
-      } else {
-        console.log("Dataverse接続が設定されていません。ローカルデータとして保存します。");
-        alert('Dataverse接続が設定されていません。設定画面で接続を追加してください。');
-      }
-
-      // ローカルデータも更新（モックデータ用）
-      console.log("新規案件作成:", newProject);
+      // 成功メッセージ
+      toast.success('案件が正常に作成されました!');
+      
+      // ローカルの状態を更新
+      const newProjectData: Project = {
+        id: String(createdProject.id),
+        name: createdProject.name,
+        description: createdProject.description,
+        status: createdProject.status,
+        priority: createdProject.priority,
+        clientId: String(createdProject.client.id),
+        startDate: new Date(createdProject.start_date),
+        endDate: new Date(createdProject.end_date),
+        budget: createdProject.budget,
+        progress: createdProject.progress,
+        ownerId: createdProject.owner?.id ? String(createdProject.owner.id) : '',
+        memberIds: createdProject.members?.map((m: any) => String(m.id)) || [],
+        tags: createdProject.tags || [],
+        createdAt: new Date(createdProject.created_at),
+        updatedAt: new Date(createdProject.updated_at),
+      };
+      
+      setProjects(prev => [newProjectData, ...prev]);
       
       setIsCreateDialogOpen(false);
       setNewProject({
@@ -126,9 +198,27 @@ export default function ProjectsPage() {
         budget: "",
       });
 
-    } catch (error) {
+    } catch (error: any) {
       console.error('案件作成エラー:', error);
-      alert('案件作成中にエラーが発生しました');
+      console.error('エラーレスポンス:', error.response?.data);
+      
+      // エラーメッセージを構築
+      let errorMessage = '案件作成中にエラーが発生しました';
+      if (error.response?.data) {
+        const data = error.response.data;
+        if (typeof data === 'object') {
+          // フィールドごとのエラーを表示
+          const errors = Object.entries(data).map(([field, messages]) => {
+            const msg = Array.isArray(messages) ? messages.join(', ') : messages;
+            return `${field}: ${msg}`;
+          }).join('\n');
+          errorMessage = errors || errorMessage;
+        } else {
+          errorMessage = data.detail || data.message || String(data);
+        }
+      }
+      
+      toast.error(errorMessage);
     } finally {
       setIsCreating(false);
     }
@@ -136,12 +226,12 @@ export default function ProjectsPage() {
 
   // フィルタリングされたデータ
   const filteredData = useMemo(() => {
-    return mockProjects.filter(project => {
+    return projects.filter(project => {
       if (statusFilter !== "all" && project.status !== statusFilter) return false
       if (priorityFilter !== "all" && project.priority !== priorityFilter) return false
       return true
     })
-  }, [statusFilter, priorityFilter])
+  }, [projects, statusFilter, priorityFilter])
 
   // テーブルカラム定義
   const columns: ColumnDef<Project>[] = [
@@ -164,7 +254,7 @@ export default function ProjectsPage() {
         return (
           <div className="space-y-1">
             <Link 
-              to={`/projects/${project.id}`}
+              to={`/dashboard/projects/${project.id}`}
               className="font-medium hover:underline"
             >
               {project.name}
@@ -184,7 +274,7 @@ export default function ProjectsPage() {
       accessorKey: "clientId",
       header: "クライアント",
       cell: ({ row }) => {
-        const client = mockClients.find(c => c.id === row.original.clientId)
+        const client = clients.find(c => String(c.id) === row.original.clientId)
         return client?.companyName || "-"
       },
     },
@@ -306,7 +396,7 @@ export default function ProjectsPage() {
       cell: ({ row }) => {
         return (
           <div className="flex justify-end">
-            <Link to={`/projects/${row.original.id}`}>
+            <Link to={`/dashboard/projects/${row.original.id}`}>
               <Button variant="ghost" size="sm">
                 <Eye className="h-4 w-4" />
               </Button>
@@ -393,7 +483,7 @@ export default function ProjectsPage() {
                       <SelectValue placeholder="選択してください" />
                     </SelectTrigger>
                     <SelectContent>
-                      {mockClients.map(client => (
+                      {clients.map(client => (
                         <SelectItem key={client.id} value={client.id}>
                           {client.companyName}
                         </SelectItem>
@@ -517,53 +607,62 @@ export default function ProjectsPage() {
 
         {/* Table - 現代的なテーブルデザイン */}
         <div className="border border-border rounded-xl shadow-sm overflow-hidden bg-card">
-          <Table>
-          <TableHeader>
-            {table.getHeaderGroups().map((headerGroup) => (
-              <TableRow key={headerGroup.id}>
-                {headerGroup.headers.map((header) => (
-                  <TableHead key={header.id}>
-                    {header.isPlaceholder
-                      ? null
-                      : flexRender(
-                          header.column.columnDef.header,
-                          header.getContext()
-                        )}
-                  </TableHead>
+          {isLoading ? (
+            <div className="flex items-center justify-center py-20">
+              <div className="text-center space-y-3">
+                <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary mx-auto"></div>
+                <p className="text-muted-foreground">読み込み中...</p>
+              </div>
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                {table.getHeaderGroups().map((headerGroup) => (
+                  <TableRow key={headerGroup.id}>
+                    {headerGroup.headers.map((header) => (
+                      <TableHead key={header.id}>
+                        {header.isPlaceholder
+                          ? null
+                          : flexRender(
+                              header.column.columnDef.header,
+                              header.getContext()
+                            )}
+                      </TableHead>
+                    ))}
+                  </TableRow>
                 ))}
-              </TableRow>
-            ))}
-          </TableHeader>
-          <TableBody>
-            {table.getRowModel().rows?.length ? (
-              table.getRowModel().rows.map((row) => (
-                <TableRow
-                  key={row.id}
-                  data-state={row.getIsSelected() && "selected"}
-                >
-                  {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id}>
-                      {flexRender(
-                        cell.column.columnDef.cell,
-                        cell.getContext()
-                      )}
+              </TableHeader>
+              <TableBody>
+                {table.getRowModel().rows?.length ? (
+                  table.getRowModel().rows.map((row) => (
+                    <TableRow
+                      key={row.id}
+                      data-state={row.getIsSelected() && "selected"}
+                    >
+                      {row.getVisibleCells().map((cell) => (
+                        <TableCell key={cell.id}>
+                          {flexRender(
+                            cell.column.columnDef.cell,
+                            cell.getContext()
+                          )}
+                        </TableCell>
+                      ))}
+                    </TableRow>
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell
+                      colSpan={columns.length}
+                      className="h-24 text-center"
+                    >
+                      案件が見つかりませんでした
                     </TableCell>
-                  ))}
-                </TableRow>
-              ))
-            ) : (
-              <TableRow>
-                <TableCell
-                  colSpan={columns.length}
-                  className="h-24 text-center"
-                >
-                  案件が見つかりませんでした
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
-      </div>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          )}
+        </div>
 
         {/* Pagination - 現代的なページネーションデザイン */}
         <div className="flex items-center justify-between pt-2">

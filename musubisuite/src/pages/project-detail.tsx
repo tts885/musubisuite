@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useParams, Link } from "react-router-dom"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -38,47 +38,182 @@ import {
   DollarSign, 
   Users, 
   CheckCircle2,
-  FileText,
   Edit
 } from "lucide-react"
 import { 
-  mockProjects, 
-  mockClients, 
-  mockMembers,
-  mockAttachments,
-  mockComments,
   getStatusLabel,
   getPriorityLabel,
-  getTasksByProject,
-  getMembersByProject
 } from "@/data/mockData"
-import type { ProjectStatus, ProjectPriority } from "@/types"
+import type { Project, Client, ProjectStatus, ProjectPriority } from "@/types"
+import { djangoAPI } from "@/services/djangoAPI"
+import { toast } from "sonner"
 
 export default function ProjectDetailPage() {
   const { id } = useParams<{ id: string }>()
-  const project = mockProjects.find(p => p.id === id)
+  const [isLoading, setIsLoading] = useState(true)
+  const [project, setProject] = useState<Project | null>(null)
+  const [client, setClient] = useState<Client | null>(null)
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
+  const [isUpdating, setIsUpdating] = useState(false)
   const [editProject, setEditProject] = useState({
-    name: project?.name || "",
-    description: project?.description || "",
-    clientId: project?.clientId || "",
-    status: project?.status || "planning" as ProjectStatus,
-    priority: project?.priority || "medium" as ProjectPriority,
-    startDate: project?.startDate.toISOString().split('T')[0] || "",
-    endDate: project?.endDate.toISOString().split('T')[0] || "",
-    budget: project?.budget?.toString() || "",
+    name: "",
+    description: "",
+    clientId: "",
+    status: "planning" as ProjectStatus,
+    priority: "medium" as ProjectPriority,
+    startDate: "",
+    endDate: "",
+    budget: "",
   })
-  const client = project ? mockClients.find(c => c.id === project.clientId) : undefined
-  const projectTasks = project ? getTasksByProject(project.id) : []
-  const projectMembers = project ? getMembersByProject(project.id) : []
-  const projectAttachments = mockAttachments.filter(a => a.projectId === id)
-  const projectComments = mockComments.filter(c => c.projectId === id)
+  const [clients, setClients] = useState<Client[]>([])
+
+  // プロジェクトデータを取得
+  useEffect(() => {
+    const fetchData = async () => {
+      if (!id) return
+      
+      setIsLoading(true)
+      try {
+        // クライアント一覧を取得
+        const clientsData = await djangoAPI.getClients()
+        const clientsList = clientsData.results || clientsData
+        setClients(clientsList)
+
+        // プロジェクト詳細を取得
+        const projectData = await djangoAPI.getProject(id)
+        console.log('取得したプロジェクト詳細:', projectData)
+        
+        // データを変換
+        const transformedProject: Project = {
+          id: String(projectData.id),
+          name: projectData.name,
+          description: projectData.description,
+          status: projectData.status,
+          priority: projectData.priority,
+          clientId: String(projectData.client.id),
+          startDate: new Date(projectData.start_date),
+          endDate: new Date(projectData.end_date),
+          budget: projectData.budget,
+          progress: projectData.progress,
+          ownerId: projectData.owner?.id ? String(projectData.owner.id) : '',
+          memberIds: projectData.members?.map((m: any) => String(m.id)) || [],
+          tags: projectData.tags || [],
+          createdAt: new Date(projectData.created_at),
+          updatedAt: new Date(projectData.updated_at),
+        }
+        
+        setProject(transformedProject)
+        
+        // クライアント情報を取得
+        const clientInfo = clientsList.find((c: Client) => String(c.id) === String(projectData.client.id))
+        setClient(clientInfo || null)
+        
+        // 編集フォームを初期化
+        setEditProject({
+          name: transformedProject.name,
+          description: transformedProject.description,
+          clientId: transformedProject.clientId,
+          status: transformedProject.status,
+          priority: transformedProject.priority,
+          startDate: transformedProject.startDate.toISOString().split('T')[0],
+          endDate: transformedProject.endDate.toISOString().split('T')[0],
+          budget: transformedProject.budget?.toString() || "",
+        })
+        
+      } catch (error) {
+        console.error('プロジェクト取得エラー:', error)
+        toast.error('プロジェクトの取得に失敗しました')
+      } finally {
+        setIsLoading(false)
+      }
+    }
+    
+    fetchData()
+  }, [id])
 
   // 編集ハンドラー
-  const handleEditProject = () => {
-    // TODO: 実際のAPI呼び出しに置き換える
-    console.log("案件更新:", editProject)
-    setIsEditDialogOpen(false)
+  const handleEditProject = async () => {
+    if (!project || !id) return
+    
+    setIsUpdating(true)
+    try {
+      const updateData = {
+        name: editProject.name,
+        description: editProject.description,
+        status: editProject.status,
+        priority: editProject.priority,
+        client_id: editProject.clientId,
+        start_date: editProject.startDate,
+        end_date: editProject.endDate,
+        budget: editProject.budget ? parseFloat(editProject.budget) : undefined,
+        tags: project.tags,
+      }
+      
+      console.log('送信する更新データ:', updateData)
+      const updatedProject = await djangoAPI.updateProject(id, updateData as any)
+      console.log('更新されたプロジェクト:', updatedProject)
+      
+      // ローカル状態を更新
+      const transformedProject: Project = {
+        id: String(updatedProject.id),
+        name: updatedProject.name,
+        description: updatedProject.description,
+        status: updatedProject.status,
+        priority: updatedProject.priority,
+        clientId: String(updatedProject.client.id),
+        startDate: new Date(updatedProject.start_date),
+        endDate: new Date(updatedProject.end_date),
+        budget: updatedProject.budget,
+        progress: updatedProject.progress,
+        ownerId: updatedProject.owner?.id ? String(updatedProject.owner.id) : '',
+        memberIds: updatedProject.members?.map((m: any) => String(m.id)) || [],
+        tags: updatedProject.tags || [],
+        createdAt: new Date(updatedProject.created_at),
+        updatedAt: new Date(updatedProject.updated_at),
+      }
+      
+      setProject(transformedProject)
+      setIsEditDialogOpen(false)
+      toast.success('案件を更新しました')
+      
+    } catch (error: any) {
+      console.error('案件更新エラー:', error)
+      console.error('エラーレスポンス:', error.response?.data)
+      
+      let errorMessage = '案件更新中にエラーが発生しました'
+      if (error.response?.data) {
+        const data = error.response.data
+        if (typeof data === 'object') {
+          const errors = Object.entries(data).map(([field, messages]) => {
+            const msg = Array.isArray(messages) ? messages.join(', ') : messages
+            return `${field}: ${msg}`
+          }).join('\n')
+          errorMessage = errors || errorMessage
+        }
+      }
+      
+      toast.error(errorMessage)
+    } finally {
+      setIsUpdating(false)
+    }
+  }
+
+  const projectTasks: any[] = []
+  const projectMembers: any[] = []
+  const projectAttachments: any[] = []
+  const projectComments: any[] = []
+
+  if (isLoading) {
+    return (
+      <div className="w-full h-full px-8 py-6">
+        <div className="flex items-center justify-center py-20">
+          <div className="text-center space-y-3">
+            <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary mx-auto"></div>
+            <p className="text-muted-foreground">読み込み中...</p>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   if (!project) {
@@ -87,7 +222,7 @@ export default function ProjectDetailPage() {
         <div className="text-center">
           <h2 className="text-2xl font-bold">案件が見つかりません</h2>
           <p className="text-muted-foreground mt-2">指定された案件は存在しません</p>
-          <Link to="/projects">
+          <Link to="/dashboard/projects">
             <Button className="mt-4">
               <ArrowLeft className="mr-2 h-4 w-4" />
               案件一覧に戻る
@@ -108,7 +243,7 @@ export default function ProjectDetailPage() {
       {/* Header */}
       <div className="flex items-start justify-between">
         <div className="space-y-2">
-          <Link to="/projects">
+          <Link to="/dashboard/projects">
             <Button variant="ghost" size="sm" className="mb-2">
               <ArrowLeft className="mr-2 h-4 w-4" />
               案件一覧に戻る
@@ -164,9 +299,9 @@ export default function ProjectDetailPage() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      {mockClients.map(client => (
-                        <SelectItem key={client.id} value={client.id}>
-                          {client.companyName}
+                      {clients.map((c) => (
+                        <SelectItem key={c.id} value={String(c.id)}>
+                          {c.companyName}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -235,11 +370,11 @@ export default function ProjectDetailPage() {
               </div>
             </div>
             <DialogFooter>
-              <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
+              <Button variant="outline" onClick={() => setIsEditDialogOpen(false)} disabled={isUpdating}>
                 キャンセル
               </Button>
-              <Button onClick={handleEditProject} disabled={!editProject.name || !editProject.clientId || !editProject.endDate}>
-                保存
+              <Button onClick={handleEditProject} disabled={!editProject.name || !editProject.clientId || !editProject.endDate || isUpdating}>
+                {isUpdating ? "保存中..." : "保存"}
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -404,34 +539,11 @@ export default function ProjectDetailPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {projectTasks.map(task => {
-                    const assignee = task.assigneeId ? mockMembers.find(m => m.id === task.assigneeId) : undefined
-                    return (
-                      <TableRow key={task.id}>
-                        <TableCell>
-                          <div>
-                            <div className="font-medium">{task.title}</div>
-                            <div className="text-sm text-muted-foreground">{task.description}</div>
-                          </div>
-                        </TableCell>
-                        <TableCell>{assignee?.name || '未割当'}</TableCell>
-                        <TableCell>
-                          <Badge variant="outline">{getStatusLabel(task.status)}</Badge>
-                        </TableCell>
-                        <TableCell>{getPriorityLabel(task.priority)}</TableCell>
-                        <TableCell>
-                          {task.dueDate ? task.dueDate.toLocaleDateString('ja-JP') : '-'}
-                        </TableCell>
-                      </TableRow>
-                    )
-                  })}
-                  {projectTasks.length === 0 && (
-                    <TableRow>
-                      <TableCell colSpan={5} className="text-center text-muted-foreground">
-                        タスクはありません
-                      </TableCell>
-                    </TableRow>
-                  )}
+                  <TableRow>
+                    <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
+                      タスク機能は今後実装予定です
+                    </TableCell>
+                  </TableRow>
                 </TableBody>
               </Table>
             </CardContent>
@@ -446,23 +558,8 @@ export default function ProjectDetailPage() {
               <CardDescription>案件に参加しているメンバー</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
-                {projectMembers.map(member => (
-                  <div key={member.id} className="flex items-center gap-4">
-                    <img 
-                      src={member.avatar} 
-                      alt={member.name}
-                      className="w-12 h-12 rounded-full"
-                    />
-                    <div className="flex-1">
-                      <div className="font-medium">{member.name}</div>
-                      <div className="text-sm text-muted-foreground">
-                        {member.position} - {member.department}
-                      </div>
-                    </div>
-                    <Badge variant="outline">{member.role}</Badge>
-                  </div>
-                ))}
+              <div className="text-center text-muted-foreground py-8">
+                メンバー機能は今後実装予定です
               </div>
             </CardContent>
           </Card>
@@ -476,28 +573,8 @@ export default function ProjectDetailPage() {
               <CardDescription>案件に関連するファイル</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
-                {projectAttachments.map(file => {
-                  const uploader = mockMembers.find(m => m.id === file.uploadedBy)
-                  return (
-                    <div key={file.id} className="flex items-center gap-4 p-3 border rounded-lg">
-                      <FileText className="h-8 w-8 text-muted-foreground" />
-                      <div className="flex-1">
-                        <div className="font-medium">{file.fileName}</div>
-                        <div className="text-sm text-muted-foreground">
-                          {(file.fileSize / 1024).toFixed(2)} KB • {uploader?.name} • 
-                          {file.uploadedAt.toLocaleDateString('ja-JP')}
-                        </div>
-                      </div>
-                      <Button variant="outline" size="sm">ダウンロード</Button>
-                    </div>
-                  )
-                })}
-                {projectAttachments.length === 0 && (
-                  <div className="text-center text-muted-foreground py-8">
-                    添付ファイルはありません
-                  </div>
-                )}
+              <div className="text-center text-muted-foreground py-8">
+                ファイル機能は今後実装予定です
               </div>
             </CardContent>
           </Card>
@@ -511,33 +588,8 @@ export default function ProjectDetailPage() {
               <CardDescription>案件に関するコメント</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
-                {projectComments.map(comment => {
-                  const author = mockMembers.find(m => m.id === comment.authorId)
-                  return (
-                    <div key={comment.id} className="flex gap-4">
-                      <img 
-                        src={author?.avatar} 
-                        alt={author?.name}
-                        className="w-10 h-10 rounded-full"
-                      />
-                      <div className="flex-1 space-y-1">
-                        <div className="flex items-center gap-2">
-                          <span className="font-medium">{author?.name}</span>
-                          <span className="text-sm text-muted-foreground">
-                            {comment.createdAt.toLocaleString('ja-JP')}
-                          </span>
-                        </div>
-                        <p className="text-sm">{comment.content}</p>
-                      </div>
-                    </div>
-                  )
-                })}
-                {projectComments.length === 0 && (
-                  <div className="text-center text-muted-foreground py-8">
-                    コメントはありません
-                  </div>
-                )}
+              <div className="text-center text-muted-foreground py-8">
+                コメント機能は今後実装予定です
               </div>
             </CardContent>
           </Card>
