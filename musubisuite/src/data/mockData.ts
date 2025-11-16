@@ -121,40 +121,46 @@ export const mockMembers: Member[] = [
 // クライアントのモックデータ
 export const mockClients: Client[] = [
   {
-    id: 'c1',
-    name: '山田 次郎',
-    companyName: 'ABC株式会社',
+    id: 1,
+    company_name: 'ABC株式会社',
+    contact_name: '山田 次郎',
     email: 'yamada@abc-corp.com',
     phone: '03-1234-5678',
-    address: '東京都千代田区1-2-3',
-    industry: 'IT・情報通信',
+    address: '千代田区1-2-3',
+    prefecture: '東京都',
+    city: '千代田区',
+    industry: 'it',
     note: '大手IT企業。長期的なパートナーシップを希望',
-    createdAt: new Date('2023-01-10'),
-    updatedAt: new Date('2023-01-10'),
+    created_at: '2023-01-10T00:00:00Z',
+    updated_at: '2023-01-10T00:00:00Z',
   },
   {
-    id: 'c2',
-    name: '伊藤 美由紀',
-    companyName: 'XYZ商事株式会社',
+    id: 2,
+    company_name: 'XYZ商事株式会社',
+    contact_name: '伊藤 美由紀',
     email: 'ito@xyz-trading.com',
     phone: '03-9876-5432',
-    address: '東京都港区4-5-6',
-    industry: '小売・流通',
+    address: '港区4-5-6',
+    prefecture: '東京都',
+    city: '港区',
+    industry: 'retail',
     note: 'ECサイトリニューアル案件',
-    createdAt: new Date('2023-02-15'),
-    updatedAt: new Date('2023-02-15'),
+    created_at: '2023-02-15T00:00:00Z',
+    updated_at: '2023-02-15T00:00:00Z',
   },
   {
-    id: 'c3',
-    name: '中村 拓也',
-    companyName: 'デジタルソリューションズ株式会社',
+    id: 3,
+    company_name: 'デジタルソリューションズ株式会社',
+    contact_name: '中村 拓也',
     email: 'nakamura@digital-sol.com',
     phone: '06-1111-2222',
-    address: '大阪府大阪市北区7-8-9',
-    industry: 'コンサルティング',
+    address: '北区7-8-9',
+    prefecture: '大阪府',
+    city: '大阪市北区',
+    industry: 'service',
     note: '業務システム開発を検討中',
-    createdAt: new Date('2023-03-20'),
-    updatedAt: new Date('2023-03-20'),
+    created_at: '2023-03-20T00:00:00Z',
+    updated_at: '2023-03-20T00:00:00Z',
   },
 ];
 
@@ -394,7 +400,6 @@ export const mockDashboardStats: DashboardStats = {
   overdueTasksCount: mockTasks.filter(
     t => t.dueDate && t.dueDate < new Date() && t.status !== 'done'
   ).length,
-  totalMembers: mockMembers.length,
   recentActivities: mockActivityLogs.slice(0, 5),
 };
 
@@ -447,7 +452,7 @@ export const mockComments: Comment[] = [
 export const getClientByProject = (projectId: string): Client | undefined => {
   const project = mockProjects.find(p => p.id === projectId);
   if (!project) return undefined;
-  return mockClients.find(c => c.id === project.clientId);
+  return mockClients.find(c => String(c.id) === project.clientId);
 };
 
 // ヘルパー関数: プロジェクトIDからタスクを取得

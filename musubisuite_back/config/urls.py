@@ -26,6 +26,8 @@ from members.views import MemberViewSet
 from projects.views import ProjectViewSet, AttachmentViewSet, CommentViewSet
 from tasks.views import TaskViewSet
 from activities.views import ActivityLogViewSet
+from contracts.views import ContractViewSet
+from ai_settings.views import AIProviderViewSet, SearchEngineConfigViewSet, AISettingsViewSet
 
 # DRF Router
 router = routers.DefaultRouter()
@@ -36,6 +38,10 @@ router.register(r'attachments', AttachmentViewSet, basename='attachment')
 router.register(r'comments', CommentViewSet, basename='comment')
 router.register(r'tasks', TaskViewSet, basename='task')
 router.register(r'activities', ActivityLogViewSet, basename='activity')
+router.register(r'contracts', ContractViewSet, basename='contract')
+router.register(r'ai-providers', AIProviderViewSet, basename='ai-provider')
+router.register(r'search-engines', SearchEngineConfigViewSet, basename='search-engine')
+router.register(r'ai-settings', AISettingsViewSet, basename='ai-settings')
 
 urlpatterns = [
     # Admin

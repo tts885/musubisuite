@@ -1,0 +1,1006 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MusubiSuite API通信アーキテクチャ</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+
+        header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px;
+            text-align: center;
+        }
+
+        header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        header p {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+
+        .content {
+            padding: 40px;
+        }
+
+        .section {
+            margin-bottom: 50px;
+        }
+
+        .section h2 {
+            color: #667eea;
+            font-size: 2em;
+            margin-bottom: 20px;
+            border-bottom: 3px solid #667eea;
+            padding-bottom: 10px;
+        }
+
+        .architecture-diagram {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 40px;
+            margin: 30px 0;
+            position: relative;
+        }
+
+        .layer {
+            background: white;
+            border-radius: 10px;
+            padding: 25px;
+            margin: 20px 0;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            position: relative;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .layer:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+        }
+
+        .layer-title {
+            font-size: 1.5em;
+            font-weight: bold;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+        }
+
+        .layer-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 15px;
+            font-size: 1.5em;
+        }
+
+        .frontend { border-left: 5px solid #61dafb; }
+        .frontend .layer-icon { background: #61dafb; color: white; }
+
+        .powerapp { border-left: 5px solid #742774; }
+        .powerapp .layer-icon { background: #742774; color: white; }
+
+        .network { border-left: 5px solid #ffa726; }
+        .network .layer-icon { background: #ffa726; color: white; }
+
+        .backend { border-left: 5px solid #092e20; }
+        .backend .layer-icon { background: #092e20; color: white; }
+
+        .database { border-left: 5px solid #0277bd; }
+        .database .layer-icon { background: #0277bd; color: white; }
+
+        .components {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .component {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            border: 2px solid #e9ecef;
+            font-size: 0.9em;
+        }
+
+        .component strong {
+            color: #667eea;
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        .arrow {
+            text-align: center;
+            font-size: 2em;
+            color: #667eea;
+            margin: 10px 0;
+            animation: bounce 2s infinite;
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .flow-diagram {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            margin: 30px 0;
+            border: 2px solid #e9ecef;
+        }
+
+        .flow-step {
+            display: flex;
+            align-items: center;
+            margin: 20px 0;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            position: relative;
+        }
+
+        .flow-number {
+            width: 40px;
+            height: 40px;
+            background: #667eea;
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 1.2em;
+            margin-right: 20px;
+            flex-shrink: 0;
+        }
+
+        .flow-content {
+            flex: 1;
+        }
+
+        .flow-content h4 {
+            color: #667eea;
+            margin-bottom: 8px;
+            font-size: 1.1em;
+        }
+
+        .code-block {
+            background: #1e1e1e;
+            color: #d4d4d4;
+            padding: 20px;
+            border-radius: 10px;
+            overflow-x: auto;
+            margin: 20px 0;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+            line-height: 1.6;
+        }
+
+        .code-block .keyword { color: #569cd6; }
+        .code-block .string { color: #ce9178; }
+        .code-block .function { color: #dcdcaa; }
+        .code-block .comment { color: #6a9955; }
+
+        .tech-stack {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin: 30px 0;
+        }
+
+        .tech-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 25px;
+            border-radius: 12px;
+            text-align: center;
+            transition: transform 0.3s ease;
+        }
+
+        .tech-card:hover {
+            transform: scale(1.05);
+        }
+
+        .tech-card h3 {
+            font-size: 1.5em;
+            margin-bottom: 10px;
+        }
+
+        .tech-card ul {
+            list-style: none;
+            text-align: left;
+        }
+
+        .tech-card li {
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.2);
+        }
+
+        .tech-card li:last-child {
+            border-bottom: none;
+        }
+
+        .security-features {
+            background: #fff3cd;
+            border-left: 5px solid #ffc107;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+
+        .security-features h3 {
+            color: #856404;
+            margin-bottom: 15px;
+        }
+
+        .security-features ul {
+            list-style: none;
+        }
+
+        .security-features li {
+            padding: 8px 0;
+            padding-left: 25px;
+            position: relative;
+        }
+
+        .security-features li:before {
+            content: "🔒";
+            position: absolute;
+            left: 0;
+        }
+
+        .data-flow {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            margin: 30px 0;
+            gap: 20px;
+        }
+
+        .data-box {
+            flex: 1;
+            min-width: 200px;
+            background: white;
+            border: 3px solid #667eea;
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            position: relative;
+        }
+
+        .data-box h4 {
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+
+        .data-arrow {
+            font-size: 2em;
+            color: #667eea;
+            display: flex;
+            align-items: center;
+        }
+
+        @media (max-width: 768px) {
+            .data-arrow {
+                transform: rotate(90deg);
+                margin: 10px 0;
+            }
+        }
+
+        .endpoint-list {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+
+        .endpoint-item {
+            background: white;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+        }
+
+        .endpoint-method {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 4px;
+            font-weight: bold;
+            font-size: 0.85em;
+            margin-right: 10px;
+        }
+
+        .method-get { background: #4caf50; color: white; }
+        .method-post { background: #2196f3; color: white; }
+        .method-put { background: #ff9800; color: white; }
+        .method-patch { background: #9c27b0; color: white; }
+        .method-delete { background: #f44336; color: white; }
+
+        .highlight-box {
+            background: #e3f2fd;
+            border-left: 5px solid #2196f3;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+
+        .highlight-box h3 {
+            color: #1976d2;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🏗️ MusubiSuite API通信アーキテクチャ</h1>
+            <p>フロントエンドとバックエンドの完全ガイド</p>
+        </header>
+
+        <div class="content">
+            <!-- アーキテクチャ概要 -->
+            <div class="section">
+                <h2>📊 システムアーキテクチャ全体図</h2>
+                <div class="architecture-diagram">
+                    <div class="layer powerapp">
+                        <div class="layer-title">
+                            <div class="layer-icon">⚡</div>
+                            Power Apps (オプション)
+                        </div>
+                        <p>Power Appsからの埋め込みアクセス。URL パラメータで検出し、自動でダッシュボードにリダイレクト。</p>
+                        <div class="components">
+                            <div class="component">
+                                <strong>統合方法</strong>
+                                iframe埋め込み
+                            </div>
+                            <div class="component">
+                                <strong>検出パラメータ</strong>
+                                _localAppUrl, _localConnectionUrl
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="arrow">↓</div>
+
+                    <div class="layer frontend">
+                        <div class="layer-title">
+                            <div class="layer-icon">⚛️</div>
+                            フロントエンド (React + TypeScript + Vite)
+                        </div>
+                        <p>ポート: 3000 | モダンなSPAアプリケーション</p>
+                        <div class="components">
+                            <div class="component">
+                                <strong>React 19</strong>
+                                UIコンポーネント
+                            </div>
+                            <div class="component">
+                                <strong>TypeScript</strong>
+                                型安全な開発
+                            </div>
+                            <div class="component">
+                                <strong>TanStack Router</strong>
+                                クライアントサイドルーティング
+                            </div>
+                            <div class="component">
+                                <strong>Axios</strong>
+                                HTTP通信
+                            </div>
+                            <div class="component">
+                                <strong>Tailwind CSS</strong>
+                                スタイリング
+                            </div>
+                            <div class="component">
+                                <strong>shadcn/ui</strong>
+                                UIコンポーネントライブラリ
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="arrow">↓ HTTP/HTTPS ↓</div>
+
+                    <div class="layer network">
+                        <div class="layer-title">
+                            <div class="layer-icon">🌐</div>
+                            ネットワーク層
+                        </div>
+                        <p>CORS設定により安全な通信を実現</p>
+                        <div class="components">
+                            <div class="component">
+                                <strong>プロトコル</strong>
+                                HTTP/1.1, JSON
+                            </div>
+                            <div class="component">
+                                <strong>認証方式</strong>
+                                JWT (Bearer Token)
+                            </div>
+                            <div class="component">
+                                <strong>CORS</strong>
+                                開発環境: ALL_ORIGINS<br>
+                                本番環境: 特定オリジンのみ
+                            </div>
+                            <div class="component">
+                                <strong>タイムアウト</strong>
+                                10秒
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="arrow">↓</div>
+
+                    <div class="layer backend">
+                        <div class="layer-title">
+                            <div class="layer-icon">🐍</div>
+                            バックエンド (Django REST Framework)
+                        </div>
+                        <p>ポート: 8000 | RESTful API サーバー</p>
+                        <div class="components">
+                            <div class="component">
+                                <strong>Django 5.0</strong>
+                                Webフレームワーク
+                            </div>
+                            <div class="component">
+                                <strong>DRF</strong>
+                                REST API構築
+                            </div>
+                            <div class="component">
+                                <strong>SimpleJWT</strong>
+                                JWT認証
+                            </div>
+                            <div class="component">
+                                <strong>django-cors-headers</strong>
+                                CORS管理
+                            </div>
+                            <div class="component">
+                                <strong>django-filter</strong>
+                                フィルタリング
+                            </div>
+                            <div class="component">
+                                <strong>drf-spectacular</strong>
+                                API ドキュメント
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="arrow">↓</div>
+
+                    <div class="layer database">
+                        <div class="layer-title">
+                            <div class="layer-icon">💾</div>
+                            データベース (SQLite / PostgreSQL)
+                        </div>
+                        <p>開発環境: SQLite | 本番環境: PostgreSQL推奨</p>
+                        <div class="components">
+                            <div class="component">
+                                <strong>テーブル</strong>
+                                Projects, Clients, Members, Tasks, Activities
+                            </div>
+                            <div class="component">
+                                <strong>ORM</strong>
+                                Django ORM
+                            </div>
+                            <div class="component">
+                                <strong>マイグレーション</strong>
+                                Djangoマイグレーション
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- データフロー -->
+            <div class="section">
+                <h2>🔄 データフロー (リクエスト → レスポンス)</h2>
+                
+                <div class="flow-diagram">
+                    <div class="flow-step">
+                        <div class="flow-number">1</div>
+                        <div class="flow-content">
+                            <h4>ユーザーアクション</h4>
+                            <p>ユーザーがブラウザでボタンをクリックまたはフォームを送信</p>
+                        </div>
+                    </div>
+
+                    <div class="flow-step">
+                        <div class="flow-number">2</div>
+                        <div class="flow-content">
+                            <h4>Reactコンポーネント</h4>
+                            <p>イベントハンドラーが実行され、API呼び出しを開始</p>
+                            <div class="code-block">
+<span class="keyword">const</span> handleCreateProject = <span class="keyword">async</span> () => {
+  <span class="keyword">const</span> data = <span class="keyword">await</span> djangoAPI.<span class="function">createProject</span>(projectData);
+}</div>
+                        </div>
+                    </div>
+
+                    <div class="flow-step">
+                        <div class="flow-number">3</div>
+                        <div class="flow-content">
+                            <h4>Django API Client (Axios)</h4>
+                            <p>リクエストを構築し、JWTトークンを自動付与</p>
+                            <div class="code-block">
+<span class="comment">// リクエストインターセプター</span>
+<span class="keyword">this</span>.api.interceptors.request.<span class="function">use</span>((config) => {
+  <span class="keyword">if</span> (<span class="keyword">this</span>.accessToken) {
+    config.headers.Authorization = <span class="string">`Bearer ${this.accessToken}`</span>;
+  }
+  <span class="keyword">return</span> config;
+});</div>
+                        </div>
+                    </div>
+
+                    <div class="flow-step">
+                        <div class="flow-number">4</div>
+                        <div class="flow-content">
+                            <h4>HTTPリクエスト送信</h4>
+                            <p>ネットワーク経由でDjangoサーバーにリクエストを送信</p>
+                            <div class="code-block">
+<span class="keyword">POST</span> http://127.0.0.1:8000/api/projects/
+<span class="keyword">Headers:</span>
+  Content-Type: application/json
+  Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+<span class="keyword">Body:</span>
+  { <span class="string">"name"</span>: <span class="string">"新規プロジェクト"</span>, <span class="string">"client_id"</span>: <span class="string">"1"</span>, ... }</div>
+                        </div>
+                    </div>
+
+                    <div class="flow-step">
+                        <div class="flow-number">5</div>
+                        <div class="flow-content">
+                            <h4>Django ミドルウェア</h4>
+                            <p>CORS検証、CSRF検証、認証処理を実行</p>
+                            <div class="code-block">
+<span class="comment"># CORS検証</span>
+corsheaders.middleware.CorsMiddleware
+<span class="comment"># JWT認証</span>
+rest_framework_simplejwt.authentication.JWTAuthentication</div>
+                        </div>
+                    </div>
+
+                    <div class="flow-step">
+                        <div class="flow-number">6</div>
+                        <div class="flow-content">
+                            <h4>Django View (ViewSet)</h4>
+                            <p>リクエストを処理し、ビジネスロジックを実行</p>
+                            <div class="code-block">
+<span class="keyword">class</span> <span class="function">ProjectViewSet</span>(viewsets.ModelViewSet):
+    <span class="keyword">def</span> <span class="function">create</span>(self, request):
+        serializer = ProjectSerializer(data=request.data)
+        serializer.<span class="function">is_valid</span>(raise_exception=<span class="keyword">True</span>)
+        serializer.<span class="function">save</span>()
+        <span class="keyword">return</span> Response(serializer.data)</div>
+                        </div>
+                    </div>
+
+                    <div class="flow-step">
+                        <div class="flow-number">7</div>
+                        <div class="flow-content">
+                            <h4>データベース操作</h4>
+                            <p>Django ORMを使用してデータベースにアクセス</p>
+                            <div class="code-block">
+<span class="comment"># SQL自動生成</span>
+<span class="keyword">INSERT INTO</span> projects_project 
+  (name, description, client_id, status, ...) 
+<span class="keyword">VALUES</span> (<span class="string">'新規プロジェクト'</span>, ..., <span class="string">'planning'</span>, ...);</div>
+                        </div>
+                    </div>
+
+                    <div class="flow-step">
+                        <div class="flow-number">8</div>
+                        <div class="flow-content">
+                            <h4>JSONレスポンス生成</h4>
+                            <p>SerializerがデータベースオブジェクトをJSONに変換</p>
+                            <div class="code-block">
+{
+  <span class="string">"id"</span>: 123,
+  <span class="string">"name"</span>: <span class="string">"新規プロジェクト"</span>,
+  <span class="string">"status"</span>: <span class="string">"planning"</span>,
+  <span class="string">"created_at"</span>: <span class="string">"2025-11-15T10:30:00Z"</span>,
+  ...
+}</div>
+                        </div>
+                    </div>
+
+                    <div class="flow-step">
+                        <div class="flow-number">9</div>
+                        <div class="flow-content">
+                            <h4>レスポンス送信</h4>
+                            <p>HTTPレスポンスとしてフロントエンドに返却</p>
+                            <div class="code-block">
+<span class="keyword">HTTP/1.1 201 Created</span>
+Content-Type: application/json
+Access-Control-Allow-Origin: *
+
+{ <span class="string">"id"</span>: 123, <span class="string">"name"</span>: <span class="string">"新規プロジェクト"</span>, ... }</div>
+                        </div>
+                    </div>
+
+                    <div class="flow-step">
+                        <div class="flow-number">10</div>
+                        <div class="flow-content">
+                            <h4>フロントエンド処理</h4>
+                            <p>データを受け取り、状態を更新してUIを再レンダリング</p>
+                            <div class="code-block">
+<span class="keyword">const</span> newProject = <span class="keyword">await</span> response.data;
+<span class="function">setProjects</span>(prev => [newProject, ...prev]);
+toast.<span class="function">success</span>(<span class="string">'プロジェクトが作成されました!'</span>);</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 主要APIエンドポイント -->
+            <div class="section">
+                <h2>🔌 主要APIエンドポイント</h2>
+                
+                <div class="endpoint-list">
+                    <h3>🔐 認証API</h3>
+                    <div class="endpoint-item">
+                        <span class="endpoint-method method-post">POST</span>
+                        <code>/api/auth/token/</code>
+                        <p>ログイン - JWTトークン取得</p>
+                    </div>
+                    <div class="endpoint-item">
+                        <span class="endpoint-method method-post">POST</span>
+                        <code>/api/auth/token/refresh/</code>
+                        <p>トークンリフレッシュ</p>
+                    </div>
+
+                    <h3 style="margin-top: 30px;">📁 プロジェクトAPI</h3>
+                    <div class="endpoint-item">
+                        <span class="endpoint-method method-get">GET</span>
+                        <code>/api/projects/</code>
+                        <p>プロジェクト一覧取得 (フィルタ・検索・ページネーション対応)</p>
+                    </div>
+                    <div class="endpoint-item">
+                        <span class="endpoint-method method-get">GET</span>
+                        <code>/api/projects/{id}/</code>
+                        <p>プロジェクト詳細取得</p>
+                    </div>
+                    <div class="endpoint-item">
+                        <span class="endpoint-method method-post">POST</span>
+                        <code>/api/projects/</code>
+                        <p>新規プロジェクト作成</p>
+                    </div>
+                    <div class="endpoint-item">
+                        <span class="endpoint-method method-patch">PATCH</span>
+                        <code>/api/projects/{id}/</code>
+                        <p>プロジェクト更新</p>
+                    </div>
+                    <div class="endpoint-item">
+                        <span class="endpoint-method method-delete">DELETE</span>
+                        <code>/api/projects/{id}/</code>
+                        <p>プロジェクト削除</p>
+                    </div>
+
+                    <h3 style="margin-top: 30px;">👥 クライアントAPI</h3>
+                    <div class="endpoint-item">
+                        <span class="endpoint-method method-get">GET</span>
+                        <code>/api/clients/</code>
+                        <p>クライアント一覧取得</p>
+                    </div>
+                    <div class="endpoint-item">
+                        <span class="endpoint-method method-post">POST</span>
+                        <code>/api/clients/</code>
+                        <p>新規クライアント作成</p>
+                    </div>
+
+                    <h3 style="margin-top: 30px;">✅ タスクAPI</h3>
+                    <div class="endpoint-item">
+                        <span class="endpoint-method method-get">GET</span>
+                        <code>/api/tasks/?project={project_id}</code>
+                        <p>タスク一覧取得 (プロジェクトフィルタ)</p>
+                    </div>
+                    <div class="endpoint-item">
+                        <span class="endpoint-method method-post">POST</span>
+                        <code>/api/tasks/</code>
+                        <p>新規タスク作成</p>
+                    </div>
+
+                    <h3 style="margin-top: 30px;">👤 メンバーAPI</h3>
+                    <div class="endpoint-item">
+                        <span class="endpoint-method method-get">GET</span>
+                        <code>/api/members/</code>
+                        <p>メンバー一覧取得</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 技術スタック詳細 -->
+            <div class="section">
+                <h2>🛠️ 技術スタック詳細</h2>
+                
+                <div class="tech-stack">
+                    <div class="tech-card">
+                        <h3>⚛️ フロントエンド</h3>
+                        <ul>
+                            <li>React 19</li>
+                            <li>TypeScript 5</li>
+                            <li>Vite 6</li>
+                            <li>TanStack Router</li>
+                            <li>Axios</li>
+                            <li>Tailwind CSS</li>
+                            <li>shadcn/ui</li>
+                            <li>Sonner (トースト)</li>
+                        </ul>
+                    </div>
+
+                    <div class="tech-card">
+                        <h3>🐍 バックエンド</h3>
+                        <ul>
+                            <li>Django 5.0</li>
+                            <li>Django REST Framework</li>
+                            <li>SimpleJWT</li>
+                            <li>django-cors-headers</li>
+                            <li>django-filter</li>
+                            <li>drf-spectacular</li>
+                            <li>Whitenoise</li>
+                        </ul>
+                    </div>
+
+                    <div class="tech-card">
+                        <h3>💾 データベース</h3>
+                        <ul>
+                            <li>SQLite (開発)</li>
+                            <li>PostgreSQL (推奨)</li>
+                            <li>Django ORM</li>
+                            <li>マイグレーション管理</li>
+                        </ul>
+                    </div>
+
+                    <div class="tech-card">
+                        <h3>🔒 セキュリティ</h3>
+                        <ul>
+                            <li>JWT認証</li>
+                            <li>CORS制御</li>
+                            <li>CSRF保護</li>
+                            <li>HTTPSサポート</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- セキュリティ機能 -->
+            <div class="section">
+                <h2>🔒 セキュリティ機能</h2>
+                
+                <div class="security-features">
+                    <h3>実装済みのセキュリティ対策</h3>
+                    <ul>
+                        <li><strong>JWT認証:</strong> アクセストークン(1時間) + リフレッシュトークン(7日間)</li>
+                        <li><strong>CORS設定:</strong> 開発環境では全オリジン許可、本番環境では特定オリジンのみ</li>
+                        <li><strong>CSRF保護:</strong> Djangoミドルウェアによる自動保護</li>
+                        <li><strong>HTTPSサポート:</strong> 本番環境では必須</li>
+                        <li><strong>パスワードバリデーション:</strong> Django標準の4つの検証ルール</li>
+                        <li><strong>認証インターセプター:</strong> 401エラー時の自動トークンクリア</li>
+                        <li><strong>環境変数:</strong> シークレットキーの外部管理</li>
+                    </ul>
+                </div>
+
+                <div class="highlight-box">
+                    <h3>💡 開発環境での注意点</h3>
+                    <p><strong>DEBUG=True</strong> の場合:</p>
+                    <ul style="margin-top: 10px; margin-left: 20px;">
+                        <li>すべてのAPIエンドポイントが認証不要 (AllowAny)</li>
+                        <li>すべてのオリジンからのCORSリクエストを許可</li>
+                        <li>詳細なエラーメッセージを表示</li>
+                    </ul>
+                    <p style="margin-top: 15px; color: #d32f2f;"><strong>⚠️ 本番環境では必ず DEBUG=False に設定してください!</strong></p>
+                </div>
+            </div>
+
+            <!-- データフロー図 -->
+            <div class="section">
+                <h2>📡 通信プロトコル詳細</h2>
+                
+                <div class="data-flow">
+                    <div class="data-box">
+                        <h4>クライアント</h4>
+                        <p>React App<br>localhost:3000</p>
+                    </div>
+                    
+                    <div class="data-arrow">→</div>
+                    
+                    <div class="data-box">
+                        <h4>HTTP Request</h4>
+                        <p style="font-size: 0.85em; margin-top: 10px;">
+                            Method: GET/POST/PUT/PATCH/DELETE<br>
+                            Content-Type: application/json<br>
+                            Authorization: Bearer token
+                        </p>
+                    </div>
+                    
+                    <div class="data-arrow">→</div>
+                    
+                    <div class="data-box">
+                        <h4>サーバー</h4>
+                        <p>Django API<br>localhost:8000</p>
+                    </div>
+                    
+                    <div class="data-arrow">→</div>
+                    
+                    <div class="data-box">
+                        <h4>HTTP Response</h4>
+                        <p style="font-size: 0.85em; margin-top: 10px;">
+                            Status: 200/201/400/401/404<br>
+                            Content-Type: application/json<br>
+                            Body: JSON data
+                        </p>
+                    </div>
+                    
+                    <div class="data-arrow">→</div>
+                    
+                    <div class="data-box">
+                        <h4>UI更新</h4>
+                        <p>State更新<br>再レンダリング</p>
+                    </div>
+                </div>
+
+                <div class="code-block">
+<span class="comment">// 完全な通信例</span>
+
+<span class="comment">// 1. フロントエンド: APIコール</span>
+<span class="keyword">const</span> response = <span class="keyword">await</span> axios.<span class="function">post</span>(
+  <span class="string">'http://127.0.0.1:8000/api/projects/'</span>,
+  {
+    name: <span class="string">'新規プロジェクト'</span>,
+    client_id: <span class="string">'1'</span>,
+    status: <span class="string">'planning'</span>
+  },
+  {
+    headers: {
+      <span class="string">'Authorization'</span>: <span class="string">'Bearer eyJhbGci...'</span>,
+      <span class="string">'Content-Type'</span>: <span class="string">'application/json'</span>
+    }
+  }
+);
+
+<span class="comment">// 2. バックエンド: Django View処理</span>
+<span class="comment"># projects/views.py</span>
+<span class="keyword">class</span> <span class="function">ProjectViewSet</span>(viewsets.ModelViewSet):
+    queryset = Project.objects.<span class="function">all</span>()
+    serializer_class = ProjectSerializer
+    permission_classes = [AllowAny]  <span class="comment"># DEBUG=True</span>
+    
+<span class="comment">// 3. レスポンス: 作成されたデータ</span>
+{
+  <span class="string">"id"</span>: 123,
+  <span class="string">"name"</span>: <span class="string">"新規プロジェクト"</span>,
+  <span class="string">"client"</span>: { <span class="string">"id"</span>: 1, <span class="string">"company_name"</span>: <span class="string">"株式会社サンプル"</span> },
+  <span class="string">"status"</span>: <span class="string">"planning"</span>,
+  <span class="string">"created_at"</span>: <span class="string">"2025-11-15T10:30:00.000Z"</span>
+}</div>
+            </div>
+
+            <!-- 環境設定 -->
+            <div class="section">
+                <h2>⚙️ 環境設定とポート構成</h2>
+                
+                <div class="highlight-box">
+                    <h3>🌐 開発環境の設定</h3>
+                    <div class="code-block">
+<span class="comment"># フロントエンド (Vite)</span>
+<span class="keyword">PORT:</span> 3000
+<span class="keyword">HOST:</span> :: (IPv4 + IPv6)
+<span class="keyword">BASE_URL:</span> ./
+<span class="keyword">API_URL:</span> http://127.0.0.1:8000/api
+
+<span class="comment"># バックエンド (Django)</span>
+<span class="keyword">PORT:</span> 8000
+<span class="keyword">HOST:</span> 0.0.0.0
+<span class="keyword">DEBUG:</span> True
+<span class="keyword">ALLOWED_HOSTS:</span> localhost,127.0.0.1,172.27.112.1,*
+<span class="keyword">CORS_ALLOW_ALL_ORIGINS:</span> True (DEBUG=True時)
+
+<span class="comment"># データベース</span>
+<span class="keyword">ENGINE:</span> sqlite3
+<span class="keyword">NAME:</span> db.sqlite3</div>
+                </div>
+
+                <div class="security-features">
+                    <h3>🔄 サーバー再起動時の動作</h3>
+                    <ul>
+                        <li><strong>フロントエンド:</strong> Vite の Hot Module Replacement (HMR) により自動リロード</li>
+                        <li><strong>バックエンド:</strong> Django の auto-reload 機能によりコード変更を自動検出</li>
+                        <li><strong>データベース:</strong> SQLite ファイルは永続化されるため再起動後もデータ保持</li>
+                        <li><strong>JWT トークン:</strong> localStorage に保存されるためページリロード後も有効</li>
+                    </ul>
+                </div>
+
+                <div class="highlight-box">
+                    <h3>🔌 ポート変更時の対応</h3>
+                    <p>ポート番号が変更された場合、以下の設定を更新する必要があります:</p>
+                    <div style="margin-top: 15px;">
+                        <p><strong>フロントエンドのポート変更:</strong></p>
+                        <div class="code-block">
+<span class="comment"># vite.config.ts</span>
+server: {
+  port: <span class="string">3000</span>  <span class="comment">← ここを変更</span>
+}
+
+<span class="comment"># settings.py (本番環境の場合)</span>
+CORS_ALLOWED_ORIGINS = [
+  <span class="string">"http://localhost:3000"</span>  <span class="comment">← ここを変更</span>
+]</div>
+                    </div>
+                    <div style="margin-top: 15px;">
+                        <p><strong>バックエンドのポート変更:</strong></p>
+                        <div class="code-block">
+<span class="comment"># コマンドライン</span>
+python manage.py runserver 0.0.0.0:<span class="string">8000</span>  <span class="comment">← ポート番号を変更</span>
+
+<span class="comment"># フロントエンド: djangoAPI.ts</span>
+baseURL: <span class="string">'http://127.0.0.1:8000/api'</span>  <span class="comment">← ここを変更</span>
+<span class="comment"># または .env ファイル</span>
+VITE_API_URL=<span class="string">'http://127.0.0.1:8000/api'</span></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- まとめ -->
+            <div class="section">
+                <h2>✅ まとめ</h2>
+                
+                <div class="highlight-box">
+                    <h3>🎯 アーキテクチャの特徴</h3>
+                    <ul style="margin-left: 20px; margin-top: 10px;">
+                        <li>完全に分離されたフロントエンドとバックエンド (SPA + RESTful API)</li>
+                        <li>モダンな技術スタック (React 19 + Django 5.0)</li>
+                        <li>型安全な開発 (TypeScript)</li>
+                        <li>JWT ベースの認証システム</li>
+                        <li>CORS による安全な通信</li>
+                        <li>開発環境での柔軟な設定 (CORS_ALLOW_ALL_ORIGINS)</li>
+                        <li>Power Apps との統合サポート</li>
+                    </ul>
+                </div>
+
+                <div class="security-features">
+                    <h3>🚀 スケーラビリティ</h3>
+                    <ul>
+                        <li><strong>水平スケーリング:</strong> フロントエンドとバックエンドを独立してスケール可能</li>
+                        <li><strong>CDN配信:</strong> フロントエンドは静的ファイルとしてCDNに配置可能</li>
+                        <li><strong>データベース移行:</strong> SQLite → PostgreSQL への移行が容易</li>
+                        <li><strong>負荷分散:</strong> 複数のバックエンドサーバーで負荷分散可能</li>
+                    </ul>
+                </div>
+
+                <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; border-radius: 15px; text-align: center; margin-top: 30px;">
+                    <h3 style="color: white; font-size: 1.8em; margin-bottom: 15px;">🎉 これで完璧です!</h3>
+                    <p style="font-size: 1.2em;">サーバー再起動やポート変更にも柔軟に対応できる<br>堅牢なアーキテクチャが完成しました。</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

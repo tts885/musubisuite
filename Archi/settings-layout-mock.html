@@ -1,0 +1,910 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>設定画面レイアウト設計 - MusubiSuite</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px 40px;
+            border-bottom: 4px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .header h1 {
+            font-size: 32px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .header p {
+            font-size: 16px;
+            opacity: 0.95;
+            margin-top: 8px;
+        }
+
+        .icon {
+            width: 40px;
+            height: 40px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+        }
+
+        .content {
+            display: flex;
+            min-height: calc(100vh - 200px);
+        }
+
+        /* サイドバーナビゲーション */
+        .sidebar {
+            width: 280px;
+            background: #f8f9fa;
+            border-right: 1px solid #e9ecef;
+            padding: 24px 0;
+        }
+
+        .nav-section {
+            margin-bottom: 32px;
+        }
+
+        .nav-section-title {
+            font-size: 12px;
+            font-weight: 600;
+            color: #6c757d;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            padding: 0 24px;
+            margin-bottom: 12px;
+        }
+
+        .nav-item {
+            padding: 12px 24px;
+            color: #495057;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 15px;
+        }
+
+        .nav-item:hover {
+            background: #e9ecef;
+            color: #212529;
+        }
+
+        .nav-item.active {
+            background: #667eea;
+            color: white;
+            font-weight: 600;
+            position: relative;
+        }
+
+        .nav-item.active::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 4px;
+            background: #764ba2;
+        }
+
+        .nav-icon {
+            width: 20px;
+            height: 20px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* メインコンテンツエリア */
+        .main-content {
+            flex: 1;
+            padding: 40px;
+            overflow-y: auto;
+            background: #ffffff;
+        }
+
+        .page-header {
+            margin-bottom: 32px;
+        }
+
+        .page-title {
+            font-size: 28px;
+            font-weight: 700;
+            color: #212529;
+            margin-bottom: 8px;
+        }
+
+        .page-description {
+            font-size: 15px;
+            color: #6c757d;
+        }
+
+        /* セクションカード */
+        .section-card {
+            background: white;
+            border: 1px solid #e9ecef;
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 24px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        }
+
+        .section-card-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            padding-bottom: 16px;
+            border-bottom: 2px solid #f8f9fa;
+        }
+
+        .section-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: #212529;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .section-icon {
+            width: 32px;
+            height: 32px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 8px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: #e9ecef;
+            color: #495057;
+        }
+
+        .btn-secondary:hover {
+            background: #dee2e6;
+        }
+
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #c82333;
+        }
+
+        /* フォーム要素 */
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .form-group.full-width {
+            grid-column: 1 / -1;
+        }
+
+        .form-label {
+            font-size: 14px;
+            font-weight: 600;
+            color: #495057;
+        }
+
+        .form-input {
+            padding: 10px 14px;
+            border: 1px solid #ced4da;
+            border-radius: 6px;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .form-select {
+            padding: 10px 14px;
+            border: 1px solid #ced4da;
+            border-radius: 6px;
+            font-size: 14px;
+            background: white;
+            cursor: pointer;
+        }
+
+        .form-textarea {
+            padding: 10px 14px;
+            border: 1px solid #ced4da;
+            border-radius: 6px;
+            font-size: 14px;
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        /* テーブル */
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        .data-table thead {
+            background: #f8f9fa;
+        }
+
+        .data-table th {
+            padding: 12px 16px;
+            text-align: left;
+            font-size: 13px;
+            font-weight: 600;
+            color: #495057;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border-bottom: 2px solid #e9ecef;
+        }
+
+        .data-table td {
+            padding: 14px 16px;
+            border-bottom: 1px solid #f8f9fa;
+            font-size: 14px;
+            color: #495057;
+        }
+
+        .data-table tbody tr:hover {
+            background: #f8f9fa;
+        }
+
+        .badge {
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+            display: inline-block;
+        }
+
+        .badge-success {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .badge-warning {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .badge-info {
+            background: #d1ecf1;
+            color: #0c5460;
+        }
+
+        .badge-danger {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        /* アクションボタングループ */
+        .action-buttons {
+            display: flex;
+            gap: 8px;
+        }
+
+        .btn-icon {
+            width: 32px;
+            height: 32px;
+            padding: 0;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 6px;
+            border: 1px solid #e9ecef;
+            background: white;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-icon:hover {
+            background: #f8f9fa;
+            border-color: #667eea;
+        }
+
+        /* 検索バー */
+        .search-bar {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .search-input {
+            flex: 1;
+            padding: 10px 14px 10px 40px;
+            border: 1px solid #ced4da;
+            border-radius: 8px;
+            font-size: 14px;
+            background: white url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="%236c757d" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>') no-repeat 12px center;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+        }
+
+        .stat-label {
+            font-size: 13px;
+            opacity: 0.9;
+            margin-bottom: 8px;
+        }
+
+        .stat-value {
+            font-size: 32px;
+            font-weight: 700;
+        }
+
+        /* タブ */
+        .tabs {
+            display: flex;
+            gap: 4px;
+            border-bottom: 2px solid #e9ecef;
+            margin-bottom: 24px;
+        }
+
+        .tab {
+            padding: 12px 24px;
+            background: none;
+            border: none;
+            font-size: 15px;
+            font-weight: 600;
+            color: #6c757d;
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            transition: all 0.2s;
+        }
+
+        .tab:hover {
+            color: #495057;
+            background: #f8f9fa;
+        }
+
+        .tab.active {
+            color: #667eea;
+            border-bottom-color: #667eea;
+        }
+
+        /* 情報メッセージ */
+        .info-message {
+            padding: 16px;
+            background: #e7f3ff;
+            border-left: 4px solid #2196F3;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            color: #0c5460;
+        }
+
+        .warning-message {
+            padding: 16px;
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            color: #856404;
+        }
+
+        /* レスポンシブ */
+        @media (max-width: 1024px) {
+            .content {
+                flex-direction: column;
+            }
+
+            .sidebar {
+                width: 100%;
+                border-right: none;
+                border-bottom: 1px solid #e9ecef;
+            }
+
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 640px) {
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* スクロールバーのスタイリング */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #f8f9fa;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #ced4da;
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #adb5bd;
+        }
+
+        /* アニメーション */
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .section-card {
+            animation: fadeIn 0.3s ease-out;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- ヘッダー -->
+        <div class="header">
+            <h1>
+                <span class="icon">⚙️</span>
+                設定
+            </h1>
+            <p>システムの設定と管理を一元化</p>
+        </div>
+
+        <div class="content">
+            <!-- サイドバーナビゲーション -->
+            <div class="sidebar">
+                <div class="nav-section">
+                    <div class="nav-section-title">マスタ管理</div>
+                    <div class="nav-item active">
+                        <span class="nav-icon">👥</span>
+                        ユーザー管理
+                    </div>
+                    <div class="nav-item">
+                        <span class="nav-icon">🏢</span>
+                        クライアント管理
+                    </div>
+                </div>
+
+                <div class="nav-section">
+                    <div class="nav-section-title">システム設定</div>
+                    <div class="nav-item">
+                        <span class="nav-icon">🔐</span>
+                        認証・セキュリティ
+                    </div>
+                    <div class="nav-item">
+                        <span class="nav-icon">📧</span>
+                        通知設定
+                    </div>
+                    <div class="nav-item">
+                        <span class="nav-icon">🎨</span>
+                        外観・テーマ
+                    </div>
+                </div>
+
+                <div class="nav-section">
+                    <div class="nav-section-title">統合設定</div>
+                    <div class="nav-item">
+                        <span class="nav-icon">🗄️</span>
+                        Dataverse接続
+                    </div>
+                    <div class="nav-item">
+                        <span class="nav-icon">🔌</span>
+                        API設定
+                    </div>
+                </div>
+
+                <div class="nav-section">
+                    <div class="nav-section-title">その他</div>
+                    <div class="nav-item">
+                        <span class="nav-icon">📊</span>
+                        システムログ
+                    </div>
+                    <div class="nav-item">
+                        <span class="nav-icon">ℹ️</span>
+                        バージョン情報
+                    </div>
+                </div>
+            </div>
+
+            <!-- メインコンテンツ -->
+            <div class="main-content">
+                <!-- ページヘッダー -->
+                <div class="page-header">
+                    <h2 class="page-title">ユーザー管理</h2>
+                    <p class="page-description">システムユーザーの作成、編集、削除、権限管理</p>
+                </div>
+
+                <!-- 統計情報 -->
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-label">総ユーザー数</div>
+                        <div class="stat-value">24</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">アクティブ</div>
+                        <div class="stat-value">20</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">管理者</div>
+                        <div class="stat-value">5</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">閲覧者</div>
+                        <div class="stat-value">8</div>
+                    </div>
+                </div>
+
+                <!-- ユーザー一覧セクション -->
+                <div class="section-card">
+                    <div class="section-card-header">
+                        <div class="section-title">
+                            <span class="section-icon">👥</span>
+                            ユーザー一覧
+                        </div>
+                        <button class="btn btn-primary">
+                            <span>➕</span>
+                            新規ユーザー追加
+                        </button>
+                    </div>
+
+                    <!-- 検索とフィルター -->
+                    <div class="search-bar">
+                        <input type="text" class="search-input" placeholder="ユーザー名、メール、部署で検索...">
+                        <select class="form-select" style="width: auto;">
+                            <option>すべての役割</option>
+                            <option>オーナー</option>
+                            <option>管理者</option>
+                            <option>メンバー</option>
+                            <option>閲覧者</option>
+                        </select>
+                        <select class="form-select" style="width: auto;">
+                            <option>すべての部署</option>
+                            <option>開発部</option>
+                            <option>営業部</option>
+                            <option>総務部</option>
+                        </select>
+                    </div>
+
+                    <!-- ユーザーテーブル -->
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>ユーザー名</th>
+                                <th>メールアドレス</th>
+                                <th>部署</th>
+                                <th>役職</th>
+                                <th>役割</th>
+                                <th>ステータス</th>
+                                <th>アクション</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>山田太郎</strong></td>
+                                <td>yamada@company.com</td>
+                                <td>開発部</td>
+                                <td>部長</td>
+                                <td><span class="badge badge-danger">オーナー</span></td>
+                                <td><span class="badge badge-success">アクティブ</span></td>
+                                <td>
+                                    <div class="action-buttons">
+                                        <button class="btn-icon" title="編集">✏️</button>
+                                        <button class="btn-icon" title="削除">🗑️</button>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><strong>佐藤花子</strong></td>
+                                <td>sato@company.com</td>
+                                <td>開発部</td>
+                                <td>課長</td>
+                                <td><span class="badge badge-warning">管理者</span></td>
+                                <td><span class="badge badge-success">アクティブ</span></td>
+                                <td>
+                                    <div class="action-buttons">
+                                        <button class="btn-icon" title="編集">✏️</button>
+                                        <button class="btn-icon" title="削除">🗑️</button>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><strong>鈴木一郎</strong></td>
+                                <td>suzuki@company.com</td>
+                                <td>営業部</td>
+                                <td>主任</td>
+                                <td><span class="badge badge-info">メンバー</span></td>
+                                <td><span class="badge badge-success">アクティブ</span></td>
+                                <td>
+                                    <div class="action-buttons">
+                                        <button class="btn-icon" title="編集">✏️</button>
+                                        <button class="btn-icon" title="削除">🗑️</button>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><strong>高橋美咲</strong></td>
+                                <td>takahashi@company.com</td>
+                                <td>総務部</td>
+                                <td>一般</td>
+                                <td><span class="badge">閲覧者</span></td>
+                                <td><span class="badge badge-warning">保留中</span></td>
+                                <td>
+                                    <div class="action-buttons">
+                                        <button class="btn-icon" title="編集">✏️</button>
+                                        <button class="btn-icon" title="削除">🗑️</button>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- ユーザー作成/編集フォームセクション -->
+                <div class="section-card">
+                    <div class="section-card-header">
+                        <div class="section-title">
+                            <span class="section-icon">➕</span>
+                            ユーザー情報入力
+                        </div>
+                    </div>
+
+                    <div class="info-message">
+                        💡 新規ユーザーを追加する際は、メールアドレスに招待メールが送信されます。
+                    </div>
+
+                    <form>
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label class="form-label">ユーザー名 *</label>
+                                <input type="text" class="form-input" placeholder="例: 山田太郎" required>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label">メールアドレス *</label>
+                                <input type="email" class="form-input" placeholder="例: yamada@company.com" required>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label">部署</label>
+                                <select class="form-select">
+                                    <option value="">選択してください</option>
+                                    <option>開発部</option>
+                                    <option>営業部</option>
+                                    <option>総務部</option>
+                                    <option>人事部</option>
+                                    <option>経理部</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label">役職</label>
+                                <input type="text" class="form-input" placeholder="例: 部長">
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label">システム役割 *</label>
+                                <select class="form-select" required>
+                                    <option value="">選択してください</option>
+                                    <option value="owner">オーナー (全権限)</option>
+                                    <option value="admin">管理者 (管理機能)</option>
+                                    <option value="member" selected>メンバー (一般機能)</option>
+                                    <option value="viewer">閲覧者 (読み取りのみ)</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label">電話番号</label>
+                                <input type="tel" class="form-input" placeholder="例: 03-1234-5678">
+                            </div>
+
+                            <div class="form-group full-width">
+                                <label class="form-label">スキル (カンマ区切り)</label>
+                                <input type="text" class="form-input" placeholder="例: Python, Django, React, TypeScript">
+                            </div>
+
+                            <div class="form-group full-width">
+                                <label class="form-label">備考</label>
+                                <textarea class="form-textarea" placeholder="ユーザーに関する追加情報..."></textarea>
+                            </div>
+                        </div>
+
+                        <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 24px;">
+                            <button type="button" class="btn btn-secondary">キャンセル</button>
+                            <button type="submit" class="btn btn-primary">保存</button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- 権限設定セクション -->
+                <div class="section-card">
+                    <div class="section-card-header">
+                        <div class="section-title">
+                            <span class="section-icon">🔐</span>
+                            役割別権限マトリックス
+                        </div>
+                    </div>
+
+                    <div class="warning-message">
+                        ⚠️ 権限の変更は既存ユーザーのアクセス権限に即座に影響します。慎重に設定してください。
+                    </div>
+
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>機能</th>
+                                <th style="text-align: center;">オーナー</th>
+                                <th style="text-align: center;">管理者</th>
+                                <th style="text-align: center;">メンバー</th>
+                                <th style="text-align: center;">閲覧者</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>プロジェクト作成</strong></td>
+                                <td style="text-align: center;">✅</td>
+                                <td style="text-align: center;">✅</td>
+                                <td style="text-align: center;">✅</td>
+                                <td style="text-align: center;">❌</td>
+                            </tr>
+                            <tr>
+                                <td><strong>プロジェクト編集</strong></td>
+                                <td style="text-align: center;">✅</td>
+                                <td style="text-align: center;">✅</td>
+                                <td style="text-align: center;">✅</td>
+                                <td style="text-align: center;">❌</td>
+                            </tr>
+                            <tr>
+                                <td><strong>プロジェクト削除</strong></td>
+                                <td style="text-align: center;">✅</td>
+                                <td style="text-align: center;">✅</td>
+                                <td style="text-align: center;">❌</td>
+                                <td style="text-align: center;">❌</td>
+                            </tr>
+                            <tr>
+                                <td><strong>ユーザー管理</strong></td>
+                                <td style="text-align: center;">✅</td>
+                                <td style="text-align: center;">✅</td>
+                                <td style="text-align: center;">❌</td>
+                                <td style="text-align: center;">❌</td>
+                            </tr>
+                            <tr>
+                                <td><strong>クライアント管理</strong></td>
+                                <td style="text-align: center;">✅</td>
+                                <td style="text-align: center;">✅</td>
+                                <td style="text-align: center;">✅</td>
+                                <td style="text-align: center;">❌</td>
+                            </tr>
+                            <tr>
+                                <td><strong>システム設定</strong></td>
+                                <td style="text-align: center;">✅</td>
+                                <td style="text-align: center;">❌</td>
+                                <td style="text-align: center;">❌</td>
+                                <td style="text-align: center;">❌</td>
+                            </tr>
+                            <tr>
+                                <td><strong>データ閲覧</strong></td>
+                                <td style="text-align: center;">✅</td>
+                                <td style="text-align: center;">✅</td>
+                                <td style="text-align: center;">✅</td>
+                                <td style="text-align: center;">✅</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ナビゲーション切り替えのデモ
+        document.querySelectorAll('.nav-item').forEach(item => {
+            item.addEventListener('click', function() {
+                document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+                this.classList.add('active');
+                
+                const section = this.textContent.trim();
+                console.log('切り替え:', section);
+                
+                // 実際の実装では、ここでページコンテンツを動的に切り替えます
+            });
+        });
+
+        // フォーム送信のデモ
+        document.querySelector('form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            alert('ユーザーが保存されました!(デモ)');
+        });
+    </script>
+</body>
+</html>

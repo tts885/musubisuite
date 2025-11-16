@@ -47,6 +47,16 @@ export default function LandingPage() {
   const navigate = useNavigate()
 
   useEffect(() => {
+    // Power Appsからのアクセスを検出
+    const urlParams = new URLSearchParams(window.location.search)
+    const isPowerApps = urlParams.has('_localAppUrl') || urlParams.has('_localConnectionUrl')
+    
+    // Power Appsからのアクセスの場合、ダッシュボードにリダイレクト
+    if (isPowerApps) {
+      navigate('/dashboard', { replace: true })
+      return
+    }
+
     // 明示的なホーム遷移の場合はリダイレクトしない
     if (isExplicitHomeNavigation()) {
       return
@@ -54,7 +64,7 @@ export default function LandingPage() {
 
     // 最後に訪問したページがある場合、そこにリダイレクト
     const lastPath = getLastVisitedPath()
-    if (lastPath && lastPath !== "/") {
+    if (lastPath && lastPath !== "/" && !lastPath.startsWith("/landing")) {
       navigate(lastPath, { replace: true })
     }
   }, [navigate])
@@ -68,7 +78,7 @@ export default function LandingPage() {
       icon: FolderKanban,
       color: "text-blue-500",
       bgColor: "bg-blue-500/10",
-      path: "/",
+      path: "/dashboard",
       features: [
         "ダッシュボードで一目で全体を把握",
         "DataGridで案件を効率的に管理",
@@ -165,7 +175,7 @@ export default function LandingPage() {
             {/* CTA ボタン */}
             <div className="flex items-center justify-center gap-4 pt-4">
               <Button asChild size="lg" className="gap-2 shadow-lg">
-                <Link to="/">
+                <Link to="/dashboard">
                   今すぐ始める
                   <ArrowRight className="w-4 h-4" />
                 </Link>
@@ -312,7 +322,7 @@ export default function LandingPage() {
             </p>
             <div className="flex items-center justify-center gap-4 pt-4">
               <Button asChild size="lg" className="gap-2 shadow-lg">
-                <Link to="/">
+                <Link to="/dashboard">
                   ダッシュボードへ
                   <ArrowRight className="w-4 h-4" />
                 </Link>

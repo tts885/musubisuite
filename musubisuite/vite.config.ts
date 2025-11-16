@@ -15,6 +15,12 @@ export default defineConfig({
   server: {
     host: "::",
     port: 3000,
+    proxy: {
+      '/api': {
+        target: 'http://localhost:8000',
+        changeOrigin: true,
+      },
+    },
     cors: {
       origin: POWER_APPS_CORS_ORIGINS
     }

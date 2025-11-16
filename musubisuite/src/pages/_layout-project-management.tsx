@@ -6,6 +6,7 @@ import {
   ListTodo,
   Users,
   GitBranch,
+  FolderKanban,
   Menu,
   X,
   ChevronRight
@@ -117,7 +118,7 @@ export default function ProjectManagementLayout({ showHeader = true }: LayoutPro
       >
         <div className="flex flex-col h-full">
           {/* Header with Menu Button - 展開/折りたたみに対応 */}
-          <div className={`h-16 border-b border-sidebar-border flex items-center ${sidebarCollapsed ? 'justify-center' : 'px-5 gap-3'}`}>
+          <div className={`border-b border-sidebar-border flex items-center ${sidebarCollapsed ? 'h-16 justify-center' : 'h-16 px-4 gap-3'}`}>
             <Button
               variant="ghost"
               size="icon"
@@ -128,7 +129,12 @@ export default function ProjectManagementLayout({ showHeader = true }: LayoutPro
               <Menu className="h-5 w-5" />
             </Button>
             {!sidebarCollapsed && (
-              <span className="font-bold text-lg whitespace-nowrap text-sidebar-foreground">プロジェクト管理</span>
+              <>
+                <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                  <FolderKanban className="w-4 h-4 text-primary" />
+                </div>
+                <h1 className="text-lg font-bold text-foreground">プロジェクト管理</h1>
+              </>
             )}
           </div>
           
@@ -143,30 +149,17 @@ export default function ProjectManagementLayout({ showHeader = true }: LayoutPro
                   to={item.path}
                   title={sidebarCollapsed ? `${item.label} - ${item.description}` : undefined}
                   className={`
-                    group flex items-center gap-3 px-3 py-2.5 rounded-lg
-                    transition-all duration-200 relative
+                    flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors
                     ${sidebarCollapsed ? 'justify-center' : ''}
                     ${isActive 
-                      ? 'bg-sidebar-accent text-sidebar-accent-foreground shadow-sm font-medium' 
-                      : 'text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground'
+                      ? 'bg-sidebar-accent text-sidebar-accent-foreground shadow-sm' 
+                      : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
                     }
                   `}
                   onClick={() => setSidebarOpen(false)}
                 >
-                  <Icon className="h-5 w-5 flex-shrink-0" />
-                  {!sidebarCollapsed && (
-                    <>
-                      <div className="flex flex-col gap-0.5 flex-1 min-w-0">
-                        <span className="text-sm font-medium leading-tight truncate">{item.label}</span>
-                        <span className={`text-xs leading-tight truncate ${isActive ? 'opacity-80' : 'opacity-60'}`}>
-                          {item.description}
-                        </span>
-                      </div>
-                      {isActive && (
-                        <ChevronRight className="h-4 w-4 flex-shrink-0 opacity-60" />
-                      )}
-                    </>
-                  )}
+                  <Icon className="w-4 h-4 flex-shrink-0" />
+                  {!sidebarCollapsed && <span>{item.label}</span>}
                 </NavLink>
               )
             })}

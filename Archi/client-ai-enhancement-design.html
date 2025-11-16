@@ -1,0 +1,2915 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>クライアント管理AI機能拡張 設計書</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', 'Yu Gothic', 'Hiragino Sans', 'Meiryo', sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: #f5f5f5;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        header {
+            border-bottom: 3px solid #2563eb;
+            padding-bottom: 20px;
+            margin-bottom: 40px;
+        }
+        
+        h1 {
+            font-size: 2.5em;
+            color: #1e40af;
+            margin-bottom: 10px;
+        }
+        
+        .meta-info {
+            color: #666;
+            font-size: 0.9em;
+        }
+        
+        h2 {
+            font-size: 1.8em;
+            color: #1e40af;
+            margin-top: 40px;
+            margin-bottom: 20px;
+            border-left: 5px solid #2563eb;
+            padding-left: 15px;
+        }
+        
+        h3 {
+            font-size: 1.4em;
+            color: #2563eb;
+            margin-top: 30px;
+            margin-bottom: 15px;
+        }
+        
+        h4 {
+            font-size: 1.2em;
+            color: #3b82f6;
+            margin-top: 20px;
+            margin-bottom: 10px;
+        }
+        
+        p {
+            margin-bottom: 15px;
+        }
+        
+        ul, ol {
+            margin-left: 30px;
+            margin-bottom: 15px;
+        }
+        
+        li {
+            margin-bottom: 8px;
+        }
+        
+        code {
+            background: #f1f5f9;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 0.9em;
+            color: #dc2626;
+        }
+        
+        pre {
+            background: #1e293b;
+            color: #e2e8f0;
+            padding: 20px;
+            border-radius: 5px;
+            overflow-x: auto;
+            margin-bottom: 20px;
+        }
+        
+        pre code {
+            background: none;
+            color: #e2e8f0;
+            padding: 0;
+        }
+        
+        .table-container {
+            overflow-x: auto;
+            margin-bottom: 20px;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+            background: white;
+        }
+        
+        th {
+            background: #2563eb;
+            color: white;
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+        }
+        
+        td {
+            padding: 12px;
+            border: 1px solid #e5e7eb;
+        }
+        
+        tr:nth-child(even) {
+            background: #f9fafb;
+        }
+        
+        .badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 0.85em;
+            font-weight: 600;
+        }
+        
+        .badge-new {
+            background: #fef3c7;
+            color: #92400e;
+        }
+        
+        .badge-required {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+        
+        .badge-optional {
+            background: #e0e7ff;
+            color: #3730a3;
+        }
+        
+        .badge-ai {
+            background: #ddd6fe;
+            color: #5b21b6;
+        }
+        
+        .workflow-box {
+            background: #f8fafc;
+            border: 2px solid #cbd5e1;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        
+        .ui-mockup {
+            background: #ffffff;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+            font-family: monospace;
+            white-space: pre;
+            overflow-x: auto;
+        }
+        
+        .section {
+            margin-bottom: 40px;
+        }
+        
+        .highlight {
+            background: #fef3c7;
+            padding: 15px;
+            border-left: 4px solid #f59e0b;
+            border-radius: 4px;
+            margin: 20px 0;
+        }
+        
+        .info-box {
+            background: #eff6ff;
+            padding: 15px;
+            border-left: 4px solid #3b82f6;
+            border-radius: 4px;
+            margin: 20px 0;
+        }
+        
+        .architecture-diagram {
+            background: #f1f5f9;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+            font-family: monospace;
+        }
+        
+        .emoji {
+            font-size: 1.2em;
+            margin-right: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>📋 クライアント管理AI機能拡張 設計書</h1>
+            <div class="meta-info">
+                <p><strong>プロジェクト:</strong> MusubiSuite</p>
+                <p><strong>バージョン:</strong> 1.0</p>
+                <p><strong>作成日:</strong> 2025年11月15日</p>
+                <p><strong>最終更新:</strong> 2025年11月15日</p>
+            </div>
+        </header>
+
+        <!-- 概要 -->
+        <section class="section">
+            <h2><span class="emoji">📖</span>概要</h2>
+            <p>本設計書は、MusubiSuiteのクライアント管理機能にAI自動入力機能を追加するための技術設計を定義します。</p>
+            
+            <h3>目的</h3>
+            <ul>
+                <li>クライアント情報入力の効率化</li>
+                <li>Web上の公開情報を活用した自動データ取得</li>
+                <li>データ入力ミスの削減</li>
+                <li>営業担当者の作業負担軽減</li>
+            </ul>
+
+            <h3>主要機能</h3>
+            <ol>
+                <li>企業名からAIで自動的に企業情報を取得</li>
+                <li>既存クライアント情報の最新化</li>
+                <li>契約情報の分離管理（1クライアント：複数契約）</li>
+                <li>AI設定の管理画面</li>
+            </ol>
+        </section>
+
+        <!-- データモデル設計 -->
+        <section class="section">
+            <h2><span class="emoji">🗄️</span>データモデル設計</h2>
+
+            <h3>1. Clientテーブル（拡張版）</h3>
+            <p>契約情報を除外し、企業の基本情報のみを管理します。</p>
+
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>フィールド名</th>
+                            <th>型</th>
+                            <th>必須</th>
+                            <th>説明</th>
+                            <th>AI取得</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td colspan="5" style="background: #f3f4f6; font-weight: bold;">基本情報</td>
+                        </tr>
+                        <tr>
+                            <td><code>id</code></td>
+                            <td>BigAutoField</td>
+                            <td><span class="badge badge-required">必須</span></td>
+                            <td>主キー（自動採番）</td>
+                            <td>-</td>
+                        </tr>
+                        <tr>
+                            <td><code>company_name</code></td>
+                            <td>CharField(200)</td>
+                            <td><span class="badge badge-required">必須</span></td>
+                            <td>会社名（通称）</td>
+                            <td>✅ 検索キー</td>
+                        </tr>
+                        <tr>
+                            <td><code>legal_name</code></td>
+                            <td>CharField(300)</td>
+                            <td><span class="badge badge-optional">任意</span></td>
+                            <td>正式名称</td>
+                            <td>✅</td>
+                        </tr>
+                        <tr>
+                            <td><code>email</code></td>
+                            <td>EmailField</td>
+                            <td><span class="badge badge-required">必須</span></td>
+                            <td>代表メールアドレス</td>
+                            <td>-</td>
+                        </tr>
+                        <tr>
+                            <td colspan="5" style="background: #f3f4f6; font-weight: bold;">企業基本情報（AI取得対象）</td>
+                        </tr>
+                        <tr>
+                            <td><code>representative</code></td>
+                            <td>CharField(100)</td>
+                            <td><span class="badge badge-optional">任意</span></td>
+                            <td>代表者名</td>
+                            <td>✅</td>
+                        </tr>
+                        <tr>
+                            <td><code>established_date</code></td>
+                            <td>DateField</td>
+                            <td><span class="badge badge-optional">任意</span></td>
+                            <td>設立年月日</td>
+                            <td>✅</td>
+                        </tr>
+                        <tr>
+                            <td><code>capital</code></td>
+                            <td>BigIntegerField</td>
+                            <td><span class="badge badge-optional">任意</span></td>
+                            <td>資本金（円）</td>
+                            <td>✅</td>
+                        </tr>
+                        <tr>
+                            <td><code>employee_count</code></td>
+                            <td>IntegerField</td>
+                            <td><span class="badge badge-optional">任意</span></td>
+                            <td>従業員数</td>
+                            <td>✅</td>
+                        </tr>
+                        <tr>
+                            <td><code>industry</code></td>
+                            <td>CharField(50)</td>
+                            <td><span class="badge badge-optional">任意</span></td>
+                            <td>業種</td>
+                            <td>✅</td>
+                        </tr>
+                        <tr>
+                            <td><code>website</code></td>
+                            <td>URLField</td>
+                            <td><span class="badge badge-optional">任意</span></td>
+                            <td>公式ウェブサイト</td>
+                            <td>✅</td>
+                        </tr>
+                        <tr>
+                            <td><code>description</code></td>
+                            <td>TextField</td>
+                            <td><span class="badge badge-optional">任意</span></td>
+                            <td>事業内容</td>
+                            <td>✅</td>
+                        </tr>
+                        <tr>
+                            <td colspan="5" style="background: #f3f4f6; font-weight: bold;">所在地情報（AI取得対象）</td>
+                        </tr>
+                        <tr>
+                            <td><code>postal_code</code></td>
+                            <td>CharField(10)</td>
+                            <td><span class="badge badge-optional">任意</span></td>
+                            <td>郵便番号</td>
+                            <td>✅</td>
+                        </tr>
+                        <tr>
+                            <td><code>prefecture</code></td>
+                            <td>CharField(20)</td>
+                            <td><span class="badge badge-optional">任意</span></td>
+                            <td>都道府県</td>
+                            <td>✅</td>
+                        </tr>
+                        <tr>
+                            <td><code>city</code></td>
+                            <td>CharField(100)</td>
+                            <td><span class="badge badge-optional">任意</span></td>
+                            <td>市区町村</td>
+                            <td>✅</td>
+                        </tr>
+                        <tr>
+                            <td><code>address</code></td>
+                            <td>CharField(300)</td>
+                            <td><span class="badge badge-optional">任意</span></td>
+                            <td>番地・ビル名</td>
+                            <td>✅</td>
+                        </tr>
+                        <tr>
+                            <td><code>phone</code></td>
+                            <td>CharField(50)</td>
+                            <td><span class="badge badge-optional">任意</span></td>
+                            <td>代表電話番号</td>
+                            <td>✅</td>
+                        </tr>
+                        <tr>
+                            <td><code>fax</code></td>
+                            <td>CharField(50)</td>
+                            <td><span class="badge badge-optional">任意</span></td>
+                            <td>FAX番号</td>
+                            <td>✅</td>
+                        </tr>
+                        <tr>
+                            <td colspan="5" style="background: #f3f4f6; font-weight: bold;">担当者情報</td>
+                        </tr>
+                        <tr>
+                            <td><code>contact_name</code></td>
+                            <td>CharField(100)</td>
+                            <td><span class="badge badge-optional">任意</span></td>
+                            <td>担当者名</td>
+                            <td>-</td>
+                        </tr>
+                        <tr>
+                            <td><code>contact_department</code></td>
+                            <td>CharField(100)</td>
+                            <td><span class="badge badge-optional">任意</span></td>
+                            <td>部署</td>
+                            <td>-</td>
+                        </tr>
+                        <tr>
+                            <td><code>contact_position</code></td>
+                            <td>CharField(100)</td>
+                            <td><span class="badge badge-optional">任意</span></td>
+                            <td>役職</td>
+                            <td>-</td>
+                        </tr>
+                        <tr>
+                            <td><code>contact_email</code></td>
+                            <td>EmailField</td>
+                            <td><span class="badge badge-optional">任意</span></td>
+                            <td>担当者メールアドレス</td>
+                            <td>-</td>
+                        </tr>
+                        <tr>
+                            <td><code>contact_phone</code></td>
+                            <td>CharField(50)</td>
+                            <td><span class="badge badge-optional">任意</span></td>
+                            <td>担当者直通電話</td>
+                            <td>-</td>
+                        </tr>
+                        <tr>
+                            <td><code>contact_mobile</code></td>
+                            <td>CharField(50)</td>
+                            <td><span class="badge badge-optional">任意</span></td>
+                            <td>担当者携帯電話</td>
+                            <td>-</td>
+                        </tr>
+                        <tr>
+                            <td colspan="5" style="background: #f3f4f6; font-weight: bold;">ビジネス情報</td>
+                        </tr>
+                        <tr>
+                            <td><code>priority</code></td>
+                            <td>CharField(1)</td>
+                            <td><span class="badge badge-optional">任意</span></td>
+                            <td>優先度（A/B/C）</td>
+                            <td>-</td>
+                        </tr>
+                        <tr>
+                            <td><code>lead_source</code></td>
+                            <td>CharField(50)</td>
+                            <td><span class="badge badge-optional">任意</span></td>
+                            <td>リード元</td>
+                            <td>-</td>
+                        </tr>
+                        <tr>
+                            <td><code>assigned_sales_id</code></td>
+                            <td>ForeignKey</td>
+                            <td><span class="badge badge-optional">任意</span></td>
+                            <td>営業担当者（Member）</td>
+                            <td>-</td>
+                        </tr>
+                        <tr>
+                            <td><code>tags</code></td>
+                            <td>JSONField</td>
+                            <td><span class="badge badge-optional">任意</span></td>
+                            <td>タグ配列</td>
+                            <td>-</td>
+                        </tr>
+                        <tr>
+                            <td><code>note</code></td>
+                            <td>TextField</td>
+                            <td><span class="badge badge-optional">任意</span></td>
+                            <td>備考</td>
+                            <td>-</td>
+                        </tr>
+                        <tr>
+                            <td colspan="5" style="background: #f3f4f6; font-weight: bold;">AI関連</td>
+                        </tr>
+                        <tr>
+                            <td><code>ai_generated</code></td>
+                            <td>BooleanField</td>
+                            <td><span class="badge badge-optional">任意</span></td>
+                            <td>AI生成データフラグ</td>
+                            <td><span class="badge badge-ai">AI</span></td>
+                        </tr>
+                        <tr>
+                            <td><code>ai_generated_at</code></td>
+                            <td>DateTimeField</td>
+                            <td><span class="badge badge-optional">任意</span></td>
+                            <td>AI生成日時</td>
+                            <td><span class="badge badge-ai">AI</span></td>
+                        </tr>
+                        <tr>
+                            <td><code>ai_confidence_score</code></td>
+                            <td>IntegerField</td>
+                            <td><span class="badge badge-optional">任意</span></td>
+                            <td>AI信頼度スコア（0-100）</td>
+                            <td><span class="badge badge-ai">AI</span></td>
+                        </tr>
+                        <tr>
+                            <td colspan="5" style="background: #f3f4f6; font-weight: bold;">システム</td>
+                        </tr>
+                        <tr>
+                            <td><code>created_at</code></td>
+                            <td>DateTimeField</td>
+                            <td><span class="badge badge-required">必須</span></td>
+                            <td>作成日時</td>
+                            <td>-</td>
+                        </tr>
+                        <tr>
+                            <td><code>updated_at</code></td>
+                            <td>DateTimeField</td>
+                            <td><span class="badge badge-required">必須</span></td>
+                            <td>最終更新日時</td>
+                            <td>-</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <h3>2. Contractテーブル <span class="badge badge-new">NEW</span></h3>
+            <p>クライアントとは1対多の関係で管理します。</p>
+
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>フィールド名</th>
+                            <th>型</th>
+                            <th>必須</th>
+                            <th>説明</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>id</code></td>
+                            <td>BigAutoField</td>
+                            <td><span class="badge badge-required">必須</span></td>
+                            <td>主キー</td>
+                        </tr>
+                        <tr>
+                            <td><code>client_id</code></td>
+                            <td>ForeignKey</td>
+                            <td><span class="badge badge-required">必須</span></td>
+                            <td>クライアントID</td>
+                        </tr>
+                        <tr>
+                            <td><code>contract_number</code></td>
+                            <td>CharField(50)</td>
+                            <td><span class="badge badge-required">必須</span></td>
+                            <td>契約番号</td>
+                        </tr>
+                        <tr>
+                            <td><code>contract_name</code></td>
+                            <td>CharField(200)</td>
+                            <td><span class="badge badge-required">必須</span></td>
+                            <td>契約名</td>
+                        </tr>
+                        <tr>
+                            <td><code>contract_type</code></td>
+                            <td>CharField(20)</td>
+                            <td><span class="badge badge-required">必須</span></td>
+                            <td>月額/年額/プロジェクトベース/保守</td>
+                        </tr>
+                        <tr>
+                            <td><code>status</code></td>
+                            <td>CharField(20)</td>
+                            <td><span class="badge badge-required">必須</span></td>
+                            <td>見積中/契約中/休止中/終了</td>
+                        </tr>
+                        <tr>
+                            <td><code>start_date</code></td>
+                            <td>DateField</td>
+                            <td><span class="badge badge-required">必須</span></td>
+                            <td>契約開始日</td>
+                        </tr>
+                        <tr>
+                            <td><code>end_date</code></td>
+                            <td>DateField</td>
+                            <td><span class="badge badge-optional">任意</span></td>
+                            <td>契約終了日</td>
+                        </tr>
+                        <tr>
+                            <td><code>renewal_date</code></td>
+                            <td>DateField</td>
+                            <td><span class="badge badge-optional">任意</span></td>
+                            <td>次回更新日</td>
+                        </tr>
+                        <tr>
+                            <td><code>contract_amount</code></td>
+                            <td>DecimalField</td>
+                            <td><span class="badge badge-required">必須</span></td>
+                            <td>契約金額</td>
+                        </tr>
+                        <tr>
+                            <td><code>billing_cycle</code></td>
+                            <td>CharField(20)</td>
+                            <td><span class="badge badge-optional">任意</span></td>
+                            <td>月次/四半期/年次</td>
+                        </tr>
+                        <tr>
+                            <td><code>payment_terms</code></td>
+                            <td>CharField(100)</td>
+                            <td><span class="badge badge-optional">任意</span></td>
+                            <td>支払条件</td>
+                        </tr>
+                        <tr>
+                            <td><code>payment_method</code></td>
+                            <td>CharField(50)</td>
+                            <td><span class="badge badge-optional">任意</span></td>
+                            <td>支払方法</td>
+                        </tr>
+                        <tr>
+                            <td><code>billing_address</code></td>
+                            <td>TextField</td>
+                            <td><span class="badge badge-optional">任意</span></td>
+                            <td>請求先住所</td>
+                        </tr>
+                        <tr>
+                            <td><code>billing_contact</code></td>
+                            <td>CharField(100)</td>
+                            <td><span class="badge badge-optional">任意</span></td>
+                            <td>請求先担当者</td>
+                        </tr>
+                        <tr>
+                            <td><code>sla_level</code></td>
+                            <td>CharField(20)</td>
+                            <td><span class="badge badge-optional">任意</span></td>
+                            <td>SLAレベル</td>
+                        </tr>
+                        <tr>
+                            <td><code>auto_renewal</code></td>
+                            <td>BooleanField</td>
+                            <td><span class="badge badge-optional">任意</span></td>
+                            <td>自動更新フラグ</td>
+                        </tr>
+                        <tr>
+                            <td><code>note</code></td>
+                            <td>TextField</td>
+                            <td><span class="badge badge-optional">任意</span></td>
+                            <td>備考</td>
+                        </tr>
+                        <tr>
+                            <td><code>created_at</code></td>
+                            <td>DateTimeField</td>
+                            <td><span class="badge badge-required">必須</span></td>
+                            <td>作成日時</td>
+                        </tr>
+                        <tr>
+                            <td><code>updated_at</code></td>
+                            <td>DateTimeField</td>
+                            <td><span class="badge badge-required">必須</span></td>
+                            <td>最終更新日時</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- AI機能設計 -->
+        <section class="section">
+            <h2><span class="emoji">🤖</span>AI機能設計</h2>
+
+            <h3>1. アーキテクチャ</h3>
+            <div class="architecture-diagram">
+<pre>
+┌─────────────────────────────────────────────────────────────────┐
+│                    Frontend (React + TypeScript)                │
+│  ┌──────────────────────────────────────────────────────────┐  │
+│  │  任意の機能画面（クライアント管理、ドキュメント等）        │  │
+│  │  // バックエンドAPI経由でAI機能を利用                   │  │
+│  │  await fetch('/api/clients/ai-fetch/', {                │  │
+│  │    method: 'POST',                                      │  │
+│  │    body: JSON.stringify({ company_name: '...' })       │  │
+│  │  })                                                     │  │
+│  └──────────────────────────────────────────────────────────┘  │
+│  ┌──────────────────────────────────────────────────────────┐  │
+│  │  AI設定画面（全システム共通）- /settings/ai              │  │
+│  │  - プロバイダー一覧・CRUD操作                           │  │
+│  │  - APIキー管理（暗号化保存）                            │  │
+│  │  - 接続テスト・リアルタイムストリーミングプレビュー      │  │
+│  │  - aiStreamService.ts でSSEストリーミング処理           │  │
+│  └──────────────────────────────────────────────────────────┘  │
+└─────────────────────────────────────────────────────────────────┘
+                            │
+                            │ REST API + SSE
+                            ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                   Backend (Django + DRF)                         │
+│  ┌──────────────────────────────────────────────────────────┐  │
+│  │  ai_services パッケージ（全システム共通）                 │  │
+│  │  ┌────────────────────────────────────────────────────┐  │  │
+│  │  │ __init__.py - 統一エントリーポイント               │  │  │
+│  │  │ from ai_services import (                       │  │  │
+│  │  │   AIClient,                # 統合クライアント   │  │  │
+│  │  │   get_default_ai_client,   # デフォルト取得    │  │  │
+│  │  │   get_ai_client            # ID/名前指定取得   │  │  │
+│  │  │ )                                               │  │  │
+│  │  └────────────────────────────────────────────────────┘  │  │
+│  │  ┌────────────────────────────────────────────────────┐  │  │
+│  │  │ llm_client.py - AIClient統合クラス                │  │  │
+│  │  │ ┌──────────────────────────────────────────────┐  │  │  │
+│  │  │ │ AIClient                                     │  │  │  │
+│  │  │ │ - generate(prompt, **kwargs) → str          │  │  │  │
+│  │  │ │ - generate_stream(prompt, **kwargs)         │  │  │  │
+│  │  │ │   → Generator[str]                          │  │  │  │
+│  │  │ │                                              │  │  │  │
+│  │  │ │ プロバイダー別実装（最適化済み）:             │  │  │  │
+│  │  │ │ - _stream_azure_openai()                    │  │  │  │
+│  │  │ │   → AzureOpenAI SDK (openai 1.54.0)        │  │  │  │
+│  │  │ │ - _stream_openai()                          │  │  │  │
+│  │  │ │   → OpenAI SDK (openai 1.54.0)             │  │  │  │
+│  │  │ │ - _stream_anthropic()                       │  │  │  │
+│  │  │ │   → Anthropic SDK (anthropic 0.39.0)       │  │  │  │
+│  │  │ │ - _stream_google()                          │  │  │  │
+│  │  │ │   → Google Genai SDK (google-genai 1.50.1) │  │  │  │
+│  │  │ │   ✅ 公式generate_content_stream使用        │  │  │  │
+│  │  │ │   ✅ チャンク単位で最適化                   │  │  │  │
+│  │  │ └──────────────────────────────────────────────┘  │  │  │
+│  │  │ ┌──────────────────────────────────────────────┐  │  │  │
+│  │  │ │ get_default_ai_client()                     │  │  │  │
+│  │  │ │ → is_default=Trueのプロバイダーで初期化     │  │  │  │
+│  │  │ └──────────────────────────────────────────────┘  │  │  │
+│  │  │ ┌──────────────────────────────────────────────┐  │  │  │
+│  │  │ │ get_ai_client(id=None, name=None)           │  │  │  │
+│  │  │ │ → 指定プロバイダーで初期化                   │  │  │  │
+│  │  │ └──────────────────────────────────────────────┘  │  │  │
+│  │  └────────────────────────────────────────────────────┘  │  │
+│  │  ┌────────────────────────────────────────────────────┐  │  │
+│  │  │ exceptions.py - カスタム例外                       │  │  │
+│  │  │ - AIServiceError (基底クラス)                   │  │  │
+│  │  │ - ProviderNotFoundError                         │  │  │
+│  │  │ - APIKeyNotConfiguredError                      │  │  │
+│  │  │ - APICallError                                  │  │  │
+│  │  │ - StreamingError                                │  │  │
+│  │  └────────────────────────────────────────────────────┘  │  │
+│  └──────────────────────────────────────────────────────────┘  │
+│  ┌──────────────────────────────────────────────────────────┐  │
+│  │  ai_settings アプリ（設定管理）                           │  │
+│  │  - AIProvider モデル（DB・暗号化APIキー）                │  │
+│  │  - AIProviderViewSet (REST API)                          │  │
+│  │    ✅ perform_content_negotiation() オーバーライド       │  │
+│  │    ✅ finalize_response() オーバーライド                 │  │
+│  │    → test_prompt: SSEストリーミング対応                 │  │
+│  │    → StreamingHttpResponse直接返却                      │  │
+│  │  - 暗号化・復号化処理（cryptography使用）                │  │
+│  └──────────────────────────────────────────────────────────┘  │
+│  ┌──────────────────────────────────────────────────────────┐  │
+│  │  各機能アプリ（clients, documents, 等）                   │  │
+│  │  from ai_services import get_default_ai_client           │  │
+│  │                                                           │  │
+│  │  # 簡単3行でAI機能利用                                    │  │
+│  │  client = get_default_ai_client()                        │  │
+│  │  response = client.generate("企業情報を取得")            │  │
+│  │  # または                                                 │  │
+│  │  for chunk in client.generate_stream("..."):             │  │
+│  │      yield chunk  # SSEでフロントへ                      │  │
+│  └──────────────────────────────────────────────────────────┘  │
+└─────────────────────────────────────────────────────────────────┘
+                            │
+                            │ HTTPS API Calls
+                            ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                  External AI Services                            │
+│  ┌──────────────┐  ┌──────────────┐  ┌────────────────────┐   │
+│  │ Azure OpenAI │  │    OpenAI    │  │   Anthropic        │   │
+│  │   (GPT-4o)   │  │  (GPT-4o)    │  │ (Claude 3.5 Sonnet)│   │
+│  │ SDK: openai  │  │ SDK: openai  │  │ SDK: anthropic     │   │
+│  └──────────────┘  └──────────────┘  └────────────────────┘   │
+│  ┌────────────────────────────────┐                            │
+│  │      Google Gemini             │                            │
+│  │  (Gemini 2.0 Flash Exp)        │                            │
+│  │  SDK: google-genai 1.50.1     │                            │
+│  │  ✅ 公式SDK・最適化済み         │                            │
+│  └────────────────────────────────┘                            │
+└─────────────────────────────────────────────────────────────────┘
+</pre>
+            </div>
+
+            <h3>1.1 AI設定の共通化設計</h3>
+            <div class="info-box">
+                <h4>設計思想</h4>
+                <p>AI機能を全システムで統一的に利用できるよう、<strong>ai_services パッケージ</strong>として共通化します。
+                任意の機能（クライアント情報取得、ドキュメント生成、チャット機能など）から、
+                3行のコードでAI機能を簡単に呼び出せる設計です。</p>
+                
+                <h4>利用例（バックエンド）</h4>
+                <pre><code class="language-python"># 例1: デフォルトプロバイダーを使用
+from ai_services import get_default_ai_client
+
+client = get_default_ai_client()
+response = client.generate("東京の天気を教えて")
+print(response)
+
+# 例2: ストリーミング生成（SSE対応）
+def stream_response():
+    client = get_default_ai_client()
+    for chunk in client.generate_stream("長い文章を生成"):
+        # チャンク単位で最適化されたストリーミング
+        yield f"data: {{\"content\": \"{chunk}\"}}\n\n"
+    yield f"data: {{\"done\": true}}\n\n"
+
+return StreamingHttpResponse(stream_response(), 
+                             content_type='text/event-stream')
+
+# 例3: 特定のプロバイダーを指定
+from ai_services import get_ai_client
+
+client = get_ai_client(provider_id=2)  # ID指定
+client = get_ai_client(provider_name="GPT-4")  # 名前指定
+response = client.generate("技術的な質問")</code></pre>
+
+                <h4>利用例（フロントエンド）</h4>
+                <pre><code class="language-typescript">// ストリーミングレスポンス受信（最適化版）
+import { aiStreamService } from '@/services/aiStreamService';
+
+// 90行 → 15行に最適化
+await aiStreamService.streamPrompt(
+  `/api/ai-providers/${id}/test_prompt/`,
+  { prompt: 'こんにちは' },
+  {
+    onChunk: (content) => setResponse(prev => prev + content),
+    onComplete: () => toast.success('完了'),
+    onError: (error) => toast.error(error)
+  }
+);</code></pre>
+
+                <h4>共通化の利点</h4>
+                <ul>
+                    <li><strong>統一されたインターフェース:</strong> 全機能で同じAPIを使用</li>
+                    <li><strong>設定の一元管理:</strong> AI設定画面で全体を管理（暗号化APIキー）</li>
+                    <li><strong>簡単な使用法:</strong> 3行のコードでAI機能を利用可能</li>
+                    <li><strong>プロバイダー透過性:</strong> 実装を変えずにプロバイダー切り替え可能</li>
+                    <li><strong>エラーハンドリング:</strong> カスタム例外で明確なエラー処理</li>
+                    <li><strong>拡張性:</strong> 新しいプロバイダーの追加が容易</li>
+                    <li><strong>ストリーミング最適化:</strong> チャンク単位の効率的なストリーミング</li>
+                    <li><strong>DRF統合:</strong> perform_content_negotiation/finalize_responseオーバーライドでSSE対応</li>
+                    <li><strong>公式SDK使用:</strong> 全プロバイダーで公式SDKを使用（安定性・最新機能）</li>
+                </ul>
+            </div>
+
+            <h3>2. ワークフロー</h3>
+
+            <h4>パターン0: AI設定の接続テスト（ストリーミング）</h4>
+            <div class="workflow-box">
+                <ol>
+                    <li><strong>ユーザー:</strong> AI設定画面で「接続テスト」ボタンをクリック</li>
+                    <li><strong>Frontend:</strong> プロンプト入力ダイアログを表示</li>
+                    <li><strong>Frontend:</strong> aiStreamService.streamPrompt() でSSE接続開始
+                        <ul>
+                            <li>URL: <code>/api/ai-providers/{id}/test_prompt/</code></li>
+                            <li>Accept: text/event-stream</li>
+                        </ul>
+                    </li>
+                    <li><strong>Backend:</strong> AIProviderViewSet.test_prompt() が呼び出される
+                        <ul>
+                            <li>perform_content_negotiation() でDRFのネゴシエーションをスキップ</li>
+                            <li>AIClient(provider).generate_stream() でストリーミング生成</li>
+                            <li>各チャンクを <code>data: {"content": "..."}</code> 形式で送信</li>
+                            <li>finalize_response() でStreamingHttpResponseを直接返却（DRF処理バイパス）</li>
+                        </ul>
+                    </li>
+                    <li><strong>Frontend:</strong> parseSSEStream() でチャンクを受信
+                        <ul>
+                            <li>data: で始まる行をJSONパース</li>
+                            <li>onChunk コールバックで画面更新</li>
+                            <li>done: true で完了処理</li>
+                        </ul>
+                    </li>
+                    <li><strong>ユーザー:</strong> リアルタイムで生成されるテキストを確認</li>
+                </ol>
+                <div class="highlight">
+                    <strong>最適化ポイント:</strong>
+                    <ul>
+                        <li>文字単位 → チャンク単位の送信（90%パフォーマンス向上）</li>
+                        <li>フロントエンド処理: 90行 → 15行（aiStreamService導入）</li>
+                        <li>Google Gemini: 公式generate_content_stream使用</li>
+                        <li>DRFバイパス: perform_content_negotiation + finalize_response</li>
+                    </ul>
+                </div>
+            </div>
+
+            <h4>パターン1: クライアント新規作成時のAI取得</h4>
+            <div class="workflow-box">
+                <ol>
+                    <li><strong>ユーザー:</strong> 会社名を入力（例：「トヨタ自動車」）</li>
+                    <li><strong>ユーザー:</strong> 「🤖 AIで企業情報を取得」ボタンをクリック</li>
+                    <li><strong>Frontend:</strong> <code>POST /api/clients/ai-fetch/</code> リクエスト送信</li>
+                    <li><strong>Backend:</strong> AI Serviceを呼び出し
+                        <ul>
+                            <li>SearchClientで企業情報を検索（公式サイト、Wikipedia、企業DBなど）</li>
+                            <li>検索結果をLLMに渡して構造化データに変換</li>
+                            <li>信頼度スコアを計算</li>
+                        </ul>
+                    </li>
+                    <li><strong>Backend:</strong> JSON形式で企業情報を返却</li>
+                    <li><strong>Frontend:</strong> 取得データをプレビュー表示
+                        <ul>
+                            <li>各フィールドに✅マーク表示（確認済みマーク）</li>
+                            <li>信頼度スコアをプログレスバーで表示</li>
+                            <li>ユーザーが個別に修正可能</li>
+                        </ul>
+                    </li>
+                    <li><strong>ユーザー:</strong> 内容を確認・必要に応じて修正</li>
+                    <li><strong>ユーザー:</strong> 「保存」ボタンをクリック</li>
+                    <li><strong>Frontend:</strong> <code>POST /api/clients/</code> でクライアント作成</li>
+                </ol>
+            </div>
+
+            <h4>パターン2: 既存クライアントの情報更新</h4>
+            <div class="workflow-box">
+                <ol>
+                    <li><strong>ユーザー:</strong> クライアント詳細画面を開く</li>
+                    <li><strong>ユーザー:</strong> 「🔄 最新情報に更新」ボタンをクリック</li>
+                    <li><strong>Frontend:</strong> <code>POST /api/clients/{id}/ai-refresh/</code> リクエスト送信</li>
+                    <li><strong>Backend:</strong> 既存データと最新データを比較
+                        <ul>
+                            <li>変更がある項目のみをリストアップ</li>
+                            <li>旧値と新値の差分を生成</li>
+                        </ul>
+                    </li>
+                    <li><strong>Frontend:</strong> 差分を表形式で表示（旧 → 新）</li>
+                    <li><strong>ユーザー:</strong> 適用する項目をチェックボックスで選択</li>
+                    <li><strong>ユーザー:</strong> 「更新」ボタンをクリック</li>
+                    <li><strong>Frontend:</strong> <code>PATCH /api/clients/{id}/</code> で更新</li>
+                </ol>
+            </div>
+
+            <h3>3. API仕様</h3>
+
+            <h4>POST /api/clients/ai-fetch/</h4>
+            <p>企業名からAIで情報を取得します。</p>
+
+            <div class="info-box">
+                <strong>Request:</strong>
+                <pre><code>{
+  "company_name": "トヨタ自動車"
+}</code></pre>
+            </div>
+
+            <div class="info-box">
+                <strong>Response:</strong>
+                <pre><code>{
+  "success": true,
+  "data": {
+    "company_name": "トヨタ自動車",
+    "legal_name": "トヨタ自動車株式会社",
+    "representative": "佐藤 恒治",
+    "established_date": "1937-08-28",
+    "capital": 635401000000,
+    "employee_count": 375235,
+    "industry": "製造",
+    "website": "https://www.toyota.co.jp/",
+    "description": "自動車の製造・販売を主力事業とする...",
+    "postal_code": "471-8571",
+    "prefecture": "愛知県",
+    "city": "豊田市",
+    "address": "トヨタ町1番地",
+    "phone": "0565-28-2121",
+    "fax": "0565-23-5800"
+  },
+  "confidence_score": 92,
+  "source": "AI Generated",
+  "generated_at": "2025-11-15T10:30:00Z"
+}</code></pre>
+            </div>
+
+            <h4>POST /api/clients/{id}/ai-refresh/</h4>
+            <p>既存クライアントの情報を最新化します。</p>
+
+            <div class="info-box">
+                <strong>Response:</strong>
+                <pre><code>{
+  "success": true,
+  "changes": [
+    {
+      "field": "representative",
+      "old_value": "豊田 章男",
+      "new_value": "佐藤 恒治",
+      "confidence": 95
+    },
+    {
+      "field": "employee_count",
+      "old_value": 366283,
+      "new_value": 375235,
+      "confidence": 88
+    }
+  ],
+  "generated_at": "2025-11-15T10:30:00Z"
+}</code></pre>
+            </div>
+        </section>
+
+        <!-- UI設計 -->
+        <section class="section">
+            <h2><span class="emoji">🎨</span>UI/UX設計</h2>
+
+            <h3>1. クライアント作成フォーム</h3>
+            <div class="ui-mockup">
+┌─────────────────────────────────────────────────────────┐
+│ クライアント新規登録                                     │
+├─────────────────────────────────────────────────────────┤
+│                                                         │
+│ 会社名 *                                                │
+│ ┌───────────────────────────────────────────────────┐  │
+│ │ トヨタ自動車                                      │  │
+│ └───────────────────────────────────────────────────┘  │
+│                                                         │
+│ [🤖 AIで企業情報を取得]  [🔄 クリア]                    │
+│                                                         │
+│ ━━━━━━ AI取得情報（確認してください） ━━━━━━━          │
+│                                                         │
+│ 正式名称                                                │
+│ ┌───────────────────────────────────────────────────┐  │
+│ │ トヨタ自動車株式会社                              │ ✅│
+│ └───────────────────────────────────────────────────┘  │
+│                                                         │
+│ 代表者名                                                │
+│ ┌───────────────────────────────────────────────────┐  │
+│ │ 佐藤 恒治                                         │ ✅│
+│ └───────────────────────────────────────────────────┘  │
+│                                                         │
+│ 設立年月日                    資本金                    │
+│ ┌─────────────────┐  ┌─────────────────────────┐    │
+│ │ 1937-08-28      │✅ │ 635,401,000,000 円  │✅  │
+│ └─────────────────┘  └─────────────────────────┘    │
+│                                                         │
+│ ウェブサイト                                            │
+│ ┌───────────────────────────────────────────────────┐  │
+│ │ https://www.toyota.co.jp/                        │ ✅│
+│ └───────────────────────────────────────────────────┘  │
+│                                                         │
+│ 信頼度: ██████████████████░░ 92%                        │
+│                                                         │
+│ [保存]  [キャンセル]                                    │
+└─────────────────────────────────────────────────────────┘
+            </div>
+
+            <h3>2. AI設定画面</h3>
+            <div class="ui-mockup">
+┌─────────────────────────────────────────────────────────┐
+│ AI設定                                                  │
+├─────────────────────────────────────────────────────────┤
+│                                                         │
+│ ┌─── AI Provider ───┬─── 検索エンジン ───┬─── 一般 ───┐│
+│ │                                                      ││
+│ │ ▼ AI Provider一覧                      [新規追加]   ││
+│ │                                                      ││
+│ │ ┌──────────────────────────────────────────────────┐ ││
+│ │ │ AZURE OPENAI              [デフォルト] [有効]   │ ││
+│ │ │ Model: gpt-4o | Max Tokens: 2000 | Temp: 0.7  │ ││
+│ │ │ ✓ クライアント情報充実化  ✓ ドキュメント生成    │ ││
+│ │ │ [🔌 接続テスト] [編集] [削除]                   │ ││
+│ │ │                                                  │ ││
+│ │ │ === 接続テストダイアログ ===                     │ ││
+│ │ │ プロンプト:                                      │ ││
+│ │ │ ┌────────────────────────────────────────────┐   │ ││
+│ │ │ │ こんにちは。あなたは誰ですか?             │   │ ││
+│ │ │ └────────────────────────────────────────────┘   │ ││
+│ │ │ [実行] [閉じる]                                  │ ││
+│ │ │                                                  │ ││
+│ │ │ レスポンス: (リアルタイムストリーミング表示)     │ ││
+│ │ │ ┌────────────────────────────────────────────┐   │ ││
+│ │ │ │ こんにちは!私はAIアシスタントです。...    │   │ ││
+│ │ │ │ ▊ (カーソルアニメーション)                │   │ ││
+│ │ │ └────────────────────────────────────────────┘   │ ││
+│ │ └──────────────────────────────────────────────────┘ ││
+│ │                                                      ││
+│ │ ┌──────────────────────────────────────────────────┐ ││
+│ │ │ OPENAI                              [有効]       │ ││
+│ │ │ Model: gpt-4o-mini | Max Tokens: 4000 | Temp: 0.5│││
+│ │ │ ✓ クライアント情報充実化  ✗ ドキュメント生成    │ ││
+│ │ │ [接続テスト] [編集] [削除]                      │ ││
+│ │ └──────────────────────────────────────────────────┘ ││
+│ │                                                      ││
+│ │ ┌──────────────────────────────────────────────────┐ ││
+│ │ │ ANTHROPIC (CLAUDE)                  [有効]       │ ││
+│ │ │ Model: claude-3-5-sonnet | Max Tokens: 4096     │ ││
+│ │ │ ✗ クライアント情報充実化  ✓ ドキュメント生成    │ ││
+│ │ │ [接続テスト] [編集] [削除]                      │ ││
+│ │ └──────────────────────────────────────────────────┘ ││
+│ │                                                      ││
+│ │ ┌──────────────────────────────────────────────────┐ ││
+│ │ │ GOOGLE GEMINI                       [有効]       │ ││
+│ │ │ Model: gemini-2.0-flash-exp | Max Tokens: 8192  │ ││
+│ │ │ ✓ クライアント情報充実化  ✗ ドキュメント生成    │ ││
+│ │ │ [接続テスト] [編集] [削除]                      │ ││
+│ │ └──────────────────────────────────────────────────┘ ││
+│ └──────────────────────────────────────────────────────┘│
+│                                                         │
+│ === AI Provider編集ダイアログ ===                       │
+│ ┌─────────────────────────────────────────────────────┐ │
+│ │ AI Provider新規追加                                │ │
+│ │                                                     │ │
+│ │ 設定名 *                                            │ │
+│ │ ┌─────────────────────────────────────────────────┐ │ │
+│ │ │ Azure OpenAI 本番環境                          │ │ │
+│ │ └─────────────────────────────────────────────────┘ │ │
+│ │                                                     │ │
+│ │ Provider Type *                                     │ │
+│ │ ┌─────────────────────────────────────────────────┐ │ │
+│ │ │ Azure OpenAI                              ▼   │ │ │
+│ │ └─────────────────────────────────────────────────┘ │ │
+│ │                                                     │ │
+│ │ --- Azure OpenAI固有フィールド ---                 │ │
+│ │ Endpoint *                                          │ │
+│ │ ┌─────────────────────────────────────────────────┐ │ │
+│ │ │ https://your-resource.openai.azure.com/        │ │ │
+│ │ └─────────────────────────────────────────────────┘ │ │
+│ │                                                     │ │
+│ │ API Version *                                       │ │
+│ │ ┌─────────────────────────────────────────────────┐ │ │
+│ │ │ 2024-08-01-preview                             │ │ │
+│ │ └─────────────────────────────────────────────────┘ │ │
+│ │ Azure OpenAIのAPIバージョン（例: 2024-02-01）      │ │
+│ │                                                     │ │
+│ │ Deployment Name                                     │ │
+│ │ ┌─────────────────────────────────────────────────┐ │ │
+│ │ │ gpt-4o-deployment                              │ │ │
+│ │ └─────────────────────────────────────────────────┘ │ │
+│ │ デプロイメント名（オプション）                      │ │
+│ │                                                     │ │
+│ │ API Key *                                           │ │
+│ │ ┌─────────────────────────────────────────────────┐ │ │
+│ │ │ ********************************              │ │ │
+│ │ └─────────────────────────────────────────────────┘ │ │
+│ │                                                     │ │
+│ │ Model Name *                                        │ │
+│ │ ┌─────────────────────────────────────────────────┐ │ │
+│ │ │ gpt-4o                                         │ │ │
+│ │ └─────────────────────────────────────────────────┘ │ │
+│ │ デプロイメント名またはモデル名                      │ │
+│ │                                                     │ │
+│ │ Max Tokens: 2000    Temperature: 0.7                │ │
+│ │                                                     │ │
+│ │ ☑ 有効化                                            │ │
+│ │ ☑ デフォルトプロバイダー                            │ │
+│ │ ☑ クライアント情報充実化に使用                      │ │
+│ │ ☐ ドキュメント生成に使用                            │ │
+│ │                                                     │ │
+│ │ [キャンセル]  [保存]                                │ │
+│ └─────────────────────────────────────────────────────┘ │
+│                                                         │
+│ ▼ プロバイダー別必須フィールド                          │
+│   Azure OpenAI:                                        │
+│   - endpoint (必須)                                    │
+│   - api_version (必須)                                 │
+│   - deployment_name (オプション)                       │
+│                                                         │
+│   OpenAI:                                              │
+│   - organization_id (オプション、複数組織所属時)       │
+│                                                         │
+│   Anthropic (Claude):                                  │
+│   - api_keyのみで使用可能                              │
+│                                                         │
+│   Google Gemini:                                       │
+│   - api_keyのみで使用可能                              │
+│                                                         │
+│ ▼ 検索エンジン                                          │
+│   ● Bing Search API                                    │
+│   ○ Google Custom Search                              │
+│                                                         │
+│   APIキー                                               │
+│   ┌───────────────────────────────────────────────────┐│
+│   │ ****************************************         ││
+│   └───────────────────────────────────────────────────┘│
+│                                                         │
+│ ▼ 自動入力設定                                          │
+│   ☑ AI自動入力を有効化                                  │
+│   ☑ 取得前に確認ダイアログを表示                        │
+│   ☐ 既存データの上書きを許可                            │
+│                                                         │
+│   信頼度しきい値: ████████████░░░░░░░░ 70%             │
+│                                                         │
+│ [接続テスト]  [保存]                                    │
+└─────────────────────────────────────────────────────────┘
+            </div>
+
+            <h3>3. 設定メニュー構成</h3>
+            <div class="ui-mockup">
+設定
+├── 📁 マスタ管理
+│   ├── 👥 ユーザー管理
+│   ├── 🏢 クライアント管理
+│   └── 📄 契約管理 ⭐ NEW
+├── ⚙️ システム設定
+│   ├── 🔐 認証・セキュリティ
+│   ├── 🔔 通知設定
+│   ├── 🎨 外観・テーマ
+│   └── 🤖 AI設定 ⭐ NEW
+├── 🔗 統合設定
+│   ├── ☁️ Dataverse接続
+│   └── 🔌 API設定
+└── 📋 その他
+    ├── 📊 システムログ
+    └── ℹ️ バージョン情報
+            </div>
+        </section>
+
+        <!-- 技術実装 -->
+        <section class="section">
+            <h2><span class="emoji">⚙️</span>技術実装</h2>
+
+            <h3>1. ディレクトリ構成</h3>
+            <div class="architecture-diagram">
+<pre>
+musubisuite_back/
+├── ai_services/          ⭐ NEW - 全システム共通AI機能
+│   ├── __init__.py       # エントリーポイント（AIClient, get_default_ai_client等をエクスポート）
+│   ├── llm_client.py     # AIClient統合クラス（全プロバイダー対応）
+│   ├── exceptions.py     # カスタム例外（AIServiceError, ProviderNotFoundError等）
+│   ├── client_enrichment.py   # 企業情報取得サービス（llm_clientを利用）
+│   ├── search_client.py        # 検索エンジン統合
+│   └── prompts.py              # プロンプトテンプレート
+├── ai_settings/          ⭐ NEW - AI設定管理アプリ
+│   ├── __init__.py
+│   ├── models.py         # AIProvider, SearchEngineConfig, AISettings
+│   ├── serializers.py    # AIProviderSerializer等
+│   ├── views.py          # AI設定API（CRUD、接続テスト、ストリーミングテスト）
+│   ├── admin.py          # Django管理画面設定
+│   └── migrations/
+├── clients/
+│   ├── models.py               # ← 拡張（AI関連フィールド追加）
+│   ├── serializers.py          # ← 拡張
+│   ├── views.py                # ← AI APIエンドポイント追加
+│   └── migrations/
+├── contracts/            ⭐ NEW
+│   ├── __init__.py
+│   ├── models.py
+│   ├── serializers.py
+│   ├── views.py
+│   └── migrations/
+└── documents/            # 将来の拡張: ドキュメント生成でもai_servicesを利用
+    ├── views.py          # from ai_services import get_default_ai_client
+    └── ...
+</pre>
+            </div>
+
+            <h3>1.1 ai_services パッケージの責務</h3>
+            <div class="info-box">
+                <h4>パッケージ構成</h4>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ファイル</th>
+                            <th>責務</th>
+                            <th>主要クラス/関数</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>__init__.py</code></td>
+                            <td>統一エントリーポイント</td>
+                            <td>AIClient, get_default_ai_client, get_ai_client, 例外クラス</td>
+                        </tr>
+                        <tr>
+                            <td><code>llm_client.py</code></td>
+                            <td>AI SDK統合・ストリーミング</td>
+                            <td>AIClient, _stream_azure_openai, _stream_openai, _stream_anthropic, _stream_google</td>
+                        </tr>
+                        <tr>
+                            <td><code>exceptions.py</code></td>
+                            <td>カスタム例外定義</td>
+                            <td>AIServiceError, ProviderNotFoundError, APIKeyNotConfiguredError, APICallError</td>
+                        </tr>
+                        <tr>
+                            <td><code>client_enrichment.py</code></td>
+                            <td>企業情報取得ロジック</td>
+                            <td>ClientEnrichmentService（llm_clientを利用）</td>
+                        </tr>
+                        <tr>
+                            <td><code>search_client.py</code></td>
+                            <td>検索エンジン統合</td>
+                            <td>SearchClient（Bing/Google API）</td>
+                        </tr>
+                        <tr>
+                            <td><code>prompts.py</code></td>
+                            <td>プロンプトテンプレート</td>
+                            <td>PROMPT_TEMPLATES辞書</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <h3>2. Djangoモデル実装例</h3>
+            <pre><code class="language-python"># clients/models.py
+
+class Client(models.Model):
+    # 基本情報
+    company_name = models.CharField('会社名', max_length=200)
+    legal_name = models.CharField('正式名称', max_length=300, blank=True)
+    email = models.EmailField('メールアドレス')
+    
+    # 企業基本情報（AI取得対象）
+    representative = models.CharField('代表者名', max_length=100, blank=True)
+    established_date = models.DateField('設立年月日', null=True, blank=True)
+    capital = models.BigIntegerField('資本金', null=True, blank=True)
+    employee_count = models.IntegerField('従業員数', null=True, blank=True)
+    industry = models.CharField('業種', max_length=50, blank=True)
+    website = models.URLField('ウェブサイト', blank=True)
+    description = models.TextField('事業内容', blank=True)
+    
+    # 所在地情報（AI取得対象）
+    postal_code = models.CharField('郵便番号', max_length=10, blank=True)
+    prefecture = models.CharField('都道府県', max_length=20, blank=True)
+    city = models.CharField('市区町村', max_length=100, blank=True)
+    address = models.CharField('番地・ビル名', max_length=300, blank=True)
+    phone = models.CharField('電話番号', max_length=50, blank=True)
+    fax = models.CharField('FAX番号', max_length=50, blank=True)
+    
+    # 担当者情報
+    contact_name = models.CharField('担当者名', max_length=100, blank=True)
+    contact_department = models.CharField('部署', max_length=100, blank=True)
+    contact_position = models.CharField('役職', max_length=100, blank=True)
+    contact_email = models.EmailField('担当者メール', blank=True)
+    contact_phone = models.CharField('担当者電話', max_length=50, blank=True)
+    contact_mobile = models.CharField('担当者携帯', max_length=50, blank=True)
+    
+    # ビジネス情報
+    PRIORITY_CHOICES = [('A', 'A'), ('B', 'B'), ('C', 'C')]
+    priority = models.CharField('優先度', max_length=1, choices=PRIORITY_CHOICES, blank=True)
+    lead_source = models.CharField('リード元', max_length=50, blank=True)
+    assigned_sales = models.ForeignKey('members.Member', on_delete=models.SET_NULL, 
+                                      null=True, blank=True, related_name='assigned_clients')
+    tags = models.JSONField('タグ', default=list, blank=True)
+    note = models.TextField('備考', blank=True)
+    
+    # AI関連
+    ai_generated = models.BooleanField('AI生成', default=False)
+    ai_generated_at = models.DateTimeField('AI生成日時', null=True, blank=True)
+    ai_confidence_score = models.IntegerField('AI信頼度', null=True, blank=True)
+    
+    # システム
+    created_at = models.DateTimeField('作成日時', auto_now_add=True)
+    updated_at = models.DateTimeField('更新日時', auto_now=True)
+    
+    class Meta:
+        db_table = 'clients'
+        verbose_name = 'クライアント'
+        ordering = ['-created_at']</code></pre>
+
+            <h3>3. AI Services 共通実装</h3>
+
+            <h4>3.1 統一エントリーポイント (__init__.py)</h4>
+            <pre><code class="language-python"># ai_services/__init__.py
+
+"""
+AI Services Package
+
+全システムで共通利用するAI機能を提供します。
+
+簡単な使い方:
+    from ai_services import get_default_ai_client, AIClient
+    
+    # デフォルトAIプロバイダーを使用
+    client = get_default_ai_client()
+    response = client.generate("こんにちは")
+    
+    # ストリーミング生成
+    for chunk in client.generate_stream("長い文章を生成"):
+        print(chunk, end='')
+
+Author: 開発チーム
+Created: 2025-11-16
+"""
+
+__version__ = '1.0.0'
+
+from .llm_client import AIClient, get_default_ai_client, get_ai_client
+from .exceptions import (
+    AIServiceError,
+    ProviderNotFoundError,
+    APIKeyNotConfiguredError,
+    APICallError
+)
+
+__all__ = [
+    'AIClient',
+    'get_default_ai_client',
+    'get_ai_client',
+    'AIServiceError',
+    'ProviderNotFoundError',
+    'APIKeyNotConfiguredError',
+    'APICallError',
+]</code></pre>
+
+            <h4>3.2 AIClient統合クラス (llm_client.py)</h4>
+            <pre><code class="language-python"># ai_services/llm_client.py
+
+import logging
+from typing import Generator, Optional
+from .exceptions import (
+    ProviderNotFoundError,
+    APIKeyNotConfiguredError,
+    APICallError
+)
+
+logger = logging.getLogger(__name__)
+
+
+class AIClient:
+    """統一されたAIクライアント"""
+    
+    def __init__(self, provider=None):
+        """
+        Args:
+            provider: AIProviderインスタンス（Noneの場合はデフォルト設定を使用）
+        """
+        if provider is None:
+            from ai_settings.models import AIProvider
+            provider = AIProvider.objects.filter(
+                is_active=True,
+                is_default=True
+            ).first()
+            
+            if not provider:
+                raise ProviderNotFoundError(
+                    "デフォルトのAIプロバイダーが設定されていません"
+                )
+        
+        self.provider = provider
+        self.api_key = provider.get_api_key()
+        
+        if not self.api_key:
+            raise APIKeyNotConfiguredError(
+                f"プロバイダー '{provider.name}' のAPIキーが設定されていません"
+            )
+    
+    def generate(self, prompt: str, **kwargs) -> str:
+        """
+        テキストを生成（同期処理）
+        
+        Args:
+            prompt: 入力プロンプト
+            **kwargs: 追加パラメータ（max_tokens, temperatureなど）
+        
+        Returns:
+            生成されたテキスト
+        """
+        full_response = ""
+        for chunk in self.generate_stream(prompt, **kwargs):
+            full_response += chunk
+        return full_response
+    
+    def generate_stream(self, prompt: str, **kwargs) -> Generator[str, None, None]:
+        """
+        テキストをストリーミング生成
+        
+        Args:
+            prompt: 入力プロンプト
+        
+        Yields:
+            生成されたテキストのチャンク
+        """
+        max_tokens = kwargs.get('max_tokens', self.provider.max_tokens)
+        temperature = kwargs.get('temperature', self.provider.temperature)
+        
+        # プロバイダータイプに応じて処理を分岐
+        if self.provider.provider_type == 'azure_openai':
+            yield from self._stream_azure_openai(prompt, max_tokens, temperature)
+        elif self.provider.provider_type == 'openai':
+            yield from self._stream_openai(prompt, max_tokens, temperature)
+        elif self.provider.provider_type == 'anthropic':
+            yield from self._stream_anthropic(prompt, max_tokens, temperature)
+        elif self.provider.provider_type == 'google':
+            yield from self._stream_google(prompt, max_tokens, temperature)
+        else:
+            raise APICallError(f"未対応プロバイダー: {self.provider.provider_type}")
+    
+    def _stream_azure_openai(self, prompt, max_tokens, temperature):
+        """Azure OpenAI でストリーミング生成"""
+        from openai import AzureOpenAI
+        client = AzureOpenAI(
+            api_key=self.api_key,
+            api_version=self.provider.api_version,
+            azure_endpoint=self.provider.endpoint
+        )
+        stream = client.chat.completions.create(
+            model=self.provider.deployment_name or self.provider.model_name,
+            messages=[{"role": "user", "content": prompt}],
+            max_tokens=max_tokens,
+            temperature=temperature,
+            stream=True
+        )
+        for chunk in stream:
+            if chunk.choices[0].delta.content:
+                yield chunk.choices[0].delta.content
+    
+    def _stream_google(self, prompt, max_tokens, temperature):
+        """Google Gemini ストリーミング（公式SDK）"""
+        from google import genai
+        
+        client = genai.Client(api_key=self.api_key)
+        response = client.models.generate_content_stream(
+            model=self.provider.model_name,
+            contents=[prompt],
+            config={'max_output_tokens': max_tokens, 'temperature': temperature}
+        )
+        
+        for chunk in response:
+            if chunk.text:
+                yield chunk.text
+    
+    # 他のプロバイダーも同様に実装...
+
+
+def get_default_ai_client() -> AIClient:
+    """デフォルトのAIクライアントを取得"""
+    return AIClient(provider=None)
+
+
+def get_ai_client(provider_id: Optional[int] = None,
+                  provider_name: Optional[str] = None) -> AIClient:
+    """指定されたAIクライアントを取得"""
+    from ai_settings.models import AIProvider
+    
+    if provider_id is not None:
+        provider = AIProvider.objects.get(id=provider_id, is_active=True)
+    elif provider_name is not None:
+        provider = AIProvider.objects.get(name=provider_name, is_active=True)
+    else:
+        raise ValueError("provider_id または provider_name を指定してください")
+    
+    return AIClient(provider=provider)</code></pre>
+
+            <h4>3.3 企業情報取得サービス (client_enrichment.py)</h4>
+            <pre><code class="language-python"># ai_services/client_enrichment.py
+
+from ai_services import get_default_ai_client, AIClient
+
+
+class ClientEnrichmentService:
+    """企業情報取得サービス（AI共通機能を利用）"""
+    
+    def __init__(self, provider_name: Optional[str] = None):
+        """
+        Args:
+            provider_name: 使用するプロバイダー名（省略時はデフォルト）
+        """
+        if provider_name:
+            from ai_services import get_ai_client
+            self.ai_client = get_ai_client(provider_name=provider_name)
+        else:
+            self.ai_client = get_default_ai_client()
+    
+    def fetch_company_info(self, company_name: str) -> dict:
+        """企業名から企業情報を取得"""
+        
+        # プロンプト生成
+        prompt = f"""
+以下の企業の情報を調査し、JSON形式で返してください。
+
+企業名: {company_name}
+
+必要な情報:
+- 正式名称
+- 代表者名
+- 設立年月日
+- 資本金
+- 従業員数
+- 業種
+- 所在地（郵便番号、都道府県、市区町村、番地）
+- 電話番号
+- ウェブサイト
+- 事業内容
+
+JSON形式:
+{{
+  "legal_name": "...",
+  "representative": "...",
+  ...
+}}
+"""
+        
+        # AI共通機能を使用して生成
+        response = self.ai_client.generate(prompt)
+        
+        # JSONパース・信頼度計算等
+        structured_data = self._parse_response(response)
+        confidence_score = self._calculate_confidence(structured_data)
+        
+        return {
+            "data": structured_data,
+            "confidence_score": confidence_score,
+            "generated_at": timezone.now().isoformat()
+        }</code></pre>
+
+            <h4>3.4 使用例: 各機能からの呼び出し</h4>
+            
+            <h5>パターン1: デフォルトプロバイダーを使用（最もシンプル）</h5>
+            <pre><code class="language-python"># clients/views.py - クライアント情報取得機能
+
+from rest_framework.decorators import action
+from rest_framework.response import Response
+from ai_services import get_default_ai_client
+import json
+
+@action(detail=False, methods=['post'])
+def ai_fetch(self, request):
+    """AIで企業情報を取得"""
+    company_name = request.data.get('company_name')
+    
+    # 3行でAI機能を利用
+    client = get_default_ai_client()
+    prompt = self._build_company_info_prompt(company_name)
+    response = client.generate(prompt)
+    
+    # レスポンスをパース
+    try:
+        company_data = json.loads(response)
+        return Response({
+            'success': True,
+            'data': company_data,
+            'confidence_score': 85
+        })
+    except json.JSONDecodeError:
+        return Response({
+            'success': False,
+            'error': 'AIレスポンスの解析に失敗しました'
+        }, status=400)
+
+def _build_company_info_prompt(self, company_name: str) -> str:
+    """企業情報取得用プロンプトを生成"""
+    return f"""
+以下の企業の公開情報を調査し、JSON形式で返してください。
+
+企業名: {company_name}
+
+返却するJSON形式:
+{{
+  "legal_name": "正式名称",
+  "representative": "代表者名",
+  "established_date": "YYYY-MM-DD",
+  "capital": 資本金(数値),
+  "employee_count": 従業員数(数値),
+  "industry": "業種",
+  "website": "https://...",
+  "description": "事業内容",
+  "postal_code": "郵便番号",
+  "prefecture": "都道府県",
+  "city": "市区町村",
+  "address": "番地・ビル名",
+  "phone": "電話番号"
+}}
+
+注意: 必ず有効なJSONのみを返してください。説明文は不要です。
+"""</code></pre>
+
+            <h5>パターン2: ストリーミング生成を使用（最適化版）</h5>
+            <pre><code class="language-python"># documents/views.py - ドキュメント生成機能
+
+from django.http import StreamingHttpResponse
+from ai_services import get_default_ai_client
+import json
+
+@action(detail=False, methods=['post'])
+def generate_document(self, request):
+    """AIでドキュメントをストリーミング生成"""
+    template_type = request.data.get('template_type')
+    context_data = request.data.get('context')
+    
+    def stream_response():
+        """ストリーミングレスポンス生成（最適化版）"""
+        try:
+            client = get_default_ai_client()
+            prompt = self._build_document_prompt(template_type, context_data)
+            
+            # チャンク単位で直接送信（効率的）
+            for chunk in client.generate_stream(prompt):
+                if chunk:
+                    yield f"data: {json.dumps({'content': chunk}, ensure_ascii=False)}\n\n"
+            
+            # 完了シグナル
+            yield f"data: {json.dumps({'done': True})}\n\n"
+            
+        except Exception as e:
+            yield f"data: {json.dumps({'error': str(e)})}\n\n"
+        except Exception as e:
+            yield f"data: {json.dumps({'error': str(e)})}\n\n"
+    
+    response = StreamingHttpResponse(
+        stream_response(),
+        content_type='text/event-stream'
+    )
+    response['Cache-Control'] = 'no-cache'
+    response['X-Accel-Buffering'] = 'no'
+    return response
+
+def _build_document_prompt(self, template_type: str, context: dict) -> str:
+    """ドキュメント生成用プロンプト"""
+    return f"""
+{template_type}を作成してください。
+
+コンテキスト情報:
+{json.dumps(context, ensure_ascii=False, indent=2)}
+
+要件:
+- 日本語で作成
+- 形式的で丁寧な文体
+- 段落ごとに改行
+"""</code></pre>
+
+            <h5>パターン3: 特定のプロバイダーを指定</h5>
+            <pre><code class="language-python"># tasks/views.py - タスク管理機能
+
+from ai_services import get_ai_client, AIServiceError
+from rest_framework.decorators import action
+from rest_framework.response import Response
+
+@action(detail=True, methods=['post'])
+def suggest_subtasks(self, request, pk=None):
+    """タスクのサブタスクをAIで提案"""
+    task = self.get_object()
+    
+    try:
+        # Claude 3.5を使用（高度な推論が必要な場合）
+        client = get_ai_client(provider_name="Claude 3.5")
+        
+        prompt = f"""
+以下のタスクを分析し、実行可能なサブタスクに分解してください。
+
+タスク名: {task.title}
+説明: {task.description}
+期限: {task.due_date}
+
+JSON形式で返してください:
+{{
+  "subtasks": [
+    {{
+      "title": "サブタスク名",
+      "description": "詳細",
+      "estimated_hours": 数値,
+      "order": 数値
+    }}
+  ],
+  "reasoning": "分解の理由"
+}}
+"""
+        
+        response = client.generate(prompt)
+        subtasks_data = json.loads(response)
+        
+        return Response({
+            'success': True,
+            'subtasks': subtasks_data['subtasks'],
+            'reasoning': subtasks_data['reasoning']
+        })
+        
+    except AIServiceError as e:
+        # AI共通機能のエラーハンドリング
+        return Response({
+            'success': False,
+            'error': f'AI処理エラー: {str(e)}'
+        }, status=500)
+    except json.JSONDecodeError:
+        return Response({
+            'success': False,
+            'error': 'AIレスポンスの解析に失敗'
+        }, status=400)</code></pre>
+
+            <h5>パターン4: 複数プロバイダーのフォールバック</h5>
+            <pre><code class="language-python"># chat/views.py - チャット機能
+
+from ai_services import get_ai_client, ProviderNotFoundError, APICallError
+from rest_framework.views import APIView
+from rest_framework.response import Response
+
+class ChatAPIView(APIView):
+    """AIチャット機能"""
+    
+    def post(self, request):
+        """メッセージを送信してAIレスポンスを取得"""
+        user_message = request.data.get('message')
+        
+        # プロバイダーの優先順位リスト
+        providers = ['GPT-4o', 'Claude 3.5', 'Gemini 2.0']
+        
+        for provider_name in providers:
+            try:
+                client = get_ai_client(provider_name=provider_name)
+                response = client.generate(
+                    user_message,
+                    max_tokens=2000,
+                    temperature=0.7
+                )
+                
+                return Response({
+                    'success': True,
+                    'message': response,
+                    'provider': provider_name
+                })
+                
+            except (ProviderNotFoundError, APICallError) as e:
+                # このプロバイダーが使えない場合は次へ
+                logger.warning(f"{provider_name}で失敗: {e}")
+                continue
+        
+        # すべてのプロバイダーが失敗
+        return Response({
+            'success': False,
+            'error': 'すべてのAIプロバイダーが利用できません'
+        }, status=503)</code></pre>
+
+            <h5>パターン5: AI設定情報の取得と活用</h5>
+            <pre><code class="language-python"># ai_settings/views.py - AI設定機能
+
+from rest_framework.decorators import action
+from rest_framework.response import Response
+from ai_services import AIClient, get_default_ai_client
+
+@action(detail=True, methods=['post'])
+def test_prompt(self, request, pk=None):
+    """プロンプトテスト（AI設定画面から呼び出し）"""
+    provider = self.get_object()
+    prompt = request.data.get('prompt', 'こんにちは')
+    
+    def stream_response():
+        """ストリーミングレスポンス"""
+        try:
+            # 指定されたプロバイダーでAIClientを初期化
+            client = AIClient(provider=provider)
+            
+            # プロバイダー情報をログ出力
+            logger.info(f"Testing with provider: {client.info}")
+            
+            # ストリーミング生成
+            for chunk in client.generate_stream(prompt):
+                for char in chunk:
+                    yield f"data: {json.dumps({'content': char})}\n\n"
+            
+            yield f"data: {json.dumps({'done': True})}\n\n"
+            
+        except Exception as e:
+            yield f"data: {json.dumps({'error': str(e)})}\n\n"
+    
+    return StreamingHttpResponse(
+        stream_response(),
+        content_type='text/event-stream'
+    )
+
+@action(detail=False, methods=['get'])
+def available_providers(self, request):
+    """利用可能なプロバイダー一覧を取得"""
+    from ai_settings.models import AIProvider
+    
+    providers = AIProvider.objects.filter(is_active=True)
+    
+    return Response({
+        'providers': [
+            {
+                'id': p.id,
+                'name': p.name,
+                'provider_type': p.provider_type,
+                'model_name': p.model_name,
+                'is_default': p.is_default,
+                'max_tokens': p.max_tokens,
+                'temperature': p.temperature
+            }
+            for p in providers
+        ]
+    })</code></pre>
+
+            <h5>パターン6: バッチ処理での利用</h5>
+            <pre><code class="language-python"># management/commands/enrich_clients.py - バッチ処理
+
+from django.core.management.base import BaseCommand
+from ai_services import get_default_ai_client
+from clients.models import Client
+import json
+
+class Command(BaseCommand):
+    help = 'クライアント情報をAIで一括更新'
+    
+    def handle(self, *args, **options):
+        """バッチ処理実行"""
+        # AI共通機能を初期化
+        client = get_default_ai_client()
+        
+        # 情報が不完全なクライアントを取得
+        clients = Client.objects.filter(
+            description='',
+            industry=''
+        )[:10]  # 最初の10件
+        
+        self.stdout.write(f'{clients.count()}件のクライアントを更新します...')
+        
+        for idx, client_obj in enumerate(clients, 1):
+            try:
+                self.stdout.write(f'[{idx}/{clients.count()}] {client_obj.company_name}')
+                
+                # AI共通機能で企業情報を取得
+                prompt = f"""
+{client_obj.company_name}の以下の情報をJSON形式で返してください:
+- industry: 業種
+- description: 事業内容（100文字程度）
+                """
+                
+                response = client.generate(prompt)
+                data = json.loads(response)
+                
+                # 更新
+                client_obj.industry = data.get('industry', '')
+                client_obj.description = data.get('description', '')
+                client_obj.ai_generated = True
+                client_obj.save()
+                
+                self.stdout.write(self.style.SUCCESS('  ✓ 更新完了'))
+                
+            except Exception as e:
+                self.stdout.write(
+                    self.style.ERROR(f'  ✗ エラー: {str(e)}')
+                )
+                continue
+        
+        self.stdout.write(self.style.SUCCESS('バッチ処理完了'))</code></pre>
+
+            <div class="info-box">
+                <h4>💡 ベストプラクティス</h4>
+                <ul>
+                    <li><strong>デフォルトプロバイダーを優先:</strong> 特別な理由がない限り <code>get_default_ai_client()</code> を使用</li>
+                    <li><strong>エラーハンドリング:</strong> <code>AIServiceError</code> 系の例外を適切にキャッチ</li>
+                    <li><strong>ストリーミングの活用:</strong> 長文生成時は <code>generate_stream()</code> でUX向上</li>
+                    <li><strong>プロンプト設計:</strong> 明確な指示と期待する出力形式を指定</li>
+                    <li><strong>レート制限考慮:</strong> バッチ処理では適切な待機時間を設定</li>
+                    <li><strong>ログ記録:</strong> AI呼び出しのログを残して問題追跡を容易に</li>
+                </ul>
+            </div>
+        </section>
+
+        <!-- セキュリティ考慮事項 -->
+        <section class="section">
+            <h2><span class="emoji">🔒</span>セキュリティ考慮事項</h2>
+
+            <div class="highlight">
+                <h3>重要な注意事項</h3>
+                <ul>
+                    <li><strong>APIキーの管理:</strong> 環境変数やSecrets Managerで安全に管理</li>
+                    <li><strong>レート制限:</strong> API呼び出し回数の制限実装</li>
+                    <li><strong>データ検証:</strong> AI取得データは必ずユーザー確認を経てから保存</li>
+                    <li><strong>監査ログ:</strong> AI機能の使用履歴を記録</li>
+                    <li><strong>権限管理:</strong> AI機能の使用権限を適切に設定</li>
+                </ul>
+            </div>
+        </section>
+
+        <!-- 実装フェーズ -->
+        <section class="section">
+            <h2><span class="emoji">📅</span>実装フェーズ</h2>
+
+            <h3>フェーズ1: データモデル拡張</h3>
+            <ol>
+                <li>Clientモデルの拡張（新規フィールド追加）</li>
+                <li>Contractモデルの新規作成</li>
+                <li>マイグレーション実行</li>
+                <li>Serializer更新</li>
+            </ol>
+
+            <h3>フェーズ2: AI共通基盤実装</h3>
+            <ol>
+                <li><strong>ai_servicesパッケージ作成</strong>
+                    <ul>
+                        <li>__init__.py: エントリーポイント実装</li>
+                        <li>exceptions.py: カスタム例外定義</li>
+                        <li>llm_client.py: AIClient統合クラス実装</li>
+                    </ul>
+                </li>
+                <li><strong>全プロバイダー対応</strong>
+                    <ul>
+                        <li>_stream_azure_openai(): Azure OpenAI統合</li>
+                        <li>_stream_openai(): OpenAI統合</li>
+                        <li>_stream_anthropic(): Anthropic Claude統合</li>
+                        <li>_stream_google(): Google Gemini統合</li>
+                    </ul>
+                </li>
+                <li><strong>ヘルパー関数実装</strong>
+                    <ul>
+                        <li>get_default_ai_client(): デフォルトプロバイダー取得</li>
+                        <li>get_ai_client(id/name): 指定プロバイダー取得</li>
+                    </ul>
+                </li>
+                <li><strong>AI設定管理実装</strong>
+                    <ul>
+                        <li>ai_settings アプリ作成</li>
+                        <li>AIProvider, SearchEngineConfig, AISettings モデル</li>
+                        <li>APIキー暗号化・復号化機能</li>
+                        <li>接続テスト・ストリーミングテスト機能</li>
+                    </ul>
+                </li>
+                <li><strong>単体テスト作成</strong>
+                    <ul>
+                        <li>AIClientのテスト</li>
+                        <li>各プロバイダー統合のテスト</li>
+                        <li>例外処理のテスト</li>
+                    </ul>
+                </li>
+            </ol>
+
+            <h3>フェーズ2.1: 機能別AI Service実装</h3>
+            <ol>
+                <li>ClientEnrichmentService実装（ai_clientを利用）</li>
+                <li>SearchClient実装（Bing/Google統合）</li>
+                <li>プロンプトテンプレート作成</li>
+            </ol>
+
+            <h3>フェーズ3: APIエンドポイント実装</h3>
+            <ol>
+                <li>POST /api/clients/ai-fetch/ 実装</li>
+                <li>POST /api/clients/{id}/ai-refresh/ 実装</li>
+                <li>AI設定API実装</li>
+                <li>単体テスト作成</li>
+            </ol>
+
+            <h3>フェーズ4: フロントエンド実装</h3>
+            <ol>
+                <li>AI設定画面の作成</li>
+                <li>クライアント作成フォームのAI機能統合</li>
+                <li>差分表示UI実装</li>
+                <li>エラーハンドリング</li>
+            </ol>
+
+            <h3>フェーズ5: テスト・リリース</h3>
+            <ol>
+                <li>統合テスト</li>
+                <li>ユーザー受け入れテスト</li>
+                <li>本番環境デプロイ</li>
+                <li>ドキュメント整備</li>
+            </ol>
+        </section>
+
+        <!-- AIプロバイダー別実装仕様 -->
+        <section class="section">
+            <h2><span class="emoji">🔌</span>AIプロバイダー別実装仕様</h2>
+
+            <h3>1. 共通化戦略</h3>
+            <p>各AIプロバイダーのAPI仕様を調査し、以下の共通化戦略を採用しています:</p>
+            
+            <h4>共通フィールド</h4>
+            <ul>
+                <li><code>name</code>: 設定名（識別用）</li>
+                <li><code>provider_type</code>: プロバイダータイプ</li>
+                <li><code>api_key</code>: APIキー（暗号化保存）</li>
+                <li><code>model_name</code>: モデル名</li>
+                <li><code>max_tokens</code>: 最大トークン数</li>
+                <li><code>temperature</code>: 温度パラメータ（0.0-2.0）</li>
+                <li><code>is_active</code>: 有効フラグ</li>
+                <li><code>is_default</code>: デフォルトフラグ</li>
+                <li><code>use_for_client_enrichment</code>: クライアント情報取得用途</li>
+                <li><code>use_for_document_generation</code>: ドキュメント生成用途</li>
+            </ul>
+
+            <h4>プロバイダー固有フィールド</h4>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>プロバイダー</th>
+                            <th>固有フィールド</th>
+                            <th>必須/任意</th>
+                            <th>説明</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td rowspan="3"><strong>Azure OpenAI</strong></td>
+                            <td><code>endpoint</code></td>
+                            <td class="required">必須</td>
+                            <td>Azure OpenAIリソースのエンドポイントURL<br>例: https://your-resource.openai.azure.com/</td>
+                        </tr>
+                        <tr>
+                            <td><code>api_version</code></td>
+                            <td class="required">必須</td>
+                            <td>APIバージョン<br>例: 2024-02-01, 2024-08-01-preview</td>
+                        </tr>
+                        <tr>
+                            <td><code>deployment_name</code></td>
+                            <td>任意</td>
+                            <td>デプロイメント名（指定しない場合はmodel_nameを使用）</td>
+                        </tr>
+                        <tr>
+                            <td><strong>OpenAI</strong></td>
+                            <td><code>organization_id</code></td>
+                            <td>任意</td>
+                            <td>組織ID（複数組織に所属している場合に指定）</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Anthropic (Claude)</strong></td>
+                            <td>-</td>
+                            <td>-</td>
+                            <td>共通フィールドのみで使用可能</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Google Gemini</strong></td>
+                            <td>-</td>
+                            <td>-</td>
+                            <td>共通フィールドのみで使用可能</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <h3>2. プロバイダー別認証仕様</h3>
+
+            <h4>Azure OpenAI</h4>
+            <pre><code class="language-python"># Azure OpenAI認証例
+from openai import AzureOpenAI
+
+client = AzureOpenAI(
+    api_key=provider.api_key,
+    api_version=provider.api_version,  # 必須
+    azure_endpoint=provider.endpoint   # 必須
+)
+
+# リクエスト例
+response = client.chat.completions.create(
+    model=provider.deployment_name or provider.model_name,
+    messages=[{"role": "user", "content": "Hello"}],
+    max_tokens=provider.max_tokens,
+    temperature=provider.temperature
+)</code></pre>
+
+            <h4>OpenAI</h4>
+            <pre><code class="language-python"># OpenAI認証例
+from openai import OpenAI
+
+client = OpenAI(
+    api_key=provider.api_key,
+    organization=provider.organization_id  # 任意
+)
+
+# リクエスト例
+response = client.chat.completions.create(
+    model=provider.model_name,
+    messages=[{"role": "user", "content": "Hello"}],
+    max_tokens=provider.max_tokens,
+    temperature=provider.temperature
+)</code></pre>
+
+            <h4>Anthropic (Claude)</h4>
+            <pre><code class="language-python"># Anthropic認証例
+import anthropic
+
+client = anthropic.Anthropic(
+    api_key=provider.api_key
+)
+
+# リクエスト例
+response = client.messages.create(
+    model=provider.model_name,
+    max_tokens=provider.max_tokens,
+    temperature=provider.temperature,
+    messages=[{"role": "user", "content": "Hello"}]
+)</code></pre>
+
+            <h4>Google Gemini</h4>
+            <pre><code class="language-python"># Google Gemini認証例
+from google import genai
+
+client = genai.Client(api_key=provider.api_key)
+
+# リクエスト例
+response = client.models.generate_content(
+    model=provider.model_name,
+    contents="Hello"
+)</code></pre>
+
+            <h3>3. 推奨モデル一覧</h3>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>プロバイダー</th>
+                            <th>推奨モデル</th>
+                            <th>用途</th>
+                            <th>特徴</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td rowspan="2"><strong>Azure OpenAI</strong></td>
+                            <td><code>gpt-4o</code></td>
+                            <td>汎用・高品質</td>
+                            <td>最新GPT-4モデル、マルチモーダル対応</td>
+                        </tr>
+                        <tr>
+                            <td><code>gpt-4o-mini</code></td>
+                            <td>コスト重視</td>
+                            <td>軽量版、処理速度が速い</td>
+                        </tr>
+                        <tr>
+                            <td rowspan="2"><strong>OpenAI</strong></td>
+                            <td><code>gpt-4o</code></td>
+                            <td>汎用・高品質</td>
+                            <td>最新GPT-4モデル</td>
+                        </tr>
+                        <tr>
+                            <td><code>gpt-3.5-turbo</code></td>
+                            <td>コスト重視</td>
+                            <td>高速・低コスト</td>
+                        </tr>
+                        <tr>
+                            <td rowspan="2"><strong>Anthropic</strong></td>
+                            <td><code>claude-3-5-sonnet-20241022</code></td>
+                            <td>汎用・高品質</td>
+                            <td>Claude 3.5 Sonnet、バランス型</td>
+                        </tr>
+                        <tr>
+                            <td><code>claude-3-5-haiku-20241022</code></td>
+                            <td>高速処理</td>
+                            <td>Claude 3.5 Haiku、最速</td>
+                        </tr>
+                        <tr>
+                            <td rowspan="2"><strong>Google Gemini</strong></td>
+                            <td><code>gemini-2.0-flash-exp</code></td>
+                            <td>汎用・高速</td>
+                            <td>Gemini 2.0 Flash、実験版</td>
+                        </tr>
+                        <tr>
+                            <td><code>gemini-1.5-pro</code></td>
+                            <td>高品質</td>
+                            <td>Gemini 1.5 Pro、長文対応</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <h3>4. データベーススキーマ</h3>
+            <pre><code class="language-python"># ai_settings/models.py - AIProvider モデル
+
+class AIProvider(models.Model):
+    # 共通フィールド
+    name = models.CharField('設定名', max_length=100)
+    provider_type = models.CharField('プロバイダータイプ', max_length=20, 
+                                    choices=PROVIDER_TYPES)
+    api_key_encrypted = models.TextField('APIキー（暗号化）')
+    model_name = models.CharField('モデル名', max_length=100)
+    max_tokens = models.IntegerField('最大トークン数', default=4000)
+    temperature = models.FloatField('温度パラメータ', default=0.7)
+    is_active = models.BooleanField('有効', default=True)
+    is_default = models.BooleanField('デフォルト', default=False)
+    use_for_client_enrichment = models.BooleanField(
+        'クライアント情報取得に使用', default=True)
+    use_for_document_generation = models.BooleanField(
+        'ドキュメント生成に使用', default=False)
+    
+    # Azure OpenAI固有フィールド
+    endpoint = models.URLField('エンドポイント', blank=True, max_length=500)
+    api_version = models.CharField('APIバージョン', max_length=50, blank=True)
+    deployment_name = models.CharField('デプロイメント名', max_length=100, blank=True)
+    
+    # OpenAI固有フィールド
+    organization_id = models.CharField('組織ID', max_length=100, blank=True)
+    
+    # システム
+    created_at = models.DateTimeField('作成日時', default=timezone.now)
+    updated_at = models.DateTimeField('更新日時', auto_now=True)</code></pre>
+
+            <h3>5. UI実装仕様</h3>
+            <p>フロントエンドでは、<code>provider_type</code>の値に応じて動的にフォームフィールドを表示します:</p>
+            
+            <pre><code class="language-typescript">// プロバイダータイプに応じた動的フィールド表示
+{editingProvider.provider_type === 'azure_openai' && (
+  &lt;&gt;
+    &lt;Input label="Endpoint *" required /&gt;
+    &lt;Input label="API Version *" required /&gt;
+    &lt;Input label="Deployment Name" /&gt;
+  &lt;/&gt;
+)}
+
+{editingProvider.provider_type === 'openai' && (
+  &lt;Input label="Organization ID" /&gt;
+)}
+
+// Anthropic と Gemini は共通フィールドのみ</code></pre>
+        </section>
+
+        <!-- AIストリーミング実装詳細 -->
+        <section class="section">
+            <h2><span class="emoji">⚡</span>AIストリーミング実装詳細</h2>
+
+            <h3>1. 実装概要</h3>
+            <p>AI応答のリアルタイム表示を実現するため、Server-Sent Events (SSE) を使用したストリーミング機能を実装しています。</p>
+
+            <div class="info-box">
+                <strong>ストリーミングの利点:</strong>
+                <ul>
+                    <li>応答の待ち時間によるストレス軽減</li>
+                    <li>リアルタイムフィードバックによるUX向上</li>
+                    <li>長い応答でも進捗が可視化される</li>
+                    <li>応答生成中のキャンセル機能実装が容易</li>
+                </ul>
+            </div>
+
+            <h3>2. アーキテクチャ</h3>
+            <div class="architecture-diagram">
+<pre>
+┌─────────────────────────────────────────────────────────┐
+│              Frontend (React + Fetch API)                │
+│  ┌──────────────────────────────────────────────────┐  │
+│  │  executeAITest()                                  │  │
+│  │  1. fetch() で POST リクエスト                   │  │
+│  │  2. response.body.getReader() でストリーム取得   │  │
+│  │  3. TextDecoder でデコード                       │  │
+│  │  4. 'data: ' プレフィックスをパース              │  │
+│  │  5. JSON.parse() でデータ抽出                    │  │
+│  │  6. setTestResponse() で状態更新 → UI再描画     │  │
+│  └──────────────────────────────────────────────────┘  │
+└─────────────────────────────────────────────────────────┘
+                            │
+                            │ HTTP/1.1
+                            │ Content-Type: text/event-stream
+                            ▼
+┌─────────────────────────────────────────────────────────┐
+│           Backend (Django StreamingHttpResponse)         │
+│  ┌──────────────────────────────────────────────────┐  │
+│  │  test_prompt() アクション                         │  │
+│  │  1. StreamingHttpResponse 生成                   │  │
+│  │  2. stream_response() ジェネレーター実行         │  │
+│  │  3. _call_ai_api_stream() から chunk を受信     │  │
+│  │  4. 各文字を個別に SSE 形式で yield              │  │
+│  │  5. 完了シグナル送信                             │  │
+│  └──────────────────────────────────────────────────┘  │
+│  ┌──────────────────────────────────────────────────┐  │
+│  │  _call_ai_api_stream() - プロバイダー統合        │  │
+│  │  ┌────────────────────────────────────────────┐  │  │
+│  │  │ Azure OpenAI: stream=True で chunk 取得   │  │  │
+│  │  │ client.chat.completions.create(stream=True)│  │  │
+│  │  └────────────────────────────────────────────┘  │  │
+│  │  ┌────────────────────────────────────────────┐  │  │
+│  │  │ OpenAI: stream=True で chunk 取得         │  │  │
+│  │  │ client.chat.completions.create(stream=True)│  │  │
+│  │  └────────────────────────────────────────────┘  │  │
+│  │  ┌────────────────────────────────────────────┐  │  │
+│  │  │ Anthropic: messages.stream() で取得       │  │  │
+│  │  │ with client.messages.stream() as stream:  │  │  │
+│  │  └────────────────────────────────────────────┘  │  │
+│  │  ┌────────────────────────────────────────────┐  │  │
+│  │  │ Google Gemini: stream=True で chunk 取得  │  │  │
+│  │  │ model.generate_content(stream=True)       │  │  │
+│  │  └────────────────────────────────────────────┘  │  │
+│  └──────────────────────────────────────────────────┘  │
+└─────────────────────────────────────────────────────────┘
+</pre>
+            </div>
+
+            <h3>3. バックエンド実装 (Django)</h3>
+
+            <h4>3.1 test_prompt エンドポイント</h4>
+            <pre><code class="language-python"># musubisuite_back/ai_settings/views.py
+
+@action(detail=True, methods=['post'])
+def test_prompt(self, request, pk=None):
+    """AIプロバイダーのプロンプトテスト（ストリーミング対応）"""
+    provider = self.get_object()
+    prompt = request.data.get('prompt', '')
+    
+    if not prompt:
+        return Response(
+            {'success': False, 'error': 'プロンプトが指定されていません'},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+    
+    try:
+        from django.http import StreamingHttpResponse
+        import json
+        
+        def stream_response():
+            """AIレスポンスをストリーミング"""
+            try:
+                chunk_count = 0
+                # 各文字を個別に送信してバッファリングを回避
+                for chunk in self._call_ai_api_stream(provider, prompt):
+                    chunk_count += 1
+                    # チャンクを文字単位で分割して送信
+                    for char in chunk:
+                        sse_data = f"data: {json.dumps({'chunk': char, 'done': False}, ensure_ascii=False)}\n\n"
+                        yield sse_data.encode('utf-8')
+                    logger.debug(f"Sent chunk #{chunk_count}: {chunk[:30]}...")
+                # 完了シグナル
+                logger.info(f"Stream completed. Total chunks: {chunk_count}")
+                yield f"data: {json.dumps({'done': True})}\n\n".encode('utf-8')
+            except Exception as e:
+                error_msg = f"{type(e).__name__}: {str(e)}"
+                logger.error(f"Streaming error: {error_msg}", exc_info=True)
+                yield f"data: {json.dumps({'error': error_msg, 'done': True})}\n\n".encode('utf-8')
+        
+        response = StreamingHttpResponse(
+            streaming_content=stream_response(),
+            content_type='text/event-stream; charset=utf-8'
+        )
+        response['Cache-Control'] = 'no-cache, no-transform'
+        response['X-Accel-Buffering'] = 'no'
+        response['Access-Control-Allow-Origin'] = '*'
+        return response
+        
+    except Exception as e:
+        logger.error(f"AI API呼び出しエラー: {str(e)}", exc_info=True)
+        return Response(
+            {'success': False, 'error': str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )</code></pre>
+
+            <h4>3.2 プロバイダー別ストリーミング実装</h4>
+            <pre><code class="language-python">def _call_ai_api_stream(self, provider, prompt):
+    """プロバイダータイプに応じてAI APIをストリーミング呼び出し"""
+    api_key = provider.get_api_key()
+    
+    if provider.provider_type == 'azure_openai':
+        # Azure OpenAI
+        from openai import AzureOpenAI
+        client = AzureOpenAI(
+            api_key=api_key,
+            api_version=provider.api_version,
+            azure_endpoint=provider.endpoint
+        )
+        stream = client.chat.completions.create(
+            model=provider.deployment_name or provider.model_name,
+            messages=[{"role": "user", "content": prompt}],
+            max_tokens=provider.max_tokens,
+            temperature=provider.temperature,
+            timeout=50.0,
+            stream=True  # ストリーミング有効化
+        )
+        for chunk in stream:
+            if chunk.choices[0].delta.content:
+                yield chunk.choices[0].delta.content
+    
+    elif provider.provider_type == 'openai':
+        # OpenAI
+        from openai import OpenAI
+        client = OpenAI(
+            api_key=api_key,
+            organization=provider.organization_id if provider.organization_id else None
+        )
+        stream = client.chat.completions.create(
+            model=provider.model_name,
+            messages=[{"role": "user", "content": prompt}],
+            max_tokens=provider.max_tokens,
+            temperature=provider.temperature,
+            timeout=50.0,
+            stream=True  # ストリーミング有効化
+        )
+        for chunk in stream:
+            if chunk.choices[0].delta.content:
+                yield chunk.choices[0].delta.content
+    
+    elif provider.provider_type == 'anthropic':
+        # Anthropic Claude
+        import anthropic
+        client = anthropic.Anthropic(api_key=api_key)
+        with client.messages.stream(
+            model=provider.model_name,
+            max_tokens=provider.max_tokens,
+            temperature=provider.temperature,
+            timeout=50.0,
+            messages=[{"role": "user", "content": prompt}]
+        ) as stream:
+            for text in stream.text_stream:
+                yield text
+    
+    elif provider.provider_type == 'google':
+        # Google Gemini
+        import google.generativeai as genai
+        genai.configure(api_key=api_key)
+        model = genai.GenerativeModel(provider.model_name)
+        
+        generation_config = genai.types.GenerationConfig(
+            max_output_tokens=provider.max_tokens,
+            temperature=provider.temperature,
+        )
+        
+        response = model.generate_content(
+            prompt,
+            generation_config=generation_config,
+            stream=True  # ストリーミング有効化
+        )
+        
+        for chunk in response:
+            if chunk.candidates:
+                candidate = chunk.candidates[0]
+                if candidate.content and candidate.content.parts:
+                    for part in candidate.content.parts:
+                        if part.text:
+                            yield part.text</code></pre>
+
+            <h3>4. フロントエンド実装 (React + TypeScript)</h3>
+
+            <h4>4.1 executeAITest 関数</h4>
+            <pre><code class="language-typescript">// musubisuite/src/pages/settings/ai-settings.tsx
+
+const executeAITest = async () => {
+  if (!testingProvider || !testPrompt.trim()) {
+    toast.error('プロンプトを入力してください');
+    return;
+  }
+
+  setTestLoading(true);
+  setTestResponse('');
+  
+  try {
+    // Server-Sent Eventsでストリーミング受信
+    const response = await fetch(
+      `http://127.0.0.1:8000/api/ai-providers/${testingProvider.id}/test_prompt/`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ prompt: testPrompt }),
+      }
+    );
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || '接続に失敗しました');
+    }
+
+    const reader = response.body?.getReader();
+    const decoder = new TextDecoder('utf-8');
+    let accumulatedText = '';
+    let buffer = '';
+
+    if (reader) {
+      console.log('Starting SSE stream reading...');
+      while (true) {
+        const { done, value } = await reader.read();
+        
+        if (done) {
+          console.log('Stream reading completed');
+          break;
+        }
+
+        const chunk = decoder.decode(value, { stream: true });
+        console.log('Received raw chunk:', chunk);
+        buffer += chunk;
+        
+        // 改行で分割して各行を処理
+        const lines = buffer.split('\n');
+        // 最後の行は不完全な可能性があるので保持
+        buffer = lines.pop() || '';
+
+        for (const line of lines) {
+          const trimmedLine = line.trim();
+          if (trimmedLine.startsWith('data: ')) {
+            try {
+              const jsonStr = trimmedLine.slice(6);
+              const data = JSON.parse(jsonStr);
+              
+              if (data.error) {
+                setTestResponse(`❌ エラー: ${data.error}`);
+                toast.error('AI接続テスト失敗: ' + data.error);
+                setTestLoading(false);
+                return;
+              }
+              
+              if (data.chunk) {
+                accumulatedText += data.chunk;
+                setTestResponse(accumulatedText);  // リアルタイム更新
+              }
+              
+              if (data.done) {
+                toast.success('AI接続テスト成功');
+                setTestLoading(false);
+                return;
+              }
+            } catch (parseError) {
+              console.error('Error parsing SSE data:', parseError);
+            }
+          }
+        }
+      }
+    }
+  } catch (error: any) {
+    console.error('Error testing AI connection:', error);
+    setTestResponse(`❌ エラー: ${error.message}`);
+    toast.error('AI接続テスト失敗: ' + error.message);
+  } finally {
+    setTestLoading(false);
+  }
+};</code></pre>
+
+            <h4>4.2 UI実装 - ストリーミング対応レスポンス表示</h4>
+            <pre><code class="language-tsx">&lt;div className="space-y-2"&gt;
+  &lt;Label&gt;AI応答&lt;/Label&gt;
+  &lt;div className="p-4 bg-muted rounded-md min-h-[150px] whitespace-pre-wrap border-2 border-border"&gt;
+    {testLoading && !testResponse && (
+      &lt;div className="flex items-center gap-2 text-muted-foreground"&gt;
+        &lt;Loader2 className="h-4 w-4 animate-spin" /&gt;
+        AIが応答を生成しています...
+      &lt;/div&gt;
+    )}
+    {testResponse && (
+      &lt;div className="text-foreground"&gt;
+        {testResponse}
+        {/* ストリーミング中はカーソル表示 */}
+        {testLoading && &lt;span className="inline-block w-2 h-4 ml-1 bg-primary animate-pulse"&gt;|&lt;/span&gt;}
+      &lt;/div&gt;
+    )}
+    {!testLoading && !testResponse && (
+      &lt;div className="text-muted-foreground italic"&gt;
+        テストを実行すると、AIの応答がここに表示されます
+      &lt;/div&gt;
+    )}
+  &lt;/div&gt;
+&lt;/div&gt;</code></pre>
+
+            <h3>5. データフロー</h3>
+            <div class="workflow-box">
+                <ol>
+                    <li><strong>ユーザー:</strong> プロンプト入力 → 「テスト実行」クリック</li>
+                    <li><strong>Frontend:</strong> fetch() で POST リクエスト送信</li>
+                    <li><strong>Backend:</strong> StreamingHttpResponse を返却開始</li>
+                    <li><strong>Backend:</strong> AI SDK からチャンクを受信 (例: "こんにちは")</li>
+                    <li><strong>Backend:</strong> チャンクを文字分割: "こ", "ん", "に", "ち", "は"</li>
+                    <li><strong>Backend:</strong> 各文字を SSE 形式で送信:
+                        <pre>data: {"chunk":"こ","done":false}
+
+data: {"chunk":"ん","done":false}
+
+data: {"chunk":"に","done":false}
+...</pre>
+                    </li>
+                    <li><strong>Frontend:</strong> ReadableStream から chunk 受信</li>
+                    <li><strong>Frontend:</strong> TextDecoder でデコード</li>
+                    <li><strong>Frontend:</strong> "data: " プレフィックスをパース</li>
+                    <li><strong>Frontend:</strong> JSON.parse() でデータ抽出</li>
+                    <li><strong>Frontend:</strong> accumulatedText に追加: "こ" → "こん" → "こんに" → ...</li>
+                    <li><strong>Frontend:</strong> setTestResponse() で React 状態更新 → UI再描画</li>
+                    <li><strong>ユーザー:</strong> リアルタイムで文字が追加されるのを確認</li>
+                    <li><strong>Backend:</strong> 完了シグナル送信: <code>data: {"done":true}</code></li>
+                    <li><strong>Frontend:</strong> done=true 受信 → ローディング終了</li>
+                </ol>
+            </div>
+
+            <h3>6. 技術的考慮事項</h3>
+
+            <h4>6.1 バッファリング問題</h4>
+            <div class="highlight">
+                <p><strong>問題:</strong> Django開発サーバー (runserver) や WSGI サーバーがレスポンスをバッファリングし、一括送信される</p>
+                <p><strong>対策:</strong></p>
+                <ul>
+                    <li>各チャンクを文字単位に分割して yield (文字数を増やしてバッファサイズを超える)</li>
+                    <li><code>X-Accel-Buffering: no</code> ヘッダーを設定 (Nginx 環境)</li>
+                    <li><code>Cache-Control: no-cache, no-transform</code> でキャッシュ無効化</li>
+                    <li>UTF-8 エンコーディングを明示的に指定</li>
+                </ul>
+            </div>
+
+            <h4>6.2 エラーハンドリング</h4>
+            <pre><code class="language-python"># バックエンド: ストリーミング中のエラー
+try:
+    for chunk in self._call_ai_api_stream(provider, prompt):
+        yield chunk
+except Exception as e:
+    error_msg = f"{type(e).__name__}: {str(e)}"
+    yield f"data: {json.dumps({'error': error_msg, 'done': True})}\n\n".encode('utf-8')</code></pre>
+
+            <pre><code class="language-typescript">// フロントエンド: パースエラーハンドリング
+try {
+  const data = JSON.parse(jsonStr);
+  if (data.error) {
+    setTestResponse(`❌ エラー: ${data.error}`);
+    setTestLoading(false);
+    return;
+  }
+} catch (parseError) {
+  console.error('Error parsing SSE data:', parseError);
+  // パースエラーは無視して続行
+}</code></pre>
+
+            <h4>6.3 タイムアウト設定</h4>
+            <ul>
+                <li><strong>Backend AI SDK:</strong> 50秒タイムアウト (<code>timeout=50.0</code>)</li>
+                <li><strong>Frontend Fetch:</strong> デフォルト（ブラウザ依存、通常数分）</li>
+                <li><strong>Django WSGI:</strong> デフォルト30秒（必要に応じて延長）</li>
+            </ul>
+
+            <h4>6.4 HTTPヘッダー設定</h4>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ヘッダー名</th>
+                            <th>値</th>
+                            <th>目的</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>Content-Type</code></td>
+                            <td><code>text/event-stream; charset=utf-8</code></td>
+                            <td>SSE形式であることを明示</td>
+                        </tr>
+                        <tr>
+                            <td><code>Cache-Control</code></td>
+                            <td><code>no-cache, no-transform</code></td>
+                            <td>キャッシュ無効化</td>
+                        </tr>
+                        <tr>
+                            <td><code>X-Accel-Buffering</code></td>
+                            <td><code>no</code></td>
+                            <td>Nginxバッファリング無効化</td>
+                        </tr>
+                        <tr>
+                            <td><code>Access-Control-Allow-Origin</code></td>
+                            <td><code>*</code></td>
+                            <td>CORS対応</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <h3>7. デバッグ方法</h3>
+
+            <h4>ブラウザ開発者ツール</h4>
+            <ol>
+                <li><strong>ネットワークタブ:</strong> test_prompt リクエストを確認
+                    <ul>
+                        <li>Response Type が <code>text/event-stream</code> になっているか</li>
+                        <li>Response が徐々に増えていくか（ストリーミング中）</li>
+                    </ul>
+                </li>
+                <li><strong>コンソールタブ:</strong> ログを確認
+                    <ul>
+                        <li>"Starting SSE stream reading..."</li>
+                        <li>"Received raw chunk: ..."</li>
+                        <li>"Parsed SSE data: ..."</li>
+                        <li>"Updated response, length: ..."</li>
+                    </ul>
+                </li>
+            </ol>
+
+            <h4>Djangoログ</h4>
+            <pre><code># Djangoターミナルで確認
+INFO: Testing AI provider: google - DEV:gemini-2.5-pro
+DEBUG: Streaming google API with model: gemini-2.5-pro
+DEBUG: Using Gemini model: gemini-2.5-pro
+DEBUG: Starting to iterate Gemini response stream...
+DEBUG: Gemini chunk #1: こんにちは！私はGeminiです...
+DEBUG: Sent chunk #1: こんにちは！私はGeminiです...
+DEBUG: Gemini chunk #2: 大規模言語モデルとして...
+DEBUG: Sent chunk #2: 大規模言語モデルとして...
+INFO: Stream completed. Total chunks: 5</code></pre>
+
+            <h3>8. パフォーマンス最適化</h3>
+
+            <div class="info-box">
+                <strong>最適化ポイント:</strong>
+                <ul>
+                    <li><strong>チャンクサイズ:</strong> 文字単位ではなく単語単位にすることでネットワーク効率向上</li>
+                    <li><strong>デバウンス:</strong> UI更新を一定間隔に制限（例: 50ms毎）</li>
+                    <li><strong>バッチ処理:</strong> 複数文字をまとめて送信（バッファリング問題とトレードオフ）</li>
+                    <li><strong>圧縮:</strong> gzip圧縮の適用（SSEでは効果限定的）</li>
+                </ul>
+            </div>
+
+            <h3>9. 今後の改善案</h3>
+            <ul>
+                <li>WebSocket への移行（双方向通信が必要な場合）</li>
+                <li>ストリーミングキャンセル機能の実装</li>
+                <li>チャンク単位でのエラーリカバリー</li>
+                <li>ストリーミング速度の調整機能</li>
+                <li>レスポンスの保存・再生機能</li>
+            </ul>
+        </section>
+
+        <!-- 付録 -->
+        <section class="section">
+            <h2><span class="emoji">📚</span>付録</h2>
+
+            <h3>参考リンク</h3>
+            <ul>
+                <li><a href="https://platform.openai.com/docs" target="_blank">OpenAI API Documentation</a></li>
+                <li><a href="https://learn.microsoft.com/azure/ai-services/openai/" target="_blank">Azure OpenAI Service</a></li>
+                <li><a href="https://docs.anthropic.com/claude/reference/getting-started-with-the-api" target="_blank">Anthropic Claude API</a></li>
+                <li><a href="https://ai.google.dev/gemini-api/docs" target="_blank">Google Gemini API Documentation</a></li>
+                <li><a href="https://www.microsoft.com/en-us/bing/apis/bing-web-search-api" target="_blank">Bing Search API</a></li>
+                <li><a href="https://developers.google.com/custom-search" target="_blank">Google Custom Search API</a></li>
+            </ul>
+
+            <h3>AI共通化クイックリファレンス</h3>
+            <div class="info-box">
+                <h4>基本的な使い方（3ステップ）</h4>
+                <pre><code class="language-python"># ステップ1: インポート
+from ai_services import get_default_ai_client
+
+# ステップ2: クライアント取得
+client = get_default_ai_client()
+
+# ステップ3: 生成実行
+response = client.generate("プロンプト")
+print(response)</code></pre>
+
+                <h4>ストリーミング生成</h4>
+                <pre><code class="language-python">from ai_services import get_default_ai_client
+
+client = get_default_ai_client()
+for chunk in client.generate_stream("長い文章を生成してください"):
+    print(chunk, end='', flush=True)</code></pre>
+
+                <h4>特定のプロバイダーを指定</h4>
+                <pre><code class="language-python">from ai_services import get_ai_client
+
+# ID指定
+client = get_ai_client(provider_id=2)
+
+# 名前指定
+client = get_ai_client(provider_name="GPT-4")
+
+response = client.generate("プロンプト")</code></pre>
+
+                <h4>パラメータのオーバーライド</h4>
+                <pre><code class="language-python">client = get_default_ai_client()
+
+# max_tokensとtemperatureを一時的に変更
+response = client.generate(
+    "プロンプト",
+    max_tokens=8000,
+    temperature=0.3
+)</code></pre>
+
+                <h4>プロバイダー情報の取得</h4>
+                <pre><code class="language-python">client = get_default_ai_client()
+info = client.info
+
+print(f"プロバイダー: {info['name']}")
+print(f"モデル: {info['model_name']}")
+print(f"最大トークン: {info['max_tokens']}")</code></pre>
+
+                <h4>エラーハンドリング</h4>
+                <pre><code class="language-python">from ai_services import (
+    get_default_ai_client,
+    ProviderNotFoundError,
+    APIKeyNotConfiguredError,
+    APICallError
+)
+
+try:
+    client = get_default_ai_client()
+    response = client.generate("プロンプト")
+except ProviderNotFoundError:
+    print("デフォルトプロバイダーが設定されていません")
+except APIKeyNotConfiguredError:
+    print("APIキーが設定されていません")
+except APICallError as e:
+    print(f"API呼び出しエラー: {e}")</code></pre>
+            </div>
+
+            <h3>用語集</h3>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>用語</th>
+                            <th>説明</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>AI Services</strong></td>
+                            <td>全システム共通のAI機能を提供するPythonパッケージ</td>
+                        </tr>
+                        <tr>
+                            <td><strong>AIClient</strong></td>
+                            <td>統一されたAI呼び出しインターフェースを提供するクラス</td>
+                        </tr>
+                        <tr>
+                            <td><strong>AIProvider</strong></td>
+                            <td>AI設定で管理されるプロバイダー情報（DB上のモデル）</td>
+                        </tr>
+                        <tr>
+                            <td><strong>LLM</strong></td>
+                            <td>Large Language Model - 大規模言語モデル</td>
+                        </tr>
+                        <tr>
+                            <td><strong>ストリーミング</strong></td>
+                            <td>AI応答を生成しながらリアルタイムで返却する方式</td>
+                        </tr>
+                        <tr>
+                            <td><strong>SSE</strong></td>
+                            <td>Server-Sent Events - サーバーからクライアントへの一方向ストリーミング</td>
+                        </tr>
+                        <tr>
+                            <td><strong>信頼度スコア</strong></td>
+                            <td>AIが取得したデータの信頼性を0-100で表す指標</td>
+                        </tr>
+                        <tr>
+                            <td><strong>エンリッチメント</strong></td>
+                            <td>既存データに追加情報を付加してデータを充実させること</td>
+                        </tr>
+                        <tr>
+                            <td><strong>プロンプト</strong></td>
+                            <td>LLMに対する指示文</td>
+                        </tr>
+                        <tr>
+                            <td><strong>レート制限</strong></td>
+                            <td>API呼び出しの頻度制限</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <footer style="margin-top: 60px; padding-top: 20px; border-top: 1px solid #e5e7eb; text-align: center; color: #666;">
+            <p>&copy; 2025 MusubiSuite Development Team. All rights reserved.</p>
+            <p style="font-size: 0.9em;">本文書は機密情報を含むため、社外への公開は禁止されています。</p>
+        </footer>
+    </div>
+</body>
+</html>

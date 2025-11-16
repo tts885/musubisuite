@@ -1,0 +1,755 @@
+import { useState, useEffect } from 'react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Switch } from '@/components/ui/switch';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Slider } from '@/components/ui/slider';
+import { Badge } from '@/components/ui/badge';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { CheckCircle2, XCircle, Loader2, Settings, Brain, Search, Shield } from 'lucide-react';
+import { toast } from 'sonner';
+import { djangoAPI } from '@/services/djangoAPI';
+
+interface AIProvider {
+  id?: number;
+  provider_type: string;
+  endpoint: string;
+  api_key: string;
+  model_name: string;
+  max_tokens: number;
+  temperature: number;
+  is_active: boolean;
+  is_default: boolean;
+  use_for_client_enrichment: boolean;
+  use_for_document_generation: boolean;
+}
+
+interface SearchEngineConfig {
+  id?: number;
+  engine_type: string;
+  api_key: string;
+  search_engine_id?: string;
+  max_results: number;
+  is_active: boolean;
+  is_default: boolean;
+}
+
+interface AISettings {
+  ai_enabled: boolean;
+  require_confirmation: boolean;
+  allow_overwrite: boolean;
+  confidence_threshold: number;
+  auto_save_on_high_confidence: boolean;
+}
+
+export default function AISettingsPage() {
+  
+  // State
+  const [aiProviders, setAIProviders] = useState<AIProvider[]>([]);
+  const [searchEngines, setSearchEngines] = useState<SearchEngineConfig[]>([]);
+  const [aiSettings, setAISettings] = useState<AISettings>({
+    ai_enabled: true,
+    require_confirmation: true,
+    allow_overwrite: false,
+    confidence_threshold: 70,
+    auto_save_on_high_confidence: false,
+  });
+  
+  const [loading, setLoading] = useState(false);
+  const [testingConnection, setTestingConnection] = useState<number | null>(null);
+  const [editingProvider, setEditingProvider] = useState<AIProvider | null>(null);
+  const [editingSearchEngine, setEditingSearchEngine] = useState<SearchEngineConfig | null>(null);
+
+  // Load data
+  useEffect(() => {
+    loadAllData();
+  }, []);
+
+  const loadAllData = async () => {
+    setLoading(true);
+    try {
+      // Load data independently to avoid one failure blocking others
+      await loadAIProviders();
+      await loadSearchEngines();
+      await loadAISettings();
+    } catch (error) {
+      console.error('データ読み込みエラー:', error);
+      // Don't show error toast as individual functions already handle errors
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadAIProviders = async () => {
+    try {
+      const data = await djangoAPI.getAIProviders();
+      setAIProviders(data);
+    } catch (error) {
+      console.error('Error loading AI providers:', error);
+    }
+  };
+
+  const loadSearchEngines = async () => {
+    try {
+      const data = await djangoAPI.getSearchEngines();
+      setSearchEngines(data);
+    } catch (error) {
+      console.error('Error loading search engines:', error);
+    }
+  };
+
+  const loadAISettings = async () => {
+    try {
+      const data = await djangoAPI.getAISettings();
+      if (data.length > 0) {
+        setAISettings(data[0]);
+      }
+    } catch (error) {
+      console.error('Error loading AI settings:', error);
+    }
+  };
+
+  // AI Provider operations
+  const saveAIProvider = async (provider: AIProvider) => {
+    try {
+      if (provider.id) {
+        await djangoAPI.updateAIProvider(provider.id, provider);
+      } else {
+        await djangoAPI.createAIProvider(provider);
+      }
+
+      toast.success('AI Providerを保存しました');
+
+      await loadAIProviders();
+      setEditingProvider(null);
+    } catch (error) {
+      console.error('Error saving AI provider:', error);
+      toast.error('AI Providerの保存に失敗しました');
+    }
+  };
+
+  const deleteAIProvider = async (id: number) => {
+    if (!confirm('削除しますか?')) return;
+
+    try {
+      await djangoAPI.deleteAIProvider(id);
+
+      toast.success('AI Providerを削除しました');
+
+      await loadAIProviders();
+    } catch (error) {
+      console.error('Error deleting AI provider:', error);
+      toast.error('AI Providerの削除に失敗しました');
+    }
+  };
+
+  const testConnection = async (providerId: number) => {
+    setTestingConnection(providerId);
+    try {
+      const data = await djangoAPI.testAIProviderConnection(providerId);
+
+      if (data.success) {
+        toast.success(data.message || '接続成功');
+      } else {
+        toast.error(data.message || '接続失敗');
+      }
+    } catch (error) {
+      console.error('Error testing connection:', error);
+      toast.error('接続テストに失敗しました');
+    } finally {
+      setTestingConnection(null);
+    }
+  };
+
+  // Search Engine operations
+  const saveSearchEngine = async (engine: SearchEngineConfig) => {
+    try {
+      if (engine.id) {
+        await djangoAPI.updateSearchEngine(engine.id, engine);
+      } else {
+        await djangoAPI.createSearchEngine(engine);
+      }
+
+      toast.success('検索エンジンを保存しました');
+
+      await loadSearchEngines();
+      setEditingSearchEngine(null);
+    } catch (error) {
+      console.error('Error saving search engine:', error);
+      toast.error('検索エンジンの保存に失敗しました');
+    }
+  };
+
+  const deleteSearchEngine = async (id: number) => {
+    if (!confirm('削除しますか?')) return;
+
+    try {
+      await djangoAPI.deleteSearchEngine(id);
+
+      toast.success('検索エンジンを削除しました');
+
+      await loadSearchEngines();
+    } catch (error) {
+      console.error('Error deleting search engine:', error);
+      toast.error('検索エンジンの削除に失敗しました');
+    }
+  };
+
+  // AI Settings operations
+  const saveAISettings = async () => {
+    try {
+      await djangoAPI.updateAISettings(aiSettings);
+
+      toast.success('AI設定を保存しました');
+    } catch (error) {
+      console.error('Error saving AI settings:', error);
+      toast.error('AI設定の保存に失敗しました');
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="container mx-auto p-6 space-y-6">
+      <div className="flex items-center gap-3 mb-6">
+        <Brain className="h-8 w-8 text-primary" />
+        <div>
+          <h1 className="text-3xl font-bold">AI設定</h1>
+          <p className="text-muted-foreground">
+            AI機能の設定と管理
+          </p>
+        </div>
+      </div>
+
+      <Tabs defaultValue="providers" className="space-y-4">
+        <TabsList>
+          <TabsTrigger value="providers">
+            <Brain className="h-4 w-4 mr-2" />
+            AI Provider
+          </TabsTrigger>
+          <TabsTrigger value="search">
+            <Search className="h-4 w-4 mr-2" />
+            検索エンジン
+          </TabsTrigger>
+          <TabsTrigger value="general">
+            <Settings className="h-4 w-4 mr-2" />
+            一般設定
+          </TabsTrigger>
+        </TabsList>
+
+        {/* AI Providers Tab */}
+        <TabsContent value="providers" className="space-y-4">
+          <div className="flex justify-between items-center">
+            <h2 className="text-xl font-semibold">AI Provider一覧</h2>
+            <Button
+              onClick={() =>
+                setEditingProvider({
+                  provider_type: 'openai',
+                  endpoint: '',
+                  api_key: '',
+                  model_name: 'gpt-4',
+                  max_tokens: 2000,
+                  temperature: 0.7,
+                  is_active: true,
+                  is_default: false,
+                  use_for_client_enrichment: true,
+                  use_for_document_generation: false,
+                })
+              }
+            >
+              新規追加
+            </Button>
+          </div>
+
+          <div className="grid gap-4">
+            {aiProviders.map((provider) => (
+              <Card key={provider.id}>
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <CardTitle className="text-lg">
+                        {provider.provider_type.toUpperCase()}
+                      </CardTitle>
+                      {provider.is_default && (
+                        <Badge variant="secondary">デフォルト</Badge>
+                      )}
+                      {provider.is_active ? (
+                        <Badge variant="default">有効</Badge>
+                      ) : (
+                        <Badge variant="outline">無効</Badge>
+                      )}
+                    </div>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => provider.id && testConnection(provider.id)}
+                        disabled={testingConnection === provider.id}
+                      >
+                        {testingConnection === provider.id ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          '接続テスト'
+                        )}
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setEditingProvider(provider)}
+                      >
+                        編集
+                      </Button>
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={() => provider.id && deleteAIProvider(provider.id)}
+                      >
+                        削除
+                      </Button>
+                    </div>
+                  </div>
+                  <CardDescription>
+                    Model: {provider.model_name} | Max Tokens: {provider.max_tokens} | Temperature: {provider.temperature}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex gap-4 text-sm text-muted-foreground">
+                    <div className="flex items-center gap-1">
+                      {provider.use_for_client_enrichment ? (
+                        <CheckCircle2 className="h-4 w-4 text-green-500" />
+                      ) : (
+                        <XCircle className="h-4 w-4 text-gray-400" />
+                      )}
+                      クライアント情報充実化
+                    </div>
+                    <div className="flex items-center gap-1">
+                      {provider.use_for_document_generation ? (
+                        <CheckCircle2 className="h-4 w-4 text-green-500" />
+                      ) : (
+                        <XCircle className="h-4 w-4 text-gray-400" />
+                      )}
+                      ドキュメント生成
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+
+          {/* AI Provider Edit Dialog */}
+          {editingProvider && (
+            <Card className="mt-4">
+              <CardHeader>
+                <CardTitle>
+                  {editingProvider.id ? 'AI Provider編集' : '新規AI Provider'}
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Provider Type</Label>
+                    <Select
+                      value={editingProvider.provider_type}
+                      onValueChange={(value) =>
+                        setEditingProvider({ ...editingProvider, provider_type: value })
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="openai">OpenAI</SelectItem>
+                        <SelectItem value="azure_openai">Azure OpenAI</SelectItem>
+                        <SelectItem value="anthropic">Anthropic Claude</SelectItem>
+                        <SelectItem value="google">Google Gemini</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Model Name</Label>
+                    <Input
+                      value={editingProvider.model_name}
+                      onChange={(e) =>
+                        setEditingProvider({ ...editingProvider, model_name: e.target.value })
+                      }
+                    />
+                  </div>
+
+                  <div className="space-y-2 col-span-2">
+                    <Label>Endpoint (optional)</Label>
+                    <Input
+                      value={editingProvider.endpoint}
+                      onChange={(e) =>
+                        setEditingProvider({ ...editingProvider, endpoint: e.target.value })
+                      }
+                      placeholder="空の場合はデフォルトエンドポイントを使用"
+                    />
+                  </div>
+
+                  <div className="space-y-2 col-span-2">
+                    <Label>API Key</Label>
+                    <Input
+                      type="password"
+                      value={editingProvider.api_key}
+                      onChange={(e) =>
+                        setEditingProvider({ ...editingProvider, api_key: e.target.value })
+                      }
+                      placeholder="APIキーを入力"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Max Tokens</Label>
+                    <Input
+                      type="number"
+                      value={editingProvider.max_tokens}
+                      onChange={(e) =>
+                        setEditingProvider({ ...editingProvider, max_tokens: parseInt(e.target.value) })
+                      }
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Temperature</Label>
+                    <Input
+                      type="number"
+                      step="0.1"
+                      min="0"
+                      max="2"
+                      value={editingProvider.temperature}
+                      onChange={(e) =>
+                        setEditingProvider({ ...editingProvider, temperature: parseFloat(e.target.value) })
+                      }
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <Label>有効にする</Label>
+                    <Switch
+                      checked={editingProvider.is_active}
+                      onCheckedChange={(checked: boolean) =>
+                        setEditingProvider({ ...editingProvider, is_active: checked })
+                      }
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <Label>デフォルトに設定</Label>
+                    <Switch
+                      checked={editingProvider.is_default}
+                      onCheckedChange={(checked: boolean) =>
+                        setEditingProvider({ ...editingProvider, is_default: checked })
+                      }
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <Label>クライアント情報充実化に使用</Label>
+                    <Switch
+                      checked={editingProvider.use_for_client_enrichment}
+                      onCheckedChange={(checked: boolean) =>
+                        setEditingProvider({ ...editingProvider, use_for_client_enrichment: checked })
+                      }
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <Label>ドキュメント生成に使用</Label>
+                    <Switch
+                      checked={editingProvider.use_for_document_generation}
+                      onCheckedChange={(checked: boolean) =>
+                        setEditingProvider({ ...editingProvider, use_for_document_generation: checked })
+                      }
+                    />
+                  </div>
+                </div>
+
+                <div className="flex justify-end gap-2">
+                  <Button variant="outline" onClick={() => setEditingProvider(null)}>
+                    キャンセル
+                  </Button>
+                  <Button onClick={() => saveAIProvider(editingProvider)}>保存</Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
+
+        {/* Search Engines Tab */}
+        <TabsContent value="search" className="space-y-4">
+          <div className="flex justify-between items-center">
+            <h2 className="text-xl font-semibold">検索エンジン一覧</h2>
+            <Button
+              onClick={() =>
+                setEditingSearchEngine({
+                  engine_type: 'bing',
+                  api_key: '',
+                  search_engine_id: '',
+                  max_results: 10,
+                  is_active: true,
+                  is_default: false,
+                })
+              }
+            >
+              新規追加
+            </Button>
+          </div>
+
+          <div className="grid gap-4">
+            {searchEngines.map((engine) => (
+              <Card key={engine.id}>
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <CardTitle className="text-lg">
+                        {engine.engine_type.toUpperCase()}
+                      </CardTitle>
+                      {engine.is_default && (
+                        <Badge variant="secondary">デフォルト</Badge>
+                      )}
+                      {engine.is_active ? (
+                        <Badge variant="default">有効</Badge>
+                      ) : (
+                        <Badge variant="outline">無効</Badge>
+                      )}
+                    </div>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setEditingSearchEngine(engine)}
+                      >
+                        編集
+                      </Button>
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={() => engine.id && deleteSearchEngine(engine.id)}
+                      >
+                        削除
+                      </Button>
+                    </div>
+                  </div>
+                  <CardDescription>Max Results: {engine.max_results}</CardDescription>
+                </CardHeader>
+              </Card>
+            ))}
+          </div>
+
+          {/* Search Engine Edit Dialog */}
+          {editingSearchEngine && (
+            <Card className="mt-4">
+              <CardHeader>
+                <CardTitle>
+                  {editingSearchEngine.id ? '検索エンジン編集' : '新規検索エンジン'}
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label>Engine Type</Label>
+                    <Select
+                      value={editingSearchEngine.engine_type}
+                      onValueChange={(value) =>
+                        setEditingSearchEngine({ ...editingSearchEngine, engine_type: value })
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="bing">Bing Search API</SelectItem>
+                        <SelectItem value="google">Google Custom Search</SelectItem>
+                        <SelectItem value="serper">Serper API</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>API Key</Label>
+                    <Input
+                      type="password"
+                      value={editingSearchEngine.api_key}
+                      onChange={(e) =>
+                        setEditingSearchEngine({ ...editingSearchEngine, api_key: e.target.value })
+                      }
+                      placeholder="APIキーを入力"
+                    />
+                  </div>
+
+                  {editingSearchEngine.engine_type === 'google' && (
+                    <div className="space-y-2">
+                      <Label>Search Engine ID</Label>
+                      <Input
+                        value={editingSearchEngine.search_engine_id || ''}
+                        onChange={(e) =>
+                          setEditingSearchEngine({ ...editingSearchEngine, search_engine_id: e.target.value })
+                        }
+                        placeholder="Google Custom Search Engine ID"
+                      />
+                    </div>
+                  )}
+
+                  <div className="space-y-2">
+                    <Label>Max Results</Label>
+                    <Input
+                      type="number"
+                      value={editingSearchEngine.max_results}
+                      onChange={(e) =>
+                        setEditingSearchEngine({ ...editingSearchEngine, max_results: parseInt(e.target.value) })
+                      }
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <Label>有効にする</Label>
+                    <Switch
+                      checked={editingSearchEngine.is_active}
+                      onCheckedChange={(checked: boolean) =>
+                        setEditingSearchEngine({ ...editingSearchEngine, is_active: checked })
+                      }
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <Label>デフォルトに設定</Label>
+                    <Switch
+                      checked={editingSearchEngine.is_default}
+                      onCheckedChange={(checked: boolean) =>
+                        setEditingSearchEngine({ ...editingSearchEngine, is_default: checked })
+                      }
+                    />
+                  </div>
+                </div>
+
+                <div className="flex justify-end gap-2">
+                  <Button variant="outline" onClick={() => setEditingSearchEngine(null)}>
+                    キャンセル
+                  </Button>
+                  <Button onClick={() => saveSearchEngine(editingSearchEngine)}>保存</Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
+
+        {/* General Settings Tab */}
+        <TabsContent value="general" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Shield className="h-5 w-5" />
+                AI機能の一般設定
+              </CardTitle>
+              <CardDescription>
+                すべてのAI機能に適用される共通設定
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Label>AI機能を有効にする</Label>
+                  <p className="text-sm text-muted-foreground">
+                    すべてのAI機能のマスタースイッチ
+                  </p>
+                </div>
+                <Switch
+                  checked={aiSettings.ai_enabled}
+                  onCheckedChange={(checked: boolean) =>
+                    setAISettings({ ...aiSettings, ai_enabled: checked })
+                  }
+                />
+              </div>
+
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Label>確認を必須にする</Label>
+                  <p className="text-sm text-muted-foreground">
+                    AI生成データを適用前にユーザー確認を求める
+                  </p>
+                </div>
+                <Switch
+                  checked={aiSettings.require_confirmation}
+                  onCheckedChange={(checked: boolean) =>
+                    setAISettings({ ...aiSettings, require_confirmation: checked })
+                  }
+                />
+              </div>
+
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Label>既存データの上書きを許可</Label>
+                  <p className="text-sm text-muted-foreground">
+                    手動入力済みフィールドもAIデータで上書き可能にする
+                  </p>
+                </div>
+                <Switch
+                  checked={aiSettings.allow_overwrite}
+                  onCheckedChange={(checked: boolean) =>
+                    setAISettings({ ...aiSettings, allow_overwrite: checked })
+                  }
+                />
+              </div>
+
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Label>高信頼度データの自動保存</Label>
+                  <p className="text-sm text-muted-foreground">
+                    信頼度が閾値を超えた場合に自動的に保存する
+                  </p>
+                </div>
+                <Switch
+                  checked={aiSettings.auto_save_on_high_confidence}
+                  onCheckedChange={(checked: boolean) =>
+                    setAISettings({ ...aiSettings, auto_save_on_high_confidence: checked })
+                  }
+                />
+              </div>
+
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label>信頼度閾値: {aiSettings.confidence_threshold}%</Label>
+                  <p className="text-sm text-muted-foreground">
+                    この値以上の信頼度スコアで高信頼度と判定
+                  </p>
+                  <Slider
+                    value={[aiSettings.confidence_threshold]}
+                    onValueChange={([value]: number[]) =>
+                      setAISettings({ ...aiSettings, confidence_threshold: value })
+                    }
+                    min={0}
+                    max={100}
+                    step={5}
+                    className="w-full"
+                  />
+                </div>
+              </div>
+
+              <Alert>
+                <AlertDescription>
+                  設定を変更した後は「保存」ボタンをクリックしてください
+                </AlertDescription>
+              </Alert>
+
+              <div className="flex justify-end">
+                <Button onClick={saveAISettings}>設定を保存</Button>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
+    </div>
+  );
+}

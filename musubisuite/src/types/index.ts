@@ -274,16 +274,39 @@ export interface Task {
  * - companyNameは一意である必要があります
  */
 export interface Client {
-  id: string;
-  name: string;
-  companyName: string;
+  id: number;
+  company_name: string;
+  legal_name?: string;
   email: string;
-  phone?: string;
-  address?: string;
+  representative?: string;
+  established_date?: string;
+  capital?: number;
+  employee_count?: number;
   industry?: string;
+  website?: string;
+  description?: string;
+  postal_code?: string;
+  prefecture?: string;
+  city?: string;
+  address?: string;
+  phone?: string;
+  fax?: string;
+  contact_name?: string;
+  contact_department?: string;
+  contact_position?: string;
+  contact_email?: string;
+  contact_phone?: string;
+  contact_mobile?: string;
+  priority?: string;
+  lead_source?: string;
+  assigned_sales?: number;
+  tags?: string[];
   note?: string;
-  createdAt: Date;
-  updatedAt: Date;
+  ai_generated?: boolean;
+  ai_generated_at?: string;
+  ai_confidence_score?: number;
+  created_at: string;
+  updated_at: string;
 }
 
 /**
@@ -442,7 +465,6 @@ export interface DashboardStats {
   totalTasks: number;
   completedTasks: number;
   overdueTasksCount: number;
-  totalMembers: number;
   recentActivities: ActivityLog[];
 }
 

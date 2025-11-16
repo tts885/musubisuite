@@ -167,11 +167,11 @@ export default function AppSwitcher() {
           </span>
         </button>
         
-        {/* Settings Button (Future) */}
-        <button
-          className="flex items-center justify-center w-11 h-11 rounded-lg text-sidebar-foreground/40 hover:text-sidebar-foreground hover:bg-sidebar-accent/50 transition-all duration-200 disabled:opacity-20 disabled:cursor-not-allowed group relative"
+        {/* Settings Button */}
+        <Link
+          to="/settings"
+          className="flex items-center justify-center w-11 h-11 rounded-lg text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent transition-all duration-200 group relative"
           title="設定"
-          disabled
         >
           <Settings className="w-5 h-5" />
           
@@ -179,7 +179,7 @@ export default function AppSwitcher() {
           <span className="absolute left-full ml-3 px-3 py-2 bg-popover text-popover-foreground text-sm font-medium rounded-lg shadow-lg border border-border opacity-0 group-hover:opacity-100 pointer-events-none transition-all duration-200 whitespace-nowrap z-[9999]">
             設定
           </span>
-        </button>
+        </Link>
 
         {/* Dark Mode Toggle - 最下部に配置 */}
         <button

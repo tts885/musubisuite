@@ -4,7 +4,7 @@ from .models import Client
 
 @admin.register(Client)
 class ClientAdmin(admin.ModelAdmin):
-    list_display = ['company_name', 'name', 'email', 'industry', 'created_at']
-    list_filter = ['industry', 'created_at']
-    search_fields = ['name', 'company_name', 'email']
+    list_display = ['company_name', 'legal_name', 'email', 'industry', 'priority', 'ai_generated', 'created_at']
+    list_filter = ['industry', 'priority', 'ai_generated', 'created_at']
+    search_fields = ['company_name', 'legal_name', 'email', 'representative']
     ordering = ['-created_at']

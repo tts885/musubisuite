@@ -1,5 +1,5 @@
 import axios, { type AxiosInstance, type AxiosError } from 'axios';
-import type { Project, Client, Member, Task, ActivityLog } from '@/types';
+import type { Project, Client, Task } from '@/types';
 
 /**
  * Django REST Framework APIクライアント
@@ -473,23 +473,7 @@ class DjangoAPIClient {
     page?: number;
   }) {
     const response = await this.api.get('/clients/', { params });
-    // Django APIのレスポンスをフロントエンドの型に変換
-    const data = response.data;
-    if (data.results) {
-      data.results = data.results.map((client: any) => ({
-        id: client.id,
-        name: client.name,
-        companyName: client.company_name,
-        email: client.email,
-        phone: client.phone,
-        address: client.address,
-        industry: client.industry,
-        note: client.note,
-        createdAt: new Date(client.created_at),
-        updatedAt: new Date(client.updated_at),
-      }));
-    }
-    return data;
+    return response.data;
   }
 
   /**
@@ -514,19 +498,7 @@ class DjangoAPIClient {
    */
   async getClient(id: string) {
     const response = await this.api.get(`/clients/${id}/`);
-    const client = response.data;
-    return {
-      id: client.id,
-      name: client.name,
-      companyName: client.company_name,
-      email: client.email,
-      phone: client.phone,
-      address: client.address,
-      industry: client.industry,
-      note: client.note,
-      createdAt: new Date(client.created_at),
-      updatedAt: new Date(client.updated_at),
-    };
+    return response.data;
   }
 
   /**
@@ -559,13 +531,13 @@ class DjangoAPIClient {
    * ```
    */
   async createClient(data: {
-    name: string;
     company_name: string;
     email: string;
     phone?: string;
     address?: string;
     industry?: string;
     note?: string;
+    [key: string]: any;
   }) {
     const response = await this.api.post('/clients/', data);
     return response.data;
@@ -850,6 +822,109 @@ class DjangoAPIClient {
     page?: number;
   }) {
     const response = await this.api.get('/activities/', { params });
+    return response.data;
+  }
+
+  // ========================================
+  // AI Settings API
+  // ========================================
+
+  /**
+   * AI Provider一覧を取得する
+   */
+  async getAIProviders() {
+    const response = await this.api.get('/ai-providers/');
+    return response.data;
+  }
+
+  /**
+   * AI Providerを作成する
+   */
+  async createAIProvider(data: any) {
+    const response = await this.api.post('/ai-providers/', data);
+    return response.data;
+  }
+
+  /**
+   * AI Providerを更新する
+   */
+  async updateAIProvider(id: number, data: any) {
+    const response = await this.api.put(`/ai-providers/${id}/`, data);
+    return response.data;
+  }
+
+  /**
+   * AI Providerを削除する
+   */
+  async deleteAIProvider(id: number) {
+    await this.api.delete(`/ai-providers/${id}/`);
+  }
+
+  /**
+   * AI Providerの接続テストを実行する
+   */
+  async testAIProviderConnection(id: number) {
+    const response = await this.api.post(`/ai-providers/${id}/test_connection/`);
+    return response.data;
+  }
+
+  /**
+   * AI Providerにプロンプトを送信して応答をテストする
+   */
+  async testAIProviderWithPrompt(id: number, prompt: string) {
+    // AI APIは応答に時間がかかる場合があるため、タイムアウトを60秒に設定
+    const response = await this.api.post(`/ai-providers/${id}/test_prompt/`, {
+      prompt
+    }, {
+      timeout: 60000  // 60秒
+    });
+    return response.data;
+  }
+
+  /**
+   * 検索エンジン一覧を取得する
+   */
+  async getSearchEngines() {
+    const response = await this.api.get('/search-engines/');
+    return response.data;
+  }
+
+  /**
+   * 検索エンジンを作成する
+   */
+  async createSearchEngine(data: any) {
+    const response = await this.api.post('/search-engines/', data);
+    return response.data;
+  }
+
+  /**
+   * 検索エンジンを更新する
+   */
+  async updateSearchEngine(id: number, data: any) {
+    const response = await this.api.put(`/search-engines/${id}/`, data);
+    return response.data;
+  }
+
+  /**
+   * 検索エンジンを削除する
+   */
+  async deleteSearchEngine(id: number) {
+    await this.api.delete(`/search-engines/${id}/`);
+  }
+
+  /**
+   * AI設定を取得する
+   */
+  async getAISettings() {
+    const response = await this.api.get('/ai-settings/');
+    return response.data;
+  }
+
+  /**
+   * AI設定を更新する
+   */
+  async updateAISettings(data: any) {
+    const response = await this.api.post('/ai-settings/', data);
     return response.data;
   }
 }

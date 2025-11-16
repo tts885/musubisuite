@@ -14,7 +14,6 @@ import {
   FolderKanban, 
   CheckCircle2, 
   Clock, 
-  Users,
   TrendingUp,
   AlertCircle
 } from "lucide-react"
@@ -47,7 +46,7 @@ import {
  * 
  * 案件管理システムの統計情報とビジュアライゼーションを提供します。
  * 以下の情報を表示します:
- * - 統計カード(総案件数、完了タスク数、進行中タスク数、チームメンバー数)
+ * - 統計カード(総案件数、完了案件数、総タスク数)
  * - プロジェクトステータス別の円グラフ
  * - タスク完了率の円グラフ
  * - 進行中プロジェクトの一覧カード
@@ -99,7 +98,7 @@ export default function DashboardPage() {
         </div>
 
         {/* Stats Cards - 現代的なカードデザイン */}
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           <Card className="border-border bg-card hover:shadow-lg transition-shadow duration-200">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
               <CardTitle className="text-sm font-semibold text-muted-foreground">総案件数</CardTitle>
@@ -141,21 +140,6 @@ export default function DashboardPage() {
               <div className="text-3xl font-bold text-foreground">{stats.totalTasks}</div>
               <p className="text-sm text-muted-foreground mt-2">
                 完了: <span className="font-medium text-foreground">{stats.completedTasks}件</span>
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card className="border-border bg-card hover:shadow-lg transition-shadow duration-200">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-              <CardTitle className="text-sm font-semibold text-muted-foreground">メンバー数</CardTitle>
-              <div className="p-2 bg-chart-4/10 rounded-lg">
-                <Users className="h-5 w-5 text-chart-4" />
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold text-foreground">{stats.totalMembers}</div>
-              <p className="text-sm text-muted-foreground mt-2">
-                アクティブメンバー
               </p>
             </CardContent>
           </Card>
