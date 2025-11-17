@@ -92,6 +92,8 @@ class Client(models.Model):
     
     email = models.EmailField(
         'メールアドレス',
+        blank=True,
+        null=True,
         validators=[EmailValidator()],
         help_text='代表メールアドレス'
     )

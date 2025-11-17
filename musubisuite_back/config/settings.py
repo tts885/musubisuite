@@ -55,6 +55,7 @@ INSTALLED_APPS = [
     'activities.apps.ActivitiesConfig',
     'contracts.apps.ContractsConfig',
     'ai_settings',
+    'masters.apps.MastersConfig',
 ]
 
 MIDDLEWARE = [

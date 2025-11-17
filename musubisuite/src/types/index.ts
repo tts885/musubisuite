@@ -277,7 +277,7 @@ export interface Client {
   id: number;
   company_name: string;
   legal_name?: string;
-  email: string;
+  email?: string;
   representative?: string;
   established_date?: string;
   capital?: number;

@@ -1,0 +1,1027 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>コードマスタシステム - 設計書</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: #f5f5f5;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+        }
+        
+        header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 3rem 2rem;
+            text-align: center;
+        }
+        
+        header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        header p {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+        
+        nav {
+            background: #2c3e50;
+            padding: 1rem 2rem;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        
+        nav ul {
+            list-style: none;
+            display: flex;
+            gap: 2rem;
+            flex-wrap: wrap;
+        }
+        
+        nav a {
+            color: white;
+            text-decoration: none;
+            transition: color 0.3s;
+        }
+        
+        nav a:hover {
+            color: #3498db;
+        }
+        
+        main {
+            padding: 2rem;
+        }
+        
+        section {
+            margin-bottom: 3rem;
+        }
+        
+        h2 {
+            color: #2c3e50;
+            font-size: 2rem;
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 3px solid #667eea;
+        }
+        
+        h3 {
+            color: #34495e;
+            font-size: 1.5rem;
+            margin: 1.5rem 0 1rem;
+        }
+        
+        h4 {
+            color: #7f8c8d;
+            font-size: 1.2rem;
+            margin: 1rem 0 0.5rem;
+        }
+        
+        .info-box {
+            background: #e8f4f8;
+            border-left: 4px solid #3498db;
+            padding: 1rem;
+            margin: 1rem 0;
+        }
+        
+        .warning-box {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 1rem;
+            margin: 1rem 0;
+        }
+        
+        .success-box {
+            background: #d4edda;
+            border-left: 4px solid #28a745;
+            padding: 1rem;
+            margin: 1rem 0;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1rem 0;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        th, td {
+            padding: 0.75rem;
+            text-align: left;
+            border: 1px solid #ddd;
+        }
+        
+        th {
+            background: #667eea;
+            color: white;
+            font-weight: bold;
+        }
+        
+        tr:nth-child(even) {
+            background: #f8f9fa;
+        }
+        
+        code {
+            background: #f4f4f4;
+            padding: 0.2rem 0.4rem;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+            color: #e83e8c;
+        }
+        
+        pre {
+            background: #2d2d2d;
+            color: #f8f8f2;
+            padding: 1rem;
+            border-radius: 5px;
+            overflow-x: auto;
+            margin: 1rem 0;
+        }
+        
+        pre code {
+            background: none;
+            color: inherit;
+            padding: 0;
+        }
+        
+        .schema-diagram {
+            background: white;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            padding: 2rem;
+            margin: 2rem 0;
+        }
+        
+        .entity {
+            background: #fff;
+            border: 2px solid #667eea;
+            border-radius: 8px;
+            padding: 1rem;
+            margin: 1rem 0;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        .entity-header {
+            background: #667eea;
+            color: white;
+            padding: 0.5rem 1rem;
+            margin: -1rem -1rem 1rem -1rem;
+            border-radius: 6px 6px 0 0;
+            font-weight: bold;
+        }
+        
+        .field-list {
+            list-style: none;
+            padding: 0;
+        }
+        
+        .field-list li {
+            padding: 0.5rem 0;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .field-list li:last-child {
+            border-bottom: none;
+        }
+        
+        .field-type {
+            color: #3498db;
+            font-weight: bold;
+        }
+        
+        .api-endpoint {
+            background: #f8f9fa;
+            border-left: 4px solid #28a745;
+            padding: 1rem;
+            margin: 1rem 0;
+            font-family: 'Courier New', monospace;
+        }
+        
+        .method {
+            display: inline-block;
+            padding: 0.2rem 0.5rem;
+            border-radius: 3px;
+            font-weight: bold;
+            margin-right: 0.5rem;
+        }
+        
+        .method.get { background: #61affe; color: white; }
+        .method.post { background: #49cc90; color: white; }
+        .method.patch { background: #fca130; color: white; }
+        .method.delete { background: #f93e3e; color: white; }
+        
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin: 2rem 0;
+        }
+        
+        .feature-card {
+            background: white;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 1.5rem;
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+        
+        .feature-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+        }
+        
+        .feature-icon {
+            font-size: 2rem;
+            margin-bottom: 1rem;
+        }
+        
+        footer {
+            background: #2c3e50;
+            color: white;
+            text-align: center;
+            padding: 2rem;
+            margin-top: 3rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>📋 コードマスタシステム</h1>
+            <p>一元化されたドロップダウンリスト管理システムの設計書</p>
+        </header>
+        
+        <nav>
+            <ul>
+                <li><a href="#overview">概要</a></li>
+                <li><a href="#architecture">アーキテクチャ</a></li>
+                <li><a href="#database">データベース設計</a></li>
+                <li><a href="#api">API仕様</a></li>
+                <li><a href="#frontend">フロントエンド</a></li>
+                <li><a href="#ui-design">UI設計</a></li>
+                <li><a href="#usage">使用方法</a></li>
+            </ul>
+        </nav>
+        
+        <main>
+            <!-- 概要 -->
+            <section id="overview">
+                <h2>📖 システム概要</h2>
+                
+                <div class="info-box">
+                    <h4>目的</h4>
+                    <p>システム全体で使用されるドロップダウンリスト（業種、プロジェクトステータス、優先度など）を一元管理し、
+                    コード変更の柔軟性を高め、メンテナンス性を向上させる。</p>
+                </div>
+                
+                <h3>主な機能</h3>
+                <div class="feature-grid">
+                    <div class="feature-card">
+                        <div class="feature-icon">🗂️</div>
+                        <h4>カテゴリ管理</h4>
+                        <p>コードをカテゴリ別に分類し、階層的に管理</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">🏷️</div>
+                        <h4>コード管理</h4>
+                        <p>各カテゴリ内のコードを作成・編集・削除</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">🎨</div>
+                        <h4>UI拡張</h4>
+                        <p>色・アイコンなどのメタデータをサポート</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">🌍</div>
+                        <h4>多言語対応</h4>
+                        <p>日本語名と英語名の両方を管理</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">⚡</div>
+                        <h4>キャッシング</h4>
+                        <p>5分間のクライアントサイドキャッシュ</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">🔄</div>
+                        <h4>並び替え</h4>
+                        <p>ドラッグ&ドロップでコードの順序を変更</p>
+                    </div>
+                </div>
+                
+                <div class="success-box">
+                    <h4>✅ 実装完了項目</h4>
+                    <ul>
+                        <li>Djangoバックエンド（モデル、シリアライザー、ビューセット）</li>
+                        <li>データベースマイグレーション適用</li>
+                        <li>初期データロード（5カテゴリ、29コード）</li>
+                        <li>RESTful API（CRUD + カスタムアクション）</li>
+                        <li>フロントエンドサービス層（キャッシング付き）</li>
+                        <li>共通コンポーネント（CodeMasterSelect）</li>
+                        <li>管理画面UI（Reactコンポーネント）</li>
+                        <li>設定メニューへの統合</li>
+                    </ul>
+                </div>
+            </section>
+            
+            <!-- アーキテクチャ -->
+            <section id="architecture">
+                <h2>🏗️ システムアーキテクチャ</h2>
+                
+                <h3>レイヤー構成</h3>
+                <pre><code>┌─────────────────────────────────────────────┐
+│         プレゼンテーション層                   │
+│  ┌─────────────────────────────────────┐   │
+│  │  React UI Components                │   │
+│  │  - CodeMastersPage (管理画面)        │   │
+│  │  - CodeMasterSelect (共通コンポーネント) │   │
+│  └─────────────────────────────────────┘   │
+└─────────────────────────────────────────────┘
+                    ↕
+┌─────────────────────────────────────────────┐
+│          サービス層（ビジネスロジック）          │
+│  ┌─────────────────────────────────────┐   │
+│  │  CodeMasterService                  │   │
+│  │  - APIリクエスト                     │   │
+│  │  - キャッシュ管理（5分）              │   │
+│  │  - データ変換                        │   │
+│  └─────────────────────────────────────┘   │
+└─────────────────────────────────────────────┘
+                    ↕ (HTTP/JSON)
+┌─────────────────────────────────────────────┐
+│              API層 (Django REST)            │
+│  ┌─────────────────────────────────────┐   │
+│  │  ViewSets                           │   │
+│  │  - CodeCategoryViewSet              │   │
+│  │  - CodeMasterViewSet                │   │
+│  └─────────────────────────────────────┘   │
+└─────────────────────────────────────────────┘
+                    ↕
+┌─────────────────────────────────────────────┐
+│           データアクセス層 (ORM)             │
+│  ┌─────────────────────────────────────┐   │
+│  │  Django Models                      │   │
+│  │  - CodeCategory                     │   │
+│  │  - CodeMaster                       │   │
+│  └─────────────────────────────────────┘   │
+└─────────────────────────────────────────────┘
+                    ↕
+┌─────────────────────────────────────────────┐
+│           データベース (SQLite)              │
+│  - code_categories                          │
+│  - code_masters                             │
+└─────────────────────────────────────────────┘</code></pre>
+                
+                <h3>データフロー</h3>
+                <ol>
+                    <li><strong>ユーザー操作</strong>: UIコンポーネントでユーザーがアクションを実行</li>
+                    <li><strong>サービス呼び出し</strong>: コンポーネントがCodeMasterServiceを呼び出し</li>
+                    <li><strong>キャッシュチェック</strong>: サービスがキャッシュを確認（5分以内なら即返却）</li>
+                    <li><strong>API リクエスト</strong>: キャッシュミス時、Django REST APIにHTTPリクエスト</li>
+                    <li><strong>ビジネスロジック</strong>: ViewSetがリクエストを処理</li>
+                    <li><strong>データアクセス</strong>: ORMがデータベースクエリを実行</li>
+                    <li><strong>レスポンス</strong>: JSONレスポンスをフロントエンドに返却</li>
+                    <li><strong>キャッシュ保存</strong>: サービスがレスポンスをキャッシュ</li>
+                    <li><strong>UI更新</strong>: コンポーネントが状態を更新し、画面に反映</li>
+                </ol>
+            </section>
+            
+            <!-- データベース設計 -->
+            <section id="database">
+                <h2>💾 データベース設計</h2>
+                
+                <div class="schema-diagram">
+                    <div class="entity">
+                        <div class="entity-header">code_categories (コードカテゴリ)</div>
+                        <ul class="field-list">
+                            <li><span class="field-type">PK</span> <code>code</code> VARCHAR(50) - カテゴリコード</li>
+                            <li><span class="field-type">VARCHAR</span> <code>name</code> - カテゴリ名（日本語）</li>
+                            <li><span class="field-type">TEXT</span> <code>description</code> - 説明</li>
+                            <li><span class="field-type">BOOLEAN</span> <code>is_system</code> - システム定義フラグ</li>
+                            <li><span class="field-type">INT</span> <code>sort_order</code> - 表示順序</li>
+                            <li><span class="field-type">BOOLEAN</span> <code>is_active</code> - 有効フラグ</li>
+                            <li><span class="field-type">DATETIME</span> <code>created_at</code> - 作成日時</li>
+                            <li><span class="field-type">DATETIME</span> <code>updated_at</code> - 更新日時</li>
+                        </ul>
+                    </div>
+                    
+                    <div style="text-align: center; margin: 2rem 0;">
+                        <strong style="font-size: 1.5rem;">1 : N</strong>
+                        <p style="color: #666;">1つのカテゴリに複数のコード</p>
+                    </div>
+                    
+                    <div class="entity">
+                        <div class="entity-header">code_masters (コードマスタ)</div>
+                        <ul class="field-list">
+                            <li><span class="field-type">PK</span> <code>id</code> INTEGER - ID</li>
+                            <li><span class="field-type">FK</span> <code>category</code> → code_categories.code</li>
+                            <li><span class="field-type">VARCHAR</span> <code>code</code> - コード値</li>
+                            <li><span class="field-type">VARCHAR</span> <code>name</code> - 名前（日本語）</li>
+                            <li><span class="field-type">VARCHAR</span> <code>name_en</code> - 名前（英語）</li>
+                            <li><span class="field-type">TEXT</span> <code>description</code> - 説明</li>
+                            <li><span class="field-type">INT</span> <code>sort_order</code> - 表示順序</li>
+                            <li><span class="field-type">BOOLEAN</span> <code>is_active</code> - 有効フラグ</li>
+                            <li><span class="field-type">VARCHAR</span> <code>color</code> - 色（HEX）</li>
+                            <li><span class="field-type">VARCHAR</span> <code>icon</code> - アイコン名</li>
+                            <li><span class="field-type">VARCHAR</span> <code>parent_code</code> - 親コード（階層構造用）</li>
+                            <li><span class="field-type">JSON</span> <code>metadata</code> - メタデータ</li>
+                            <li><span class="field-type">DATETIME</span> <code>created_at</code> - 作成日時</li>
+                            <li><span class="field-type">DATETIME</span> <code>updated_at</code> - 更新日時</li>
+                        </ul>
+                        <div class="info-box" style="margin-top: 1rem;">
+                            <strong>UNIQUE制約:</strong> (category, code)
+                        </div>
+                    </div>
+                </div>
+                
+                <h3>初期データ</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>カテゴリコード</th>
+                            <th>カテゴリ名</th>
+                            <th>コード数</th>
+                            <th>説明</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>INDUSTRY</code></td>
+                            <td>業種</td>
+                            <td>12</td>
+                            <td>IT、製造業、金融、小売など</td>
+                        </tr>
+                        <tr>
+                            <td><code>PROJECT_STATUS</code></td>
+                            <td>プロジェクトステータス</td>
+                            <td>5</td>
+                            <td>計画中、進行中、保留、完了、キャンセル</td>
+                        </tr>
+                        <tr>
+                            <td><code>PROJECT_PRIORITY</code></td>
+                            <td>優先度</td>
+                            <td>4</td>
+                            <td>低、中、高、緊急</td>
+                        </tr>
+                        <tr>
+                            <td><code>TASK_STATUS</code></td>
+                            <td>タスクステータス</td>
+                            <td>3</td>
+                            <td>未着手、進行中、完了</td>
+                        </tr>
+                        <tr>
+                            <td><code>PREFECTURE</code></td>
+                            <td>都道府県</td>
+                            <td>0</td>
+                            <td>日本の47都道府県（今後追加予定）</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </section>
+            
+            <!-- API仕様 -->
+            <section id="api">
+                <h2>🔌 API仕様</h2>
+                
+                <h3>エンドポイント一覧</h3>
+                
+                <h4>カテゴリ管理</h4>
+                <div class="api-endpoint">
+                    <span class="method get">GET</span> /api/code-categories/
+                    <p>すべてのカテゴリを取得</p>
+                </div>
+                
+                <div class="api-endpoint">
+                    <span class="method get">GET</span> /api/code-categories/{code}/
+                    <p>特定カテゴリの詳細を取得（コードを含む）</p>
+                </div>
+                
+                <div class="api-endpoint">
+                    <span class="method post">POST</span> /api/code-categories/
+                    <p>新しいカテゴリを作成</p>
+                </div>
+                
+                <div class="api-endpoint">
+                    <span class="method patch">PATCH</span> /api/code-categories/{code}/
+                    <p>カテゴリを更新</p>
+                </div>
+                
+                <div class="api-endpoint">
+                    <span class="method delete">DELETE</span> /api/code-categories/{code}/
+                    <p>カテゴリを削除</p>
+                </div>
+                
+                <h4>コード管理</h4>
+                <div class="api-endpoint">
+                    <span class="method get">GET</span> /api/codemasters/
+                    <p>すべてのコードを取得</p>
+                </div>
+                
+                <div class="api-endpoint">
+                    <span class="method get">GET</span> /api/codemasters/{id}/
+                    <p>特定コードの詳細を取得</p>
+                </div>
+                
+                <div class="api-endpoint">
+                    <span class="method post">POST</span> /api/codemasters/
+                    <p>新しいコードを作成</p>
+                </div>
+                
+                <div class="api-endpoint">
+                    <span class="method patch">PATCH</span> /api/codemasters/{id}/
+                    <p>コードを更新</p>
+                </div>
+                
+                <div class="api-endpoint">
+                    <span class="method delete">DELETE</span> /api/codemasters/{id}/
+                    <p>コードを削除（論理削除）</p>
+                </div>
+                
+                <h4>カスタムアクション</h4>
+                <div class="api-endpoint">
+                    <span class="method get">GET</span> /api/codemasters/by_category/?category=INDUSTRY
+                    <p>特定カテゴリのコードを取得</p>
+                </div>
+                
+                <div class="api-endpoint">
+                    <span class="method get">GET</span> /api/codemasters/bulk/?categories=INDUSTRY,PROJECT_STATUS
+                    <p>複数カテゴリのコードを一括取得</p>
+                </div>
+                
+                <div class="api-endpoint">
+                    <span class="method post">POST</span> /api/codemasters/reorder/
+                    <p>コードの並び順を更新</p>
+                    <pre><code>{
+  "codes": [
+    {"id": 1, "sort_order": 0},
+    {"id": 2, "sort_order": 1}
+  ]
+}</code></pre>
+                </div>
+                
+                <h3>レスポンス例</h3>
+                <h4>カテゴリ一覧</h4>
+                <pre><code>[
+  {
+    "code": "INDUSTRY",
+    "name": "業種",
+    "description": "業種分類",
+    "is_system": true,
+    "sort_order": 0,
+    "is_active": true,
+    "codes_count": 12
+  }
+]</code></pre>
+                
+                <h4>カテゴリ詳細（コード含む）</h4>
+                <pre><code>{
+  "code": "INDUSTRY",
+  "name": "業種",
+  "description": "業種分類",
+  "is_system": true,
+  "sort_order": 0,
+  "is_active": true,
+  "codes": [
+    {
+      "id": 1,
+      "category": "INDUSTRY",
+      "code": "it",
+      "name": "IT・情報通信業",
+      "name_en": "IT & Information Services",
+      "description": "",
+      "sort_order": 0,
+      "is_active": true,
+      "color": "#3b82f6",
+      "icon": "Laptop",
+      "parent_code": null,
+      "metadata": null,
+      "created_at": "2024-01-01T00:00:00Z",
+      "updated_at": "2024-01-01T00:00:00Z"
+    }
+  ]
+}</code></pre>
+            </section>
+            
+            <!-- フロントエンド -->
+            <section id="frontend">
+                <h2>🎨 フロントエンド設計</h2>
+                
+                <h3>ファイル構成</h3>
+                <pre><code>musubisuite/src/
+├── services/
+│   └── codemaster.ts           # APIサービス + キャッシング
+├── components/
+│   └── shared/
+│       └── CodeMasterSelect.tsx # 共通ドロップダウンコンポーネント
+└── pages/
+    └── settings/
+        └── codemasters.tsx      # 管理画面</code></pre>
+        
+                <h3>主要コンポーネント</h3>
+                
+                <h4>1. CodeMasterService (services/codemaster.ts)</h4>
+                <div class="info-box">
+                    <p><strong>役割:</strong> API通信とキャッシュ管理を担当</p>
+                    <ul>
+                        <li>5分間のインメモリキャッシュ</li>
+                        <li>CRUD操作時のキャッシュ無効化</li>
+                        <li>一括取得・並び替え機能</li>
+                    </ul>
+                </div>
+                <pre><code>// 使用例
+import { codeMasterService } from '@/services/codemaster';
+
+// カテゴリのコードを取得
+const codes = await codeMasterService.getCodesByCategory('INDUSTRY');
+
+// 複数カテゴリを一括取得
+const bulkData = await codeMasterService.getBulkCodes(['INDUSTRY', 'PROJECT_STATUS']);</code></pre>
+                
+                <h4>2. CodeMasterSelect (components/shared/)</h4>
+                <div class="info-box">
+                    <p><strong>役割:</strong> 再利用可能なドロップダウンコンポーネント</p>
+                    <ul>
+                        <li>検索機能付き</li>
+                        <li>色とアイコンの表示</li>
+                        <li>自動データロード</li>
+                    </ul>
+                </div>
+                <pre><code>// 使用例
+&lt;CodeMasterSelect
+  category="INDUSTRY"
+  value={formData.industry}
+  onChange={(value) => setFormData({ ...formData, industry: value })}
+  placeholder="業種を選択"
+/&gt;</code></pre>
+                
+                <h4>3. CodeMastersPage (pages/settings/)</h4>
+                <div class="info-box">
+                    <p><strong>役割:</strong> コードマスタの管理UI</p>
+                    <ul>
+                        <li>タブでカテゴリ切り替え</li>
+                        <li>コードの追加・編集・削除</li>
+                        <li>ドラッグ&ドロップで並び替え</li>
+                        <li>ダイアログでフォーム表示</li>
+                    </ul>
+                </div>
+                
+                <h3>状態管理</h3>
+                <ul>
+                    <li><strong>ローカル状態</strong>: React.useState() でコンポーネント内状態を管理</li>
+                    <li><strong>キャッシュ</strong>: CodeMasterService内のMapオブジェクトでキャッシュ</li>
+                    <li><strong>データフロー</strong>: 単方向データフロー（親→子）</li>
+                </ul>
+            </section>
+            
+            <!-- UI設計 -->
+            <section id="ui-design">
+                <h2>🎨 UI設計</h2>
+                
+                <h3>管理画面（CodeMastersPage）</h3>
+                <div class="info-box">
+                    <h4>画面レイアウト</h4>
+                    <p>設定メニュー > コードマスタ管理からアクセス</p>
+                </div>
+                
+                <h4>コンポーネント構成</h4>
+                <pre><code>┌─────────────────────────────────────────────────────────┐
+│ ヘッダー                                                  │
+│  - タイトル: "コードマスタ管理"                            │
+│  - 説明: "システムで使用するドロップダウンリスト項目を管理"  │
+│  - [カテゴリ追加] ボタン                                   │
+└─────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────┐
+│ カテゴリタブ                                              │
+│  [業種] [ステータス] [優先度] [タスク] [都道府県]          │
+└─────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────┐
+│ カテゴリ情報                                              │
+│  カテゴリ名: 業種                                         │
+│  説明: 業種分類                                           │
+│  [編集] [削除] ボタン (システム定義カテゴリは非表示)       │
+└─────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────┐
+│ コード一覧テーブル                                         │
+│  [コード追加] ボタン                                       │
+│  ┌───────────────────────────────────────────────────┐  │
+│  │並び順│コード│名前│英語名│色│アイコン│状態│操作│    │  │
+│  ├───────────────────────────────────────────────────┤  │
+│  │ ↑↓  │ it  │IT..│IT &..│🔵 │Laptop │有効│✏️🗑️│   │  │
+│  │ ↑↓  │manu..│製造..│Manu..│🟢 │Factory│有効│✏️🗑️│   │  │
+│  └───────────────────────────────────────────────────┘  │
+└─────────────────────────────────────────────────────────┘</code></pre>
+
+                <h4>機能詳細</h4>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>UI要素</th>
+                            <th>機能</th>
+                            <th>実装</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>カテゴリタブ</td>
+                            <td>カテゴリ切り替え</td>
+                            <td>Tabs コンポーネント、選択時にコード一覧を再取得</td>
+                        </tr>
+                        <tr>
+                            <td>コード追加ボタン</td>
+                            <td>新規コード作成</td>
+                            <td>Dialog でフォーム表示、POST /api/codemasters/</td>
+                        </tr>
+                        <tr>
+                            <td>編集アイコン</td>
+                            <td>コード編集</td>
+                            <td>Dialog でフォーム表示、PATCH /api/codemasters/{id}/</td>
+                        </tr>
+                        <tr>
+                            <td>削除アイコン</td>
+                            <td>コード削除</td>
+                            <td>確認ダイアログ後、DELETE /api/codemasters/{id}/</td>
+                        </tr>
+                        <tr>
+                            <td>並び順ボタン</td>
+                            <td>コード並び替え</td>
+                            <td>上下矢印クリックで順序変更、POST /api/codemasters/reorder/</td>
+                        </tr>
+                        <tr>
+                            <td>色表示</td>
+                            <td>視覚的な識別</td>
+                            <td>HEX色コードで塗りつぶした四角形 + 色コード文字列</td>
+                        </tr>
+                    </tbody>
+                </table>
+                
+                <h3>共通コンポーネント（CodeMasterSelect）</h3>
+                <div class="info-box">
+                    <h4>ドロップダウンコンポーネント</h4>
+                    <p>プロジェクト作成・編集フォームなどで再利用可能</p>
+                </div>
+                
+                <h4>表示例</h4>
+                <pre><code>┌──────────────────────────────────────┐
+│ 🔵 IT・情報通信業            ▼      │  ← 選択済み状態
+└──────────────────────────────────────┘
+       ↓ クリック
+┌──────────────────────────────────────┐
+│ 🔍 検索...                           │  ← 検索ボックス
+├──────────────────────────────────────┤
+│ ✓ 🔵 IT・情報通信業 (IT & Info..)   │  ← 選択中
+│   🟢 製造業 (Manufacturing)          │
+│   🟡 金融業 (Finance)                │
+│   🔴 小売業 (Retail)                 │
+│   ⚪ サービス業 (Service)             │
+└──────────────────────────────────────┘</code></pre>
+
+                <h4>実装仕様</h4>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>プロパティ</th>
+                            <th>型</th>
+                            <th>説明</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>category</td>
+                            <td>string</td>
+                            <td>カテゴリコード（例: "INDUSTRY"）</td>
+                        </tr>
+                        <tr>
+                            <td>value</td>
+                            <td>string</td>
+                            <td>選択中のコード値</td>
+                        </tr>
+                        <tr>
+                            <td>onChange</td>
+                            <td>(value: string) => void</td>
+                            <td>値変更時のコールバック</td>
+                        </tr>
+                        <tr>
+                            <td>placeholder</td>
+                            <td>string</td>
+                            <td>未選択時の表示文字列（オプション）</td>
+                        </tr>
+                        <tr>
+                            <td>disabled</td>
+                            <td>boolean</td>
+                            <td>無効化フラグ（オプション）</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h4>使用されているUIコンポーネント</h4>
+                <ul>
+                    <li><strong>Popover</strong>: ドロップダウン表示の制御</li>
+                    <li><strong>Command</strong>: 検索可能なコマンドパレット</li>
+                    <li><strong>CommandInput</strong>: リアルタイム検索</li>
+                    <li><strong>CommandItem</strong>: 各選択肢の表示</li>
+                    <li><strong>Button</strong>: トリガーボタン</li>
+                </ul>
+
+                <h3>統合箇所</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>画面</th>
+                            <th>使用箇所</th>
+                            <th>カテゴリ</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>プロジェクト一覧</td>
+                            <td>新規作成ダイアログ</td>
+                            <td>PROJECT_STATUS, PROJECT_PRIORITY</td>
+                        </tr>
+                        <tr>
+                            <td>プロジェクト詳細</td>
+                            <td>編集ダイアログ</td>
+                            <td>PROJECT_STATUS, PROJECT_PRIORITY</td>
+                        </tr>
+                        <tr>
+                            <td>設定 > コードマスタ管理</td>
+                            <td>管理画面全体</td>
+                            <td>全カテゴリ</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <div class="success-box">
+                    <h4>✅ UI実装完了</h4>
+                    <ul>
+                        <li>管理画面: タブ切り替え、CRUD操作、並び替え機能</li>
+                        <li>共通コンポーネント: 検索可能なドロップダウン、色・アイコン表示</li>
+                        <li>統合: プロジェクト画面でコードマスタを使用</li>
+                        <li>レスポンシブ対応: モバイルでも操作可能</li>
+                    </ul>
+                </div>
+            </section>
+            
+            <!-- 使用方法 -->
+            <section id="usage">
+                <h2>📚 使用方法</h2>
+                
+                <h3>1. 既存フォームへの適用</h3>
+                <h4>Before（ハードコード）</h4>
+                <pre><code>&lt;Select onValueChange={handleStatusChange} value={formData.status}&gt;
+  &lt;SelectTrigger&gt;
+    &lt;SelectValue placeholder="ステータスを選択" /&gt;
+  &lt;/SelectTrigger&gt;
+  &lt;SelectContent&gt;
+    &lt;SelectItem value="planning"&gt;計画中&lt;/SelectItem&gt;
+    &lt;SelectItem value="active"&gt;進行中&lt;/SelectItem&gt;
+    &lt;SelectItem value="completed"&gt;完了&lt;/SelectItem&gt;
+  &lt;/SelectContent&gt;
+&lt;/Select&gt;</code></pre>
+                
+                <h4>After（コードマスタ使用）</h4>
+                <pre><code>&lt;CodeMasterSelect
+  category="PROJECT_STATUS"
+  value={formData.status}
+  onChange={handleStatusChange}
+  placeholder="ステータスを選択"
+/&gt;</code></pre>
+                
+                <h3>2. 新しいカテゴリの追加</h3>
+                <ol>
+                    <li>設定画面の「コードマスタ管理」を開く</li>
+                    <li>「カテゴリ追加」ボタンをクリック</li>
+                    <li>カテゴリコード（例: PREFECTURE）と名前を入力</li>
+                    <li>保存後、そのカテゴリにコードを追加</li>
+                </ol>
+                
+                <h3>3. コードの追加・編集</h3>
+                <ol>
+                    <li>対象カテゴリのタブを選択</li>
+                    <li>「コード追加」ボタンをクリック</li>
+                    <li>必須項目（コード、名前）を入力</li>
+                    <li>オプション項目（色、アイコン、英語名など）を入力</li>
+                    <li>保存</li>
+                </ol>
+                
+                <div class="warning-box">
+                    <h4>⚠️ 注意事項</h4>
+                    <ul>
+                        <li><strong>システム定義カテゴリ</strong>は削除できません（is_system=true）</li>
+                        <li><strong>コードの削除</strong>は論理削除（is_active=false）です</li>
+                        <li><strong>キャッシュ</strong>は5分間有効です。即時反映が必要な場合はページ再読み込み</li>
+                    </ul>
+                </div>
+                
+                <h3>4. 並び順の変更</h3>
+                <p>管理画面で上下矢印ボタンを使用してコードの順序を変更できます。</p>
+                
+                <h3>5. バックエンドから直接操作</h3>
+                <pre><code># Django管理画面
+python manage.py createsuperuser
+# http://localhost:8000/admin/ でアクセス
+
+# シェルから操作
+python manage.py shell
+&gt;&gt;&gt; from masters.models import CodeMaster
+&gt;&gt;&gt; codes = CodeMaster.objects.filter(category='INDUSTRY')
+&gt;&gt;&gt; for code in codes:
+...     print(code.name)</code></pre>
+            </section>
+            
+            <!-- ベストプラクティス -->
+            <section id="best-practices">
+                <h2>💡 ベストプラクティス</h2>
+                
+                <div class="success-box">
+                    <h4>推奨事項</h4>
+                    <ul>
+                        <li>カテゴリコードは<strong>大文字のスネークケース</strong>を使用（例: PROJECT_STATUS）</li>
+                        <li>コード値は<strong>小文字のケバブケース</strong>を使用（例: in-progress）</li>
+                        <li>色は<strong>16進数カラーコード</strong>で指定（例: #3b82f6）</li>
+                        <li>アイコンは<strong>Lucideアイコン名</strong>を指定（例: Laptop, Building2）</li>
+                        <li>英語名も可能な限り入力（国際化対応）</li>
+                    </ul>
+                </div>
+                
+                <div class="info-box">
+                    <h4>パフォーマンス最適化</h4>
+                    <ul>
+                        <li>複数カテゴリが必要な場合は<code>getBulkCodes()</code>を使用</li>
+                        <li>頻繁に変更しないデータは長めのキャッシュ時間を設定</li>
+                        <li>不要なAPIコールを避けるため、コンポーネントのマウント時に一度だけ取得</li>
+                    </ul>
+                </div>
+            </section>
+            
+            <!-- 今後の拡張 -->
+            <section id="future">
+                <h2>🚀 今後の拡張予定</h2>
+                
+                <table>
+                    <thead>
+                        <tr>
+                            <th>機能</th>
+                            <th>説明</th>
+                            <th>優先度</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>階層構造サポート</td>
+                            <td>parent_codeフィールドを活用した階層ドロップダウン</td>
+                            <td>中</td>
+                        </tr>
+                        <tr>
+                            <td>都道府県データ追加</td>
+                            <td>PREFECTUREカテゴリに47都道府県を追加</td>
+                            <td>高</td>
+                        </tr>
+                        <tr>
+                            <td>インポート/エクスポート</td>
+                            <td>CSV/JSONでのデータの一括インポート・エクスポート</td>
+                            <td>中</td>
+                        </tr>
+                        <tr>
+                            <td>変更履歴</td>
+                            <td>コードマスタの変更履歴を記録</td>
+                            <td>低</td>
+                        </tr>
+                        <tr>
+                            <td>権限管理</td>
+                            <td>カテゴリごとの編集権限設定</td>
+                            <td>中</td>
+                        </tr>
+                        <tr>
+                            <td>多言語拡張</td>
+                            <td>中国語、韓国語などの追加</td>
+                            <td>低</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </section>
+        </main>
+        
+        <footer>
+            <p>&copy; 2024 MusubiSuite - Code Master System</p>
+            <p>Documentation v1.0</p>
+        </footer>
+    </div>
+</body>
+</html>

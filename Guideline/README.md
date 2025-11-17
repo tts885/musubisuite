@@ -19,6 +19,7 @@
 | 08 | [POWER_APPS_INTEGRATION.md](08_POWER_APPS_INTEGRATION.md) | Power Apps & Dataverse統合 | Power Apps開発者 |
 | 09 | [TESTING_STRATEGY.md](09_TESTING_STRATEGY.md) | テスト戦略とカバレッジ | 全開発者、QA |
 | 10 | [DEPLOYMENT.md](10_DEPLOYMENT.md) | デプロイメントとCI/CD | DevOps、インフラ |
+| 11 | [CODE_MASTER_INTEGRATION.md](11_CODE_MASTER_INTEGRATION.md) | コードマスタ統合ガイドライン | 全開発者 |
 
 ## 🎯 ガイドラインの目的
 
@@ -142,6 +143,19 @@ AI自動コード生成時に該当ガイドラインを参照指示に含める
 
 ---
 
-**Last Updated**: 2025年11月14日  
-**Version**: 1.0.0  
+## 📝 更新履歴
+
+### 2025年11月17日
+- ✨ **NEW**: 11_CODE_MASTER_INTEGRATION.md を追加
+  - コードマスタ統合の設計とベストプラクティス
+  - クライアント管理での実装例
+  - 共通パターンとコンポーネント化指針
+
+### 2025年11月14日
+- 初版リリース (00-10番のガイドライン)
+
+---
+
+**Last Updated**: 2025年11月17日  
+**Version**: 1.1.0  
 **Maintainer**: MusubiSuite Development Team

@@ -35,7 +35,6 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
@@ -50,18 +49,35 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover"
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command"
 import { 
   Search, 
   ArrowUpDown, 
   ChevronLeft, 
   ChevronRight,
   Eye,
-  Plus
+  Plus,
+  Check,
+  ChevronsUpDown,
+  Edit
 } from "lucide-react"
 import { getStatusLabel, getPriorityLabel } from "@/data/mockData"
 import type { Project, Client, ProjectStatus, ProjectPriority } from "@/types"
 import { djangoAPI } from "@/services/djangoAPI"
 import { toast } from "sonner"
+import { CodeMasterSelect } from "@/components/shared/CodeMasterSelect"
 
 /**
  * プロジェクト一覧ページコンポーネント
@@ -95,12 +111,14 @@ export default function ProjectsPage() {
   const [globalFilter, setGlobalFilter] = useState("")
   const [statusFilter, setStatusFilter] = useState<ProjectStatus | "all">("all")
   const [priorityFilter, setPriorityFilter] = useState<ProjectPriority | "all">("all")
-  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
+  const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [isCreating, setIsCreating] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [projects, setProjects] = useState<Project[]>([])
   const [clients, setClients] = useState<Client[]>([])
-  const [newProject, setNewProject] = useState({
+  const [editingProject, setEditingProject] = useState<Project | null>(null)
+  const [clientPopoverOpen, setClientPopoverOpen] = useState(false)
+  const [formData, setFormData] = useState({
     name: "",
     description: "",
     clientId: "",
@@ -111,6 +129,38 @@ export default function ProjectsPage() {
     budget: "",
   })
 
+  // 新規作成ダイアログを開く
+  const handleOpenCreateDialog = () => {
+    setEditingProject(null)
+    setFormData({
+      name: "",
+      description: "",
+      clientId: "",
+      status: "planning",
+      priority: "medium",
+      startDate: new Date().toISOString().split('T')[0],
+      endDate: "",
+      budget: "",
+    })
+    setIsDialogOpen(true)
+  }
+
+  // 編集ダイアログを開く
+  const handleOpenEditDialog = (project: Project) => {
+    setEditingProject(project)
+    setFormData({
+      name: project.name,
+      description: project.description,
+      clientId: String(project.clientId),
+      status: project.status,
+      priority: project.priority,
+      startDate: project.startDate instanceof Date ? project.startDate.toISOString().split('T')[0] : project.startDate,
+      endDate: project.endDate instanceof Date ? project.endDate.toISOString().split('T')[0] : project.endDate,
+      budget: project.budget ? String(project.budget) : "",
+    })
+    setIsDialogOpen(true)
+  }
+
   // 初期データを取得
   useEffect(() => {
     const fetchData = async () => {
@@ -118,14 +168,11 @@ export default function ProjectsPage() {
       try {
         // クライアント一覧を取得
         const clientsData = await djangoAPI.getClients();
-        console.log('取得したクライアントデータ:', clientsData);
         const clients = clientsData.results || clientsData;
-        console.log('設定するクライアント:', clients);
         setClients(clients);
 
         // プロジェクト一覧を取得
         const projectsData = await djangoAPI.getProjects();
-        console.log('取得したプロジェクトデータ:', projectsData);
         const projects = projectsData.results || projectsData;
         
         // Django APIのレスポンスをフロントエンドの型に変換
@@ -147,7 +194,6 @@ export default function ProjectsPage() {
           updatedAt: new Date(p.updated_at),
         }));
         
-        console.log('設定するプロジェクト:', transformedProjects);
         setProjects(transformedProjects);
         
       } catch (error) {
@@ -161,18 +207,18 @@ export default function ProjectsPage() {
   }, []);
 
   // 新規案件作成ハンドラー
-  const handleCreateProject = async () => {
-    if (!newProject.name.trim()) {
+  const handleSave = async () => {
+    if (!formData.name.trim()) {
       toast.error('案件名を入力してください');
       return;
     }
 
-    if (!newProject.clientId) {
+    if (!formData.clientId) {
       toast.error('クライアントを選択してください');
       return;
     }
 
-    if (!newProject.endDate) {
+    if (!formData.endDate) {
       toast.error('期限を入力してください');
       return;
     }
@@ -182,47 +228,76 @@ export default function ProjectsPage() {
     try {
       // Django APIにデータを送信
       const projectData = {
-        name: newProject.name,
-        description: newProject.description,
-        status: newProject.status,
-        priority: newProject.priority,
-        client_id: newProject.clientId,
-        start_date: newProject.startDate,
-        end_date: newProject.endDate,
-        budget: newProject.budget ? parseFloat(newProject.budget) : undefined,
+        name: formData.name,
+        description: formData.description,
+        status: formData.status,
+        priority: formData.priority,
+        client_id: formData.clientId,
+        start_date: formData.startDate,
+        end_date: formData.endDate,
+        budget: formData.budget ? parseFloat(formData.budget) : undefined,
         tags: [],
       };
-
-      console.log('送信するプロジェクトデータ:', projectData);
-      const createdProject = await djangoAPI.createProject(projectData);
-      console.log('作成されたプロジェクト:', createdProject);
       
-      // 成功メッセージ
-      toast.success('案件が正常に作成されました!');
+      if (editingProject) {
+        // 編集モード
+        const updatedProject = await djangoAPI.updateProject(editingProject.id, projectData);
+        
+        // 成功メッセージ
+        toast.success('案件が正常に更新されました!');
+        
+        // ローカルの状態を更新
+        const updatedProjectData: Project = {
+          id: String(updatedProject.id),
+          name: updatedProject.name,
+          description: updatedProject.description,
+          status: updatedProject.status,
+          priority: updatedProject.priority,
+          clientId: String(updatedProject.client.id),
+          startDate: new Date(updatedProject.start_date),
+          endDate: new Date(updatedProject.end_date),
+          budget: updatedProject.budget,
+          progress: updatedProject.progress,
+          ownerId: updatedProject.owner?.id ? String(updatedProject.owner.id) : '',
+          memberIds: updatedProject.members?.map((m: any) => String(m.id)) || [],
+          tags: updatedProject.tags || [],
+          createdAt: new Date(updatedProject.created_at),
+          updatedAt: new Date(updatedProject.updated_at),
+        };
+        
+        setProjects(prev => prev.map(p => p.id === editingProject.id ? updatedProjectData : p));
+      } else {
+        // 新規作成モード
+        const createdProject = await djangoAPI.createProject(projectData);
+        
+        // 成功メッセージ
+        toast.success('案件が正常に作成されました!');
+        
+        // ローカルの状態を更新
+        const newProjectData: Project = {
+          id: String(createdProject.id),
+          name: createdProject.name,
+          description: createdProject.description,
+          status: createdProject.status,
+          priority: createdProject.priority,
+          clientId: String(createdProject.client.id),
+          startDate: new Date(createdProject.start_date),
+          endDate: new Date(createdProject.end_date),
+          budget: createdProject.budget,
+          progress: createdProject.progress,
+          ownerId: createdProject.owner?.id ? String(createdProject.owner.id) : '',
+          memberIds: createdProject.members?.map((m: any) => String(m.id)) || [],
+          tags: createdProject.tags || [],
+          createdAt: new Date(createdProject.created_at),
+          updatedAt: new Date(createdProject.updated_at),
+        };
+        
+        setProjects(prev => [newProjectData, ...prev]);
+      }
       
-      // ローカルの状態を更新
-      const newProjectData: Project = {
-        id: String(createdProject.id),
-        name: createdProject.name,
-        description: createdProject.description,
-        status: createdProject.status,
-        priority: createdProject.priority,
-        clientId: String(createdProject.client.id),
-        startDate: new Date(createdProject.start_date),
-        endDate: new Date(createdProject.end_date),
-        budget: createdProject.budget,
-        progress: createdProject.progress,
-        ownerId: createdProject.owner?.id ? String(createdProject.owner.id) : '',
-        memberIds: createdProject.members?.map((m: any) => String(m.id)) || [],
-        tags: createdProject.tags || [],
-        createdAt: new Date(createdProject.created_at),
-        updatedAt: new Date(createdProject.updated_at),
-      };
-      
-      setProjects(prev => [newProjectData, ...prev]);
-      
-      setIsCreateDialogOpen(false);
-      setNewProject({
+      setIsDialogOpen(false);
+      setEditingProject(null);
+      setFormData({
         name: "",
         description: "",
         clientId: "",
@@ -310,7 +385,7 @@ export default function ProjectsPage() {
       header: "クライアント",
       cell: ({ row }) => {
         const client = clients.find(c => String(c.id) === row.original.clientId)
-        return client?.companyName || "-"
+        return client?.company_name || "-"
       },
     },
     {
@@ -430,7 +505,10 @@ export default function ProjectsPage() {
       id: "actions",
       cell: ({ row }) => {
         return (
-          <div className="flex justify-end">
+          <div className="flex justify-end gap-1">
+            <Button variant="ghost" size="sm" onClick={() => handleOpenEditDialog(row.original)}>
+              <Edit className="h-4 w-4" />
+            </Button>
             <Link to={`/dashboard/projects/${row.original.id}`}>
               <Button variant="ghost" size="sm">
                 <Eye className="h-4 w-4" />
@@ -476,18 +554,17 @@ export default function ProjectsPage() {
               全<span className="font-semibold text-foreground">{filteredData.length}</span>件の案件を管理
             </p>
           </div>
-          <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-            <DialogTrigger asChild>
-              <Button size="lg" className="shadow-md hover:shadow-lg transition-shadow">
-                <Plus className="mr-2 h-5 w-5" />
-                新規案件
-              </Button>
-            </DialogTrigger>
+          <Button size="lg" className="shadow-md hover:shadow-lg transition-shadow" onClick={handleOpenCreateDialog}>
+            <Plus className="mr-2 h-5 w-5" />
+            新規案件
+          </Button>
+          
+          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogContent className="sm:max-w-[600px]">
             <DialogHeader>
-              <DialogTitle>新規案件作成</DialogTitle>
+              <DialogTitle>{editingProject ? '案件編集' : '新規案件作成'}</DialogTitle>
               <DialogDescription>
-                新しい案件の情報を入力してください
+                {editingProject ? '案件の情報を編集してください' : '新しい案件の情報を入力してください'}
               </DialogDescription>
             </DialogHeader>
             <div className="grid gap-4 py-4">
@@ -495,8 +572,8 @@ export default function ProjectsPage() {
                 <Label htmlFor="name">案件名 *</Label>
                 <Input
                   id="name"
-                  value={newProject.name}
-                  onChange={(e) => setNewProject({...newProject, name: e.target.value})}
+                  value={formData.name}
+                  onChange={(e) => setFormData({...formData, name: e.target.value})}
                   placeholder="案件名を入力"
                 />
               </div>
@@ -504,8 +581,8 @@ export default function ProjectsPage() {
                 <Label htmlFor="description">説明</Label>
                 <Textarea
                   id="description"
-                  value={newProject.description}
-                  onChange={(e) => setNewProject({...newProject, description: e.target.value})}
+                  value={formData.description}
+                  onChange={(e) => setFormData({...formData, description: e.target.value})}
                   placeholder="案件の説明を入力"
                   rows={3}
                 />
@@ -513,56 +590,74 @@ export default function ProjectsPage() {
               <div className="grid grid-cols-2 gap-4">
                 <div className="grid gap-2">
                   <Label htmlFor="client">クライアント *</Label>
-                  <Select value={newProject.clientId} onValueChange={(value) => setNewProject({...newProject, clientId: value})}>
-                    <SelectTrigger id="client">
-                      <SelectValue placeholder="選択してください" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {clients.map(client => (
-                        <SelectItem key={client.id} value={client.id}>
-                          {client.companyName}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <Popover open={clientPopoverOpen} onOpenChange={setClientPopoverOpen}>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        role="combobox"
+                        aria-expanded={clientPopoverOpen}
+                        className="w-full justify-between"
+                      >
+                        {formData.clientId
+                          ? clients.find((client) => String(client.id) === formData.clientId)?.company_name || `クライアントID: ${formData.clientId} (見つかりません)`
+                          : "クライアントを選択"}
+                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-[400px] p-0">
+                      <Command>
+                        <CommandInput placeholder="クライアント名で検索..." />
+                        <CommandList>
+                          <CommandEmpty>クライアントが見つかりません。</CommandEmpty>
+                          <CommandGroup>
+                            {clients.map((client) => (
+                              <CommandItem
+                                key={client.id}
+                                value={client.company_name}
+                                onSelect={() => {
+                                  setFormData({...formData, clientId: String(client.id)})
+                                  setClientPopoverOpen(false)
+                                }}
+                              >
+                                <Check
+                                  className={"mr-2 h-4 w-4 " + (formData.clientId === String(client.id) ? "opacity-100" : "opacity-0")}
+                                />
+                                {client.company_name}
+                              </CommandItem>
+                            ))}
+                          </CommandGroup>
+                        </CommandList>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
                 </div>
                 <div className="grid gap-2">
                   <Label htmlFor="status">ステータス</Label>
-                  <Select value={newProject.status} onValueChange={(value) => setNewProject({...newProject, status: value as ProjectStatus})}>
-                    <SelectTrigger id="status">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="planning">計画中</SelectItem>
-                      <SelectItem value="active">進行中</SelectItem>
-                      <SelectItem value="on-hold">保留</SelectItem>
-                      <SelectItem value="completed">完了</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <CodeMasterSelect
+                    category="PROJECT_STATUS"
+                    value={formData.status}
+                    onChange={(value) => setFormData({...formData, status: value as ProjectStatus})}
+                    placeholder="ステータスを選択"
+                  />
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="grid gap-2">
                   <Label htmlFor="priority">優先度</Label>
-                  <Select value={newProject.priority} onValueChange={(value) => setNewProject({...newProject, priority: value as ProjectPriority})}>
-                    <SelectTrigger id="priority">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="low">低</SelectItem>
-                      <SelectItem value="medium">中</SelectItem>
-                      <SelectItem value="high">高</SelectItem>
-                      <SelectItem value="urgent">緊急</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <CodeMasterSelect
+                    category="PROJECT_PRIORITY"
+                    value={formData.priority}
+                    onChange={(value) => setFormData({...formData, priority: value as ProjectPriority})}
+                    placeholder="優先度を選択"
+                  />
                 </div>
                 <div className="grid gap-2">
                   <Label htmlFor="budget">予算</Label>
                   <Input
                     id="budget"
                     type="number"
-                    value={newProject.budget}
-                    onChange={(e) => setNewProject({...newProject, budget: e.target.value})}
+                    value={formData.budget}
+                    onChange={(e) => setFormData({...formData, budget: e.target.value})}
                     placeholder="0"
                   />
                 </div>
@@ -573,27 +668,31 @@ export default function ProjectsPage() {
                   <Input
                     id="startDate"
                     type="date"
-                    value={newProject.startDate}
-                    onChange={(e) => setNewProject({...newProject, startDate: e.target.value})}
+                    value={formData.startDate}
+                    onChange={(e) => setFormData({...formData, startDate: e.target.value})}
                   />
                 </div>
                 <div className="grid gap-2">
-                  <Label htmlFor="endDate">期限 *</Label>
+                  <Label htmlFor="endDate">期限</Label>
                   <Input
                     id="endDate"
                     type="date"
-                    value={newProject.endDate}
-                    onChange={(e) => setNewProject({...newProject, endDate: e.target.value})}
+                    value={formData.endDate}
+                    onChange={(e) => setFormData({...formData, endDate: e.target.value})}
                   />
                 </div>
               </div>
             </div>
             <DialogFooter>
-              <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)} disabled={isCreating}>
+              <Button variant="outline" onClick={() => setIsDialogOpen(false)} disabled={isCreating}>
                 キャンセル
               </Button>
-              <Button onClick={handleCreateProject} disabled={!newProject.name || isCreating}>
-                {isCreating ? "作成中..." : "作成"}
+              <Button onClick={handleSave} disabled={!formData.name || isCreating}>
+                {isCreating ? (
+                  editingProject ? '更新中...' : '作成中...'
+                ) : (
+                  editingProject ? '更新' : '作成'
+                )}
               </Button>
             </DialogFooter>
           </DialogContent>

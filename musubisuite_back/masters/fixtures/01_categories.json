@@ -1,0 +1,57 @@
+[
+  {
+    "model": "masters.codecategory",
+    "pk": "INDUSTRY",
+    "fields": {
+      "name": "業種",
+      "description": "クライアントの業種分類",
+      "is_system": true,
+      "sort_order": 10,
+      "is_active": true
+    }
+  },
+  {
+    "model": "masters.codecategory",
+    "pk": "PROJECT_STATUS",
+    "fields": {
+      "name": "案件ステータス",
+      "description": "プロジェクトの進行状況",
+      "is_system": true,
+      "sort_order": 20,
+      "is_active": true
+    }
+  },
+  {
+    "model": "masters.codecategory",
+    "pk": "PROJECT_PRIORITY",
+    "fields": {
+      "name": "案件優先度",
+      "description": "プロジェクトの重要度",
+      "is_system": true,
+      "sort_order": 30,
+      "is_active": true
+    }
+  },
+  {
+    "model": "masters.codecategory",
+    "pk": "TASK_STATUS",
+    "fields": {
+      "name": "タスクステータス",
+      "description": "タスクの進行状況",
+      "is_system": true,
+      "sort_order": 40,
+      "is_active": true
+    }
+  },
+  {
+    "model": "masters.codecategory",
+    "pk": "PREFECTURE",
+    "fields": {
+      "name": "都道府県",
+      "description": "日本の都道府県",
+      "is_system": true,
+      "sort_order": 50,
+      "is_active": true
+    }
+  }
+]

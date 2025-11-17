@@ -29,12 +29,13 @@ class ClientEnrichmentService:
         self.search_client = SearchClient()
         self.prompts = PromptTemplates()
     
-    def fetch_company_info(self, company_name: str) -> Dict[str, Any]:
+    def fetch_company_info(self, company_name: str, use_web_search: bool = True) -> Dict[str, Any]:
         """
         企業名から企業情報を取得
         
         Args:
             company_name: 企業名
+            use_web_search: Web検索を使用するか（Googleの場合のみ有効、デフォルト: True）
             
         Returns:
             企業情報の辞書（ai_generated=True, ai_confidence_scoreを含む）
@@ -43,40 +44,48 @@ class ClientEnrichmentService:
             Exception: 情報取得に失敗した場合
         """
         try:
-            logger.info(f"企業情報取得開始: {company_name}")
+            logger.info(f"企業情報取得開始: {company_name}, Web検索={use_web_search}")
             
-            # TODO: 実際のAI実装に置き換える
-            # 現在はダミーデータを返す
+            # プロンプト構築（Web検索対応版）
+            prompt = self._build_company_info_prompt(company_name, use_web_search)
+            
+            # プロバイダー別の生成処理
+            provider_type = getattr(self.ai_client.provider, 'provider_type', 'unknown')
+            if provider_type == 'google' and use_web_search:
+                response_text = self._generate_with_google_grounding(prompt)
+            else:
+                response_text = self.ai_client.generate(prompt)
+            
+            logger.debug(f"AI生成結果: {response_text[:200]}...")
+            
+            # JSONパース
+            structured_data = self._parse_json_response(response_text)
+            
+            # 信頼度スコア計算
+            confidence_score = self._calculate_confidence_score(structured_data)
+            
+            # メタデータ追加
             result = {
-                'company_name': company_name,
-                'legal_name': f"{company_name}株式会社",
-                'representative': '山田太郎',
-                'established_date': '2000-01-01',
-                'capital': 10000000,
-                'employee_count': 50,
-                'industry': 'it',
-                'website': f'https://{company_name.lower()}.example.com',
-                'description': f'{company_name}は、IT関連サービスを提供する企業です。',
-                'postal_code': '100-0001',
-                'prefecture': '東京都',
-                'city': '千代田区',
-                'address': '千代田1-1-1',
-                'phone': '03-1234-5678',
-                'fax': '03-1234-5679',
+                **structured_data,
                 'ai_generated': True,
-                'ai_confidence_score': 85,
                 'ai_generated_at': datetime.now().isoformat(),
-                '_search_results_count': 5,
-                '_search_urls': [
-                    f'https://{company_name.lower()}.example.com',
-                    f'https://ja.wikipedia.org/wiki/{company_name}',
-                    f'https://www.bloomberg.com/{company_name}'
-                ]
+                'ai_confidence_score': confidence_score,
+                'ai_provider': self.ai_client.info['name'],
+                'web_search_used': provider_type == 'google' and use_web_search,
             }
             
-            logger.info(f"企業情報取得完了: {company_name}")
+            logger.info(
+                f"企業情報取得完了: {company_name}, "
+                f"信頼度={confidence_score}%, "
+                f"プロバイダー={self.ai_client.info['name']}, "
+                f"Web検索={result['web_search_used']}"
+            )
+            
             return result
             
+        except json.JSONDecodeError as e:
+            logger.error(f"JSON解析エラー: {str(e)}, レスポンス: {response_text[:500]}")
+            raise Exception(f"AI応答の解析に失敗しました: {str(e)}")
         except Exception as e:
             logger.error(f"企業情報取得エラー: {company_name} - {str(e)}", exc_info=True)
             raise Exception(f"企業情報の取得に失敗しました: {str(e)}")
@@ -103,46 +112,16 @@ class ClientEnrichmentService:
             
             logger.info(f"企業情報更新開始: ID={client_id}, {company_name}")
             
-            # TODO: 実際のAI実装に置き換える
-            # 現在はダミーの変更データを返す
-            changes = [
-                {
-                    'field': 'representative',
-                    'old_value': client_data.get('representative', ''),
-                    'new_value': '新代表者名',
-                    'confidence': 90
-                },
-                {
-                    'field': 'employee_count',
-                    'old_value': client_data.get('employee_count', 0),
-                    'new_value': 100,
-                    'confidence': 85
-                }
-            ]
+            # 最新情報を取得
+            new_data = self.fetch_company_info(company_name)
             
-            # 新しいデータを構築
-            new_data = client_data.copy()
-            for change in changes:
-                field = change.get('field')
-                new_value = change.get('new_value')
-                if field and new_value is not None:
-                    new_data[field] = new_value
-            
-            new_data.update({
-                'ai_generated': True,
-                'ai_confidence_score': 88,
-                'ai_generated_at': datetime.now().isoformat(),
-            })
+            # 差分を計算
+            changes = self._calculate_changes(client_data, new_data)
             
             result = {
                 'changes': changes,
                 'new_data': new_data,
-                'confidence_score': 88,
-                '_search_results_count': 5,
-                '_search_urls': [
-                    f'https://{company_name.lower()}.example.com',
-                    f'https://ja.wikipedia.org/wiki/{company_name}'
-                ]
+                'confidence_score': new_data.get('ai_confidence_score', 0),
             }
             
             logger.info(f"企業情報更新完了: {company_name}, 変更 {len(changes)} 件")
@@ -152,102 +131,258 @@ class ClientEnrichmentService:
             logger.error(f"企業情報更新エラー: {str(e)}", exc_info=True)
             raise Exception(f"企業情報の更新に失敗しました: {str(e)}")
     
-    def _calculate_confidence(
-        self,
-        extracted_data: Dict[str, Any],
-        search_results: List[Any]
-    ) -> int:
+    def _generate_with_google_grounding(self, prompt: str) -> str:
         """
-        信頼度スコアを計算
+        Google Search Groundingを使用してテキスト生成
+        
+        Gemini 2.0の場合、リアルタイムWeb検索を行って最新情報を取得します。
+        公式サイトから直接情報を収集し、高精度な企業情報を返します。
         
         Args:
-            extracted_data: 抽出データ
-            search_results: 検索結果のリスト
+            prompt: 生成プロンプト
             
         Returns:
-            信頼度スコア（0-100）
+            生成されたテキスト
         """
         try:
-            score = 0
+            from google import genai
+            from google.genai import types
             
-            # 1. 情報源の信頼性（最大40点）
-            source_score = 0
-            for result in search_results[:3]:  # 上位3件を評価
-                url = result.url.lower() if hasattr(result, 'url') else ''
+            logger.info("Google Search Grounding を使用して生成開始")
+            
+            # Gemini クライアント初期化
+            client = genai.Client(api_key=self.ai_client.api_key)
+            
+            # Google Search Groundingを有効化して生成
+            response = client.models.generate_content(
+                model=self.ai_client.provider.model_name,
+                contents=[prompt],
+                config=types.GenerateContentConfig(
+                    max_output_tokens=self.ai_client.provider.max_tokens,
+                    temperature=self.ai_client.provider.temperature,
+                    # Google Search Groundingを有効化
+                    tools=[types.Tool(google_search=types.GoogleSearch())],
+                )
+            )
+            
+            # レスポンステキストを取得
+            response_text = response.text
+            
+            # Grounding メタデータのログ出力（検索したURLなど）
+            if hasattr(response, 'grounding_metadata') and response.grounding_metadata:
+                chunks = response.grounding_metadata.grounding_chunks or []
+                logger.info(f"Grounding使用: {len(chunks)} 件の検索結果を参照")
                 
-                # 公式サイト判定（co.jp, com, jp等のドメイン）
-                if any(domain in url for domain in ['.co.jp', '.com', '.jp']):
-                    # Wikipedia以外の企業ドメイン
-                    if 'wikipedia' not in url:
-                        source_score = max(source_score, 40)
-                    else:
-                        source_score = max(source_score, 30)
-                elif any(domain in url for domain in ['bloomberg', 'reuters', 'nikkei']):
-                    source_score = max(source_score, 25)
-                else:
-                    source_score = max(source_score, 15)
+                # 参照したURLをログ出力
+                if chunks:
+                    urls = [chunk.web.uri for chunk in chunks if hasattr(chunk, 'web') and hasattr(chunk.web, 'uri')]
+                    if urls:
+                        logger.info(f"参照URL: {', '.join(urls[:5])}...")  # 最初の5件のみ
+                
+                # 検索クエリをログ出力
+                if hasattr(response.grounding_metadata, 'web_search_queries') and response.grounding_metadata.web_search_queries:
+                    logger.debug(f"検索クエリ: {response.grounding_metadata.web_search_queries}")
             
-            score += source_score
+            logger.info("Google Search Grounding 生成完了")
+            return response_text
             
-            # 2. 情報の完全性（最大30点）
-            required_fields = [
-                'company_name', 'legal_name', 'industry', 'website',
-                'description', 'prefecture', 'city'
-            ]
-            important_fields = [
-                'representative', 'established_date', 'capital',
-                'employee_count', 'postal_code', 'address', 'phone'
-            ]
-            
-            # 必須項目の充足率
-            required_filled = sum(
-                1 for field in required_fields
-                if extracted_data.get(field) not in [None, '', 'null']
-            )
-            required_rate = required_filled / len(required_fields)
-            
-            # 重要項目の充足率
-            important_filled = sum(
-                1 for field in important_fields
-                if extracted_data.get(field) not in [None, '', 'null']
-            )
-            important_rate = important_filled / len(important_fields)
-            
-            # 完全性スコア
-            completeness_score = int(
-                (required_rate * 20) +  # 必須項目: 最大20点
-                (important_rate * 10)   # 重要項目: 最大10点
-            )
-            score += completeness_score
-            
-            # 3. 情報の一貫性（最大20点）
-            # 検索結果が複数ある場合は一貫性があると判断
-            if len(search_results) >= 3:
-                score += 20
-            elif len(search_results) >= 2:
-                score += 10
-            
-            # 4. 情報の新鮮さ（最大10点）
-            # 検索結果が取得できた時点で新鮮と判断
-            if search_results:
-                score += 10
-            
-            # スコアを0-100に正規化
-            score = max(0, min(100, score))
-            
-            logger.debug(
-                f"信頼度計算詳細: "
-                f"情報源={source_score}, "
-                f"完全性={completeness_score}, "
-                f"合計={score}"
-            )
-            
-            return score
-            
+        except ImportError as e:
+            logger.error(f"Google Generative AI SDKがインストールされていません: {str(e)}")
+            logger.warning("通常生成にフォールバック")
+            return self.ai_client.generate(prompt)
         except Exception as e:
-            logger.error(f"信頼度計算エラー: {str(e)}", exc_info=True)
-            # エラー時は低めのスコアを返す
-            return 30
+            logger.error(f"Google Search Grounding エラー: {str(e)}", exc_info=True)
+            logger.warning("通常生成にフォールバック")
+            return self.ai_client.generate(prompt)
+    
+    def _build_company_info_prompt(self, company_name: str, use_web_search: bool = False) -> str:
+        """企業情報取得用のプロンプトを構築"""
+        
+        # Web検索を使用する場合は詳細な指示を追加
+        if use_web_search:
+            search_instruction = f"""【重要】公式サイトを最優先で参照してください:
+1. まず「{company_name} 公式サイト」「{company_name} 会社概要」で検索
+2. 公式サイトのIR情報、会社概要、採用ページから正確な情報を取得
+3. 公式サイトが見つからない場合は、Wikipedia等の信頼できる情報源を参照
+4. 古い情報ではなく、最新の情報を優先してください
+
+"""
+        else:
+            search_instruction = ""
+        
+        return f"""以下の企業の最新情報を調査し、JSON形式で返してください。
+
+企業名: {company_name}
+
+{search_instruction}必須フィールド:
+- company_name: 会社名（正式な表記）
+- legal_name: 正式名称（登記上の名称）
+- representative: 代表者名（代表取締役社長等のフルネーム）
+- established_date: 設立年月日（YYYY-MM-DD形式、不明な場合はYYYY-MM-01やYYYY-01-01）
+- capital: 資本金（数値、単位は万円。円で取得した場合は10000で割って万円に変換してください）
+- employee_count: 従業員数（数値、連結・単体のうち取得できる方）
+- industry: 業種（IT・通信、製造、金融、小売、サービス、建設、不動産、運輸、教育、医療・福祉、メディア、その他のいずれか）
+- website: 公式ウェブサイトURL（必須）
+- description: 事業内容の説明（100-200文字程度で要約）
+- postal_code: 本社郵便番号（ハイフン付き7桁、例：100-0001）
+- prefecture: 本社都道府県
+- city: 本社市区町村
+- address: 本社番地・ビル名
+- phone: 代表電話番号（ハイフン付き、例：03-1234-5678）
+- fax: FAX番号（ハイフン付き、不明ならnull）
+
+出力形式の注意:
+1. 必ず有効なJSON形式のみを返してください（```json ... ```のMarkdown形式でも可）
+2. 説明文や追加のテキストは不要です
+3. 情報が見つからないフィールドはnullを設定してください
+4. 日付は必ずYYYY-MM-DD形式にしてください
+5. 数値フィールド（capital, employee_count）は数値型で返してください（文字列不可）
+6. 業種は上記のカテゴリから最も近いものを選択してください
+7. **重要**: capitalは必ず万円単位で返してください（例: 1億円 → 10000、1000万円 → 1000）
+
+JSON形式例:
+{{
+  "company_name": "株式会社サンプル",
+  "legal_name": "株式会社サンプル",
+  "representative": "山田太郎",
+  "established_date": "2000-04-01",
+  "capital": 10000,
+  "employee_count": 500,
+  "industry": "IT・通信",
+  "website": "https://www.sample.co.jp",
+  "description": "クラウドサービスとAIソリューションを提供する企業。主にエンタープライズ向けSaaSプロダクトを開発・販売している。",
+  "postal_code": "100-0001",
+  "prefecture": "東京都",
+  "city": "千代田区",
+  "address": "千代田1-1-1 サンプルビル",
+  "phone": "03-1234-5678",
+  "fax": "03-1234-5679"
+}}"""
+    
+    def _parse_json_response(self, response_text: str) -> Dict[str, Any]:
+        """AI応答からJSON部分を抽出してパース"""
+        import re
+        
+        # ```json ... ``` パターン
+        json_match = re.search(r'```json\s*\n(.*?)\n```', response_text, re.DOTALL)
+        if json_match:
+            json_str = json_match.group(1)
+        else:
+            # { ... } パターン
+            json_match = re.search(r'\{.*\}', response_text, re.DOTALL)
+            if json_match:
+                json_str = json_match.group(0)
+            else:
+                json_str = response_text
+        
+        # JSONパース
+        data = json.loads(json_str.strip())
+        
+        # データクリーニング
+        return self._clean_data(data)
+    
+    def _clean_data(self, data: Dict[str, Any]) -> Dict[str, Any]:
+        """データをクリーニング（型変換、空文字列処理など）"""
+        cleaned = {}
+        
+        for key, value in data.items():
+            # 空文字列またはNoneの場合
+            if value in ('', None, 'null', 'NULL', 'None'):
+                cleaned[key] = None
+            # 数値フィールドの変換
+            elif key in ('capital', 'employee_count') and isinstance(value, str):
+                try:
+                    cleaned[key] = int(value.replace(',', ''))
+                except (ValueError, AttributeError):
+                    cleaned[key] = None
+            else:
+                cleaned[key] = value
+        
+        return cleaned
+    
+    def _calculate_confidence_score(self, data: Dict[str, Any]) -> int:
+        """データの信頼度スコアを計算（0-100）"""
+        # 重要フィールドの定義と重み
+        important_fields = {
+            'company_name': 10,
+            'legal_name': 8,
+            'representative': 7,
+            'established_date': 6,
+            'capital': 5,
+            'employee_count': 5,
+            'industry': 6,
+            'website': 7,
+            'description': 5,
+            'postal_code': 4,
+            'prefecture': 4,
+            'city': 4,
+            'address': 3,
+            'phone': 5,
+            'fax': 2,
+        }
+        
+        total_weight = sum(important_fields.values())
+        achieved_weight = 0
+        
+        for field, weight in important_fields.items():
+            value = data.get(field)
+            if value and value not in ('', None, 'null', 'NULL', 'None'):
+                achieved_weight += weight
+        
+        # パーセンテージ計算
+        confidence = int((achieved_weight / total_weight) * 100)
+        
+        return confidence
+    
+    def _calculate_changes(self, old_data: Dict[str, Any], new_data: Dict[str, Any]) -> List[Dict[str, Any]]:
+        """2つのデータセット間の変更を計算"""
+        changes = []
+        
+        # 比較対象フィールド
+        compare_fields = [
+            'legal_name', 'representative', 'established_date',
+            'capital', 'employee_count', 'industry', 'website',
+            'description', 'postal_code', 'prefecture', 'city',
+            'address', 'phone', 'fax'
+        ]
+        
+        for field in compare_fields:
+            old_value = old_data.get(field)
+            new_value = new_data.get(field)
+            
+            # 値が異なる場合のみ変更として記録
+            if old_value != new_value and new_value:
+                changes.append({
+                    'field': field,
+                    'old_value': old_value,
+                    'new_value': new_value,
+                    'confidence': self._calculate_field_confidence(new_value)
+                })
+        
+        return changes
+    
+    def _calculate_field_confidence(self, value: Any) -> int:
+        """個別フィールドの信頼度を計算"""
+        if not value:
+            return 0
+        
+        # 文字列の長さベース（長いほど信頼度高い）
+        if isinstance(value, str):
+            length = len(value)
+            if length > 50:
+                return 95
+            elif length > 20:
+                return 85
+            elif length > 10:
+                return 75
+            else:
+                return 65
+        
+        # 数値は常に高信頼度
+        elif isinstance(value, (int, float)):
+            return 90
+        
+        return 70
 
 
 # シングルトンインスタンス

@@ -28,6 +28,7 @@ from tasks.views import TaskViewSet
 from activities.views import ActivityLogViewSet
 from contracts.views import ContractViewSet
 from ai_settings.views import AIProviderViewSet, SearchEngineConfigViewSet, AISettingsViewSet
+from masters.views import CodeCategoryViewSet, CodeMasterViewSet
 
 # DRF Router
 router = routers.DefaultRouter()
@@ -42,6 +43,8 @@ router.register(r'contracts', ContractViewSet, basename='contract')
 router.register(r'ai-providers', AIProviderViewSet, basename='ai-provider')
 router.register(r'search-engines', SearchEngineConfigViewSet, basename='search-engine')
 router.register(r'ai-settings', AISettingsViewSet, basename='ai-settings')
+router.register(r'code-categories', CodeCategoryViewSet, basename='code-category')
+router.register(r'codemasters', CodeMasterViewSet, basename='codemaster')
 
 urlpatterns = [
     # Admin

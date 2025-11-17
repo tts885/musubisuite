@@ -27,12 +27,18 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover"
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command"
 import {
   Table,
   TableBody,
@@ -47,7 +53,9 @@ import {
   DollarSign, 
   Users, 
   CheckCircle2,
-  Edit
+  Edit,
+  Check,
+  ChevronsUpDown
 } from "lucide-react"
 import { 
   getStatusLabel,
@@ -56,6 +64,7 @@ import {
 import type { Project, Client, ProjectStatus, ProjectPriority } from "@/types"
 import { djangoAPI } from "@/services/djangoAPI"
 import { toast } from "sonner"
+import { CodeMasterSelect } from "@/components/shared/CodeMasterSelect"
 
 /**
  * プロジェクト詳細ページコンポーネント
@@ -91,6 +100,7 @@ export default function ProjectDetailPage() {
   const [client, setClient] = useState<Client | null>(null)
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
   const [isUpdating, setIsUpdating] = useState(false)
+  const [clientPopoverOpen, setClientPopoverOpen] = useState(false)
   const [editProject, setEditProject] = useState({
     name: "",
     description: "",
@@ -117,7 +127,6 @@ export default function ProjectDetailPage() {
 
         // プロジェクト詳細を取得
         const projectData = await djangoAPI.getProject(id)
-        console.log('取得したプロジェクト詳細:', projectData)
         
         // データを変換
         const transformedProject: Project = {
@@ -185,11 +194,9 @@ export default function ProjectDetailPage() {
         tags: project.tags,
       }
       
-      console.log('送信する更新データ:', updateData)
       const updatedProject = await djangoAPI.updateProject(id, updateData as any)
-      console.log('更新されたプロジェクト:', updatedProject)
       
-      // ローカル状態を更新
+      // ローカルの状態を更新
       const transformedProject: Project = {
         id: String(updatedProject.id),
         name: updatedProject.name,
@@ -330,49 +337,66 @@ export default function ProjectDetailPage() {
               <div className="grid grid-cols-2 gap-4">
                 <div className="grid gap-2">
                   <Label htmlFor="edit-client">クライアント *</Label>
-                  <Select value={editProject.clientId} onValueChange={(value) => setEditProject({...editProject, clientId: value})}>
-                    <SelectTrigger id="edit-client">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {clients.map((c) => (
-                        <SelectItem key={c.id} value={String(c.id)}>
-                          {c.companyName}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <Popover open={clientPopoverOpen} onOpenChange={setClientPopoverOpen}>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        role="combobox"
+                        aria-expanded={clientPopoverOpen}
+                        className="w-full justify-between"
+                      >
+                        {editProject.clientId
+                          ? clients.find((client) => String(client.id) === editProject.clientId)?.company_name || "クライアントを選択"
+                          : "クライアントを選択"}
+                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-[400px] p-0">
+                      <Command>
+                        <CommandInput placeholder="クライアント名で検索..." />
+                        <CommandList>
+                          <CommandEmpty>クライアントが見つかりません。</CommandEmpty>
+                          <CommandGroup>
+                            {clients.map((client) => (
+                              <CommandItem
+                                key={client.id}
+                                value={client.company_name}
+                                onSelect={() => {
+                                  setEditProject({...editProject, clientId: String(client.id)})
+                                  setClientPopoverOpen(false)
+                                }}
+                              >
+                                <Check
+                                  className={"mr-2 h-4 w-4 " + (editProject.clientId === String(client.id) ? "opacity-100" : "opacity-0")}
+                                />
+                                {client.company_name}
+                              </CommandItem>
+                            ))}
+                          </CommandGroup>
+                        </CommandList>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
                 </div>
                 <div className="grid gap-2">
                   <Label htmlFor="edit-status">ステータス</Label>
-                  <Select value={editProject.status} onValueChange={(value) => setEditProject({...editProject, status: value as ProjectStatus})}>
-                    <SelectTrigger id="edit-status">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="planning">計画中</SelectItem>
-                      <SelectItem value="active">進行中</SelectItem>
-                      <SelectItem value="on-hold">保留</SelectItem>
-                      <SelectItem value="completed">完了</SelectItem>
-                      <SelectItem value="cancelled">中止</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <CodeMasterSelect
+                    category="PROJECT_STATUS"
+                    value={editProject.status}
+                    onChange={(value) => setEditProject({...editProject, status: value as ProjectStatus})}
+                    placeholder="ステータスを選択"
+                  />
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="grid gap-2">
                   <Label htmlFor="edit-priority">優先度</Label>
-                  <Select value={editProject.priority} onValueChange={(value) => setEditProject({...editProject, priority: value as ProjectPriority})}>
-                    <SelectTrigger id="edit-priority">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="low">低</SelectItem>
-                      <SelectItem value="medium">中</SelectItem>
-                      <SelectItem value="high">高</SelectItem>
-                      <SelectItem value="urgent">緊急</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <CodeMasterSelect
+                    category="PROJECT_PRIORITY"
+                    value={editProject.priority}
+                    onChange={(value) => setEditProject({...editProject, priority: value as ProjectPriority})}
+                    placeholder="優先度を選択"
+                  />
                 </div>
                 <div className="grid gap-2">
                   <Label htmlFor="edit-budget">予算</Label>
@@ -499,8 +523,10 @@ export default function ProjectDetailPage() {
                 
                 <div>
                   <h4 className="text-sm font-medium text-muted-foreground mb-1">クライアント</h4>
-                  <p className="text-sm font-medium">{client?.companyName}</p>
-                  <p className="text-sm text-muted-foreground">{client?.name}</p>
+                  <p className="text-sm font-medium">{client?.company_name}</p>
+                  {client?.contact_name && (
+                    <p className="text-sm text-muted-foreground">{client.contact_name}</p>
+                  )}
                 </div>
 
                 <div>

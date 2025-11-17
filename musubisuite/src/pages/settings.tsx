@@ -21,7 +21,8 @@ import {
   FileText,
   Info,
   Menu,
-  Brain
+  Brain,
+  List
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import AppSwitcher from "@/components/AppSwitcher"
@@ -69,6 +70,12 @@ const navigationSections: NavSection[] = [
         href: "/settings/contracts",
         icon: FileText,
         description: "クライアントの契約情報を管理"
+      },
+      {
+        title: "コードマスタ管理",
+        href: "/settings/codemasters",
+        icon: List,
+        description: "ドロップダウンリスト項目の管理"
       }
     ]
   },

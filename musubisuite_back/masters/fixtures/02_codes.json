@@ -1,0 +1,223 @@
+[
+  {
+    "model": "masters.codemaster",
+    "fields": {
+      "category": "INDUSTRY",
+      "code": "it",
+      "name": "IT・情報通信",
+      "name_en": "IT & Telecommunications",
+      "sort_order": 10,
+      "is_active": true,
+      "color": "#3B82F6",
+      "icon": "Monitor"
+    }
+  },
+  {
+    "model": "masters.codemaster",
+    "fields": {
+      "category": "INDUSTRY",
+      "code": "manufacturing",
+      "name": "製造業",
+      "name_en": "Manufacturing",
+      "sort_order": 20,
+      "is_active": true,
+      "color": "#8B5CF6",
+      "icon": "Factory"
+    }
+  },
+  {
+    "model": "masters.codemaster",
+    "fields": {
+      "category": "INDUSTRY",
+      "code": "finance",
+      "name": "金融・保険",
+      "name_en": "Finance & Insurance",
+      "sort_order": 30,
+      "is_active": true,
+      "color": "#10B981",
+      "icon": "DollarSign"
+    }
+  },
+  {
+    "model": "masters.codemaster",
+    "fields": {
+      "category": "INDUSTRY",
+      "code": "retail",
+      "name": "小売業",
+      "name_en": "Retail",
+      "sort_order": 40,
+      "is_active": true,
+      "color": "#F59E0B",
+      "icon": "ShoppingCart"
+    }
+  },
+  {
+    "model": "masters.codemaster",
+    "fields": {
+      "category": "INDUSTRY",
+      "code": "service",
+      "name": "サービス業",
+      "name_en": "Service Industry",
+      "sort_order": 50,
+      "is_active": true,
+      "color": "#EC4899",
+      "icon": "Users"
+    }
+  },
+  {
+    "model": "masters.codemaster",
+    "fields": {
+      "category": "PROJECT_STATUS",
+      "code": "planning",
+      "name": "計画中",
+      "name_en": "Planning",
+      "sort_order": 10,
+      "is_active": true,
+      "color": "#6B7280",
+      "icon": "FileText"
+    }
+  },
+  {
+    "model": "masters.codemaster",
+    "fields": {
+      "category": "PROJECT_STATUS",
+      "code": "active",
+      "name": "進行中",
+      "name_en": "Active",
+      "sort_order": 20,
+      "is_active": true,
+      "color": "#3B82F6",
+      "icon": "Play"
+    }
+  },
+  {
+    "model": "masters.codemaster",
+    "fields": {
+      "category": "PROJECT_STATUS",
+      "code": "on-hold",
+      "name": "保留",
+      "name_en": "On Hold",
+      "sort_order": 30,
+      "is_active": true,
+      "color": "#F59E0B",
+      "icon": "Pause"
+    }
+  },
+  {
+    "model": "masters.codemaster",
+    "fields": {
+      "category": "PROJECT_STATUS",
+      "code": "completed",
+      "name": "完了",
+      "name_en": "Completed",
+      "sort_order": 40,
+      "is_active": true,
+      "color": "#10B981",
+      "icon": "CheckCircle"
+    }
+  },
+  {
+    "model": "masters.codemaster",
+    "fields": {
+      "category": "PROJECT_STATUS",
+      "code": "cancelled",
+      "name": "中止",
+      "name_en": "Cancelled",
+      "sort_order": 50,
+      "is_active": true,
+      "color": "#EF4444",
+      "icon": "XCircle"
+    }
+  },
+  {
+    "model": "masters.codemaster",
+    "fields": {
+      "category": "PROJECT_PRIORITY",
+      "code": "low",
+      "name": "低",
+      "name_en": "Low",
+      "sort_order": 10,
+      "is_active": true,
+      "color": "#6B7280",
+      "icon": "ArrowDown"
+    }
+  },
+  {
+    "model": "masters.codemaster",
+    "fields": {
+      "category": "PROJECT_PRIORITY",
+      "code": "medium",
+      "name": "中",
+      "name_en": "Medium",
+      "sort_order": 20,
+      "is_active": true,
+      "color": "#F59E0B",
+      "icon": "Minus"
+    }
+  },
+  {
+    "model": "masters.codemaster",
+    "fields": {
+      "category": "PROJECT_PRIORITY",
+      "code": "high",
+      "name": "高",
+      "name_en": "High",
+      "sort_order": 30,
+      "is_active": true,
+      "color": "#EF4444",
+      "icon": "ArrowUp"
+    }
+  },
+  {
+    "model": "masters.codemaster",
+    "fields": {
+      "category": "PROJECT_PRIORITY",
+      "code": "urgent",
+      "name": "緊急",
+      "name_en": "Urgent",
+      "sort_order": 40,
+      "is_active": true,
+      "color": "#DC2626",
+      "icon": "AlertTriangle"
+    }
+  },
+  {
+    "model": "masters.codemaster",
+    "fields": {
+      "category": "TASK_STATUS",
+      "code": "todo",
+      "name": "未着手",
+      "name_en": "To Do",
+      "sort_order": 10,
+      "is_active": true,
+      "color": "#6B7280",
+      "icon": "Circle"
+    }
+  },
+  {
+    "model": "masters.codemaster",
+    "fields": {
+      "category": "TASK_STATUS",
+      "code": "in_progress",
+      "name": "進行中",
+      "name_en": "In Progress",
+      "sort_order": 20,
+      "is_active": true,
+      "color": "#3B82F6",
+      "icon": "RefreshCw"
+    }
+  },
+  {
+    "model": "masters.codemaster",
+    "fields": {
+      "category": "TASK_STATUS",
+      "code": "completed",
+      "name": "完了",
+      "name_en": "Completed",
+      "sort_order": 30,
+      "is_active": true,
+      "color": "#10B981",
+      "icon": "CheckCircle"
+    }
+  }
+]

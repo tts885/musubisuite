@@ -42,6 +42,8 @@ import { Search, Plus, Edit, Trash2, Building2, Mail, Phone, Loader2, Brain, Ref
 import { toast } from "sonner"
 import { djangoAPI } from "@/services/djangoAPI"
 import type { Client } from "@/types"
+import { codeMasterService, type CodeMaster } from "@/services/codemaster"
+import { DatePicker } from "@/components/ui/date-picker"
 
 /**
  * クライアント管理設定ページコンポーネント
@@ -76,10 +78,27 @@ export default function ClientsSettingsPage() {
   // フォームの状態管理
   const [formData, setFormData] = useState<Partial<Client>>({})
   
+  // 業種マスタデータの状態管理
+  const [industries, setIndustries] = useState<CodeMaster[]>([])
+  
   // 初期データ取得
   useEffect(() => {
     fetchClients()
+    fetchIndustries()
   }, [])
+  
+  // 業種マスタデータ取得
+  const fetchIndustries = async () => {
+    try {
+      const data = await codeMasterService.getCodesByCategory('INDUSTRY')
+      console.log("業種マスタデータ:", data)
+      setIndustries(data.filter(item => item.is_active))
+    } catch (error) {
+      console.error("業種マスタ取得エラー:", error)
+      // エラーが発生してもフォールバックとして空配列を設定
+      setIndustries([])
+    }
+  }
   
   // クライアント一覧取得
   const fetchClients = async () => {
@@ -119,17 +138,10 @@ export default function ClientsSettingsPage() {
     }
   }, [clients])
 
-  // 業種のラベルを取得
-  const getIndustryLabel = (industry: string) => {
-    const industryMap: Record<string, string> = {
-      it: "IT・通信",
-      manufacturing: "製造",
-      finance: "金融",
-      retail: "小売",
-      service: "サービス",
-      other: "その他"
-    }
-    return industryMap[industry] || "その他"
+  // 業種のラベルを取得（コードマスタから動的に取得）
+  const getIndustryLabel = (industryCode: string) => {
+    const industry = industries.find(item => item.code === industryCode)
+    return industry ? industry.name : industryCode
   }
 
   // フォームリセット
@@ -139,24 +151,38 @@ export default function ClientsSettingsPage() {
   }
   
   // 編集ダイアログを開く
-  const handleEditClick = (client: Client) => {
-    setSelectedClient(client)
-    setFormData(client)
-    setIsEditDialogOpen(true)
+  const handleEditClick = async (client: Client) => {
+    try {
+      // 完全な詳細データを取得
+      const fullClientData = await djangoAPI.getClient(String(client.id))
+      setSelectedClient(fullClientData)
+      // 資本金を円から万円に変換（表示用）
+      const formDataWithManYen = {
+        ...fullClientData,
+        capital: fullClientData.capital ? Math.round(fullClientData.capital / 10000) : undefined
+      }
+      setFormData(formDataWithManYen)
+      setIsEditDialogOpen(true)
+    } catch (error) {
+      console.error("クライアント詳細取得エラー:", error)
+      toast.error("クライアント詳細の取得に失敗しました")
+    }
   }
   
   // クライアント作成ハンドラー
   const handleCreateClient = async () => {
     try {
-      if (!formData.company_name || !formData.email) {
-        toast.error("必須項目（会社名、メールアドレス）を入力してください")
+      if (!formData.company_name) {
+        toast.error("会社名を入力してください")
         return
       }
       
+      // 資本金を万円から円に変換（DB保存用）
       const clientData = {
         ...formData,
         company_name: formData.company_name,
         email: formData.email,
+        capital: formData.capital ? formData.capital * 10000 : undefined
       }
       await djangoAPI.createClient(clientData)
       toast.success("クライアントを作成しました")
@@ -174,12 +200,17 @@ export default function ClientsSettingsPage() {
     try {
       if (!selectedClient) return
       
-      if (!formData.company_name || !formData.email) {
-        toast.error("必須項目（会社名、メールアドレス）を入力してください")
+      if (!formData.company_name) {
+        toast.error("会社名を入力してください")
         return
       }
       
-      await djangoAPI.updateClient(String(selectedClient.id), formData)
+      // 資本金を万円から円に変換（DB保存用）
+      const updateData = {
+        ...formData,
+        capital: formData.capital ? formData.capital * 10000 : undefined
+      }
+      await djangoAPI.updateClient(String(selectedClient.id), updateData)
       toast.success("クライアント情報を更新しました")
       setIsEditDialogOpen(false)
       resetForm()
@@ -271,13 +302,58 @@ export default function ClientsSettingsPage() {
     }
   }
 
+  // AIから取得した業種テキストをシステムの業種コードにマッピング
+  const mapIndustryToCode = (industryText: string): string => {
+    if (!industryText) return ''
+    
+    const text = industryText.toLowerCase()
+    
+    // キーワードマッピング
+    if (text.includes('it') || text.includes('情報') || text.includes('通信') || text.includes('ソフトウェア') || text.includes('システム')) return 'it'
+    if (text.includes('製造') || text.includes('メーカー') || text.includes('工業')) return 'manufacturing'
+    if (text.includes('金融') || text.includes('銀行') || text.includes('証券') || text.includes('保険')) return 'finance'
+    if (text.includes('小売') || text.includes('販売') || text.includes('流通')) return 'retail'
+    if (text.includes('サービス') || text.includes('コンサル')) return 'service'
+    if (text.includes('建設') || text.includes('建築') || text.includes('土木')) return 'construction'
+    if (text.includes('不動産')) return 'real_estate'
+    if (text.includes('運輸') || text.includes('物流') || text.includes('輸送')) return 'transportation'
+    if (text.includes('教育') || text.includes('学校') || text.includes('研修')) return 'education'
+    if (text.includes('医療') || text.includes('福祉') || text.includes('介護') || text.includes('病院')) return 'healthcare'
+    if (text.includes('メディア') || text.includes('放送') || text.includes('出版') || text.includes('広告')) return 'media'
+    
+    return 'other'
+  }
+
   // AIプレビューデータを適用
   const handleApplyAIData = () => {
     if (!aiPreviewData) return
 
     // 新規作成の場合
-    if (!selectedClient && aiPreviewData.data) {
-      setFormData(prev => ({ ...prev, ...aiPreviewData.data }))
+    if (!selectedClient) {
+      // aiPreviewDataから直接データを取得（dataプロパティではなくルートレベル）
+      const aiData = { ...aiPreviewData }
+      
+      // メタデータを除外
+      const metaFields = ['ai_generated', 'ai_generated_at', 'ai_confidence_score', 'ai_provider', '_search_urls']
+      metaFields.forEach(field => delete aiData[field])
+      
+      // AIから取得した業種テキストをシステムのコードにマッピング
+      if (aiData.industry) {
+        aiData.industry = mapIndustryToCode(aiData.industry)
+      }
+      
+      // 資本金を円から万円に変換
+      if (aiData.capital) {
+        aiData.capital = Math.round(aiData.capital / 10000)
+      }
+      
+      // 既存のフォームデータを保持しつつAIデータを適用
+      setFormData(prev => ({ 
+        ...prev, 
+        ...aiData,
+        // emailが空の場合は既存のemailを保持
+        email: aiData.email || prev.email
+      }))
       setIsAiPreviewOpen(false)
       toast.success('AI情報をフォームに適用しました')
     }
@@ -285,7 +361,12 @@ export default function ClientsSettingsPage() {
     else if (selectedClient && aiPreviewData.changes) {
       const updatedData = { ...formData };
       aiPreviewData.changes.forEach((change: any) => {
-        (updatedData as any)[change.field] = change.new_value;
+        let value = change.new_value;
+        // 資本金の場合、円から万円に変換
+        if (change.field === 'capital' && value) {
+          value = Math.round(value / 10000);
+        }
+        (updatedData as any)[change.field] = value;
       });
       setFormData(updatedData);
       setIsAiPreviewOpen(false)
@@ -349,7 +430,14 @@ export default function ClientsSettingsPage() {
             </div>
             <Dialog open={isCreateDialogOpen} onOpenChange={(open) => {
               setIsCreateDialogOpen(open)
-              if (!open) resetForm()
+              // ダイアログを開く時にフォームをリセット（新規作成なので常に空欄）
+              if (open) {
+                resetForm()
+              }
+              // ダイアログを閉じる時にもフォームをリセット
+              if (!open) {
+                resetForm()
+              }
             }}>
               <DialogTrigger asChild>
                 <Button>
@@ -357,14 +445,14 @@ export default function ClientsSettingsPage() {
                   新規クライアント追加
                 </Button>
               </DialogTrigger>
-              <DialogContent className="max-w-4xl">
+              <DialogContent className="!max-w-[90vw] w-full sm:!max-w-[1296px] max-h-[90vh]">
                 <DialogHeader>
                   <DialogTitle>新規クライアント追加</DialogTitle>
                   <DialogDescription>
                     新しいクライアント情報を登録します。AIで取得した情報を元に、詳細項目も入力できます。
                   </DialogDescription>
                 </DialogHeader>
-                <div className="grid grid-cols-4 gap-4 py-4 max-h-[60vh] overflow-y-auto px-6">
+                <div className="grid grid-cols-4 gap-4 py-4 max-h-[70vh] overflow-y-auto px-6">
                   {/* --- 基本情報 --- */}
                   <div className="col-span-4 font-bold text-lg border-b pb-2 mb-2">基本情報</div>
                   <div className="space-y-2 col-span-4">
@@ -391,8 +479,9 @@ export default function ClientsSettingsPage() {
                       placeholder="例: 株式会社サンプル"
                       value={formData.company_name || ''}
                       onChange={(e) => {
-                        setFormData({...formData, company_name: e.target.value})
-                        setCompanyNameForAI(e.target.value)
+                        const newValue = e.target.value
+                        setFormData(prev => ({...prev, company_name: newValue}))
+                        setCompanyNameForAI(newValue)
                       }}
                     />
                   </div>
@@ -401,8 +490,8 @@ export default function ClientsSettingsPage() {
                     <Input id="legal_name" value={formData.legal_name || ''} onChange={(e) => setFormData({...formData, legal_name: e.target.value})} />
                   </div>
                   <div className="space-y-2 col-span-2">
-                    <Label htmlFor="email">代表メールアドレス *</Label>
-                    <Input id="email" type="email" value={formData.email || ''} onChange={(e) => setFormData({...formData, email: e.target.value})} />
+                    <Label htmlFor="email">代表メールアドレス</Label>
+                    <Input id="email" type="email" value={formData.email || ''} onChange={(e) => setFormData(prev => ({...prev, email: e.target.value}))} />
                   </div>
 
                   {/* --- 企業詳細 --- */}
@@ -413,11 +502,29 @@ export default function ClientsSettingsPage() {
                   </div>
                   <div className="space-y-2 col-span-2">
                     <Label htmlFor="established_date">設立年月日</Label>
-                    <Input id="established_date" type="date" value={formData.established_date || ''} onChange={(e) => setFormData({...formData, established_date: e.target.value})} />
+                    <DatePicker 
+                      id="established_date"
+                      value={formData.established_date || ''}
+                      onChange={(date) => setFormData({...formData, established_date: date})}
+                      placeholder="設立年月日を選択"
+                    />
                   </div>
                   <div className="space-y-2 col-span-2">
-                    <Label htmlFor="capital">資本金</Label>
-                    <Input id="capital" type="number" value={formData.capital || ''} onChange={(e) => setFormData({...formData, capital: Number(e.target.value)})} />
+                    <Label htmlFor="capital">資本金（万円）</Label>
+                    <div className="relative">
+                      <Input 
+                        id="capital" 
+                        type="text" 
+                        value={formData.capital ? formData.capital.toLocaleString('ja-JP') : ''}
+                        onChange={(e) => {
+                          const value = e.target.value.replace(/[^0-9]/g, '')
+                          setFormData({...formData, capital: value ? Number(value) : 0})
+                        }}
+                        placeholder="0"
+                        className="pr-12"
+                      />
+                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">万円</span>
+                    </div>
                   </div>
                   <div className="space-y-2 col-span-2">
                     <Label htmlFor="employee_count">従業員数</Label>
@@ -425,7 +532,16 @@ export default function ClientsSettingsPage() {
                   </div>
                   <div className="space-y-2 col-span-2">
                     <Label htmlFor="industry">業種</Label>
-                    <Input id="industry" value={formData.industry || ''} onChange={(e) => setFormData({...formData, industry: e.target.value})} />
+                    <Select value={formData.industry || ''} onValueChange={(value) => setFormData(prev => ({...prev, industry: value}))} disabled={industries.length === 0}>
+                      <SelectTrigger className="w-full"><SelectValue placeholder={industries.length === 0 ? "業種マスタデータがありません" : "選択してください"} /></SelectTrigger>
+                      <SelectContent>
+                        {industries.map((industry) => (
+                          <SelectItem key={industry.code} value={industry.code}>
+                            {industry.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                   <div className="space-y-2 col-span-2">
                     <Label htmlFor="website">ウェブサイト</Label>
@@ -542,12 +658,11 @@ export default function ClientsSettingsPage() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">すべての業種</SelectItem>
-                <SelectItem value="it">IT・通信</SelectItem>
-                <SelectItem value="manufacturing">製造</SelectItem>
-                <SelectItem value="finance">金融</SelectItem>
-                <SelectItem value="retail">小売</SelectItem>
-                <SelectItem value="service">サービス</SelectItem>
-                <SelectItem value="other">その他</SelectItem>
+                {industries.map((industry) => (
+                  <SelectItem key={industry.code} value={industry.code}>
+                    {industry.name}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
@@ -634,7 +749,7 @@ export default function ClientsSettingsPage() {
         setIsEditDialogOpen(open)
         if (!open) resetForm()
       }}>
-        <DialogContent className="max-w-4xl">
+        <DialogContent className="!max-w-[90vw] w-full sm:!max-w-[1296px] max-h-[90vh]">
           <DialogHeader>
             <div className="flex items-center justify-between">
               <div>
@@ -677,8 +792,8 @@ export default function ClientsSettingsPage() {
               <Input id="edit_legal_name" value={formData.legal_name || ''} onChange={(e) => setFormData({...formData, legal_name: e.target.value})} />
             </div>
             <div className="space-y-2 col-span-2">
-              <Label htmlFor="edit_email">代表メールアドレス *</Label>
-              <Input id="edit_email" type="email" value={formData.email || ''} onChange={(e) => setFormData({...formData, email: e.target.value})} />
+              <Label htmlFor="edit_email">代表メールアドレス</Label>
+              <Input id="edit_email" type="email" value={formData.email || ''} onChange={(e) => setFormData(prev => ({...prev, email: e.target.value}))} />
             </div>
 
             {/* --- 企業詳細 --- */}
@@ -689,11 +804,29 @@ export default function ClientsSettingsPage() {
             </div>
             <div className="space-y-2 col-span-2">
               <Label htmlFor="edit_established_date">設立年月日</Label>
-              <Input id="edit_established_date" type="date" value={formData.established_date || ''} onChange={(e) => setFormData({...formData, established_date: e.target.value})} />
+              <DatePicker 
+                id="edit_established_date"
+                value={formData.established_date || ''}
+                onChange={(date) => setFormData({...formData, established_date: date})}
+                placeholder="設立年月日を選択"
+              />
             </div>
             <div className="space-y-2 col-span-2">
-              <Label htmlFor="edit_capital">資本金</Label>
-              <Input id="edit_capital" type="number" value={formData.capital || ''} onChange={(e) => setFormData({...formData, capital: Number(e.target.value)})} />
+              <Label htmlFor="edit_capital">資本金（万円）</Label>
+              <div className="relative">
+                <Input 
+                  id="edit_capital" 
+                  type="text" 
+                  value={formData.capital ? formData.capital.toLocaleString('ja-JP') : ''}
+                  onChange={(e) => {
+                    const value = e.target.value.replace(/[^0-9]/g, '')
+                    setFormData({...formData, capital: value ? Number(value) : 0})
+                  }}
+                  placeholder="0"
+                  className="pr-12"
+                />
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">万円</span>
+              </div>
             </div>
             <div className="space-y-2 col-span-2">
               <Label htmlFor="edit_employee_count">従業員数</Label>
@@ -701,7 +834,16 @@ export default function ClientsSettingsPage() {
             </div>
             <div className="space-y-2 col-span-2">
               <Label htmlFor="edit_industry">業種</Label>
-              <Input id="edit_industry" value={formData.industry || ''} onChange={(e) => setFormData({...formData, industry: e.target.value})} />
+              <Select value={formData.industry || ''} onValueChange={(value) => setFormData(prev => ({...prev, industry: value}))} disabled={industries.length === 0}>
+                <SelectTrigger className="w-full"><SelectValue placeholder={industries.length === 0 ? "業種マスタデータがありません" : "選択してください"} /></SelectTrigger>
+                <SelectContent>
+                  {industries.map((industry) => (
+                    <SelectItem key={industry.code} value={industry.code}>
+                      {industry.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-2 col-span-2">
               <Label htmlFor="edit_website">ウェブサイト</Label>
@@ -865,34 +1007,55 @@ export default function ClientsSettingsPage() {
 
               {/* 取得データ（新規の場合） */}
               {!aiPreviewData.changes && (
-                <div className="grid grid-cols-2 gap-4">
-                  {Object.entries(aiPreviewData)
-                    .filter(([key]) => !key.startsWith('_') && !key.startsWith('ai_'))
-                    .map(([key, value]) => (
-                      <div key={key} className="space-y-1">
-                        <Label className="text-sm text-gray-500">{key}</Label>
-                        <div className="p-2 border rounded bg-gray-50 text-sm">
-                          {value ? String(value) : '(未設定)'}
-                        </div>
-                      </div>
-                    ))
-                  }
+                <div className="space-y-4">
+                  <h3 className="font-semibold">取得データ</h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    {Object.entries(aiPreviewData)
+                      .filter(([key]) => 
+                        !key.startsWith('_') && 
+                        !key.startsWith('ai_') &&
+                        key !== 'id'
+                      )
+                      .map(([key, value]) => {
+                        const fieldLabels: Record<string, string> = {
+                          company_name: '会社名',
+                          legal_name: '正式名称',
+                          representative: '代表者名',
+                          established_date: '設立年月日',
+                          capital: '資本金',
+                          employee_count: '従業員数',
+                          industry: '業種',
+                          website: 'ウェブサイト',
+                          description: '事業内容',
+                          postal_code: '郵便番号',
+                          prefecture: '都道府県',
+                          city: '市区町村',
+                          address: '番地・ビル名',
+                          phone: '代表電話番号',
+                          fax: 'FAX番号',
+                          email: 'メールアドレス',
+                        }
+                        const label = fieldLabels[key] || key
+                        
+                        return (
+                          <div key={key} className="space-y-1">
+                            <Label className="text-sm font-medium text-gray-700">{label}</Label>
+                            <div className="p-2 border rounded bg-gray-50 text-sm min-h-[36px] flex items-center">
+                              {value ? String(value) : <span className="text-gray-400">(未設定)</span>}
+                            </div>
+                          </div>
+                        )
+                      })
+                    }
+                  </div>
                 </div>
               )}
 
-              {/* 検索ソース情報 */}
-              {aiPreviewData._search_urls && aiPreviewData._search_urls.length > 0 && (
-                <div className="text-xs text-gray-500">
-                  <div className="font-medium mb-1">情報ソース:</div>
-                  <ul className="list-disc list-inside space-y-1">
-                    {aiPreviewData._search_urls.map((url: string, index: number) => (
-                      <li key={index}>
-                        <a href={url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
-                          {url}
-                        </a>
-                      </li>
-                    ))}
-                  </ul>
+              {/* AIプロバイダー情報 */}
+              {aiPreviewData.ai_provider && (
+                <div className="text-xs text-gray-500 p-3 bg-gray-50 rounded">
+                  <span className="font-medium">使用プロバイダー: </span>
+                  {aiPreviewData.ai_provider}
                 </div>
               )}
             </div>

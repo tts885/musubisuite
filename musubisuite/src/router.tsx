@@ -32,6 +32,7 @@ import SettingsPage from "@/pages/settings"
 import UsersSettingsPage from "@/pages/settings/users"
 import ClientsSettingsPage from "@/pages/settings/clients"
 import AISettingsPage from "@/pages/settings/ai-settings"
+import CodeMastersPage from "@/pages/settings/codemasters"
 import NotFoundPage from "@/pages/not-found"
 import UnderConstructionPage from "@/pages/under-construction"
 
@@ -98,7 +99,8 @@ export const router = createBrowserRouter([
       { path: "users", element: <UsersSettingsPage /> },
       { path: "clients", element: <ClientsSettingsPage /> },
       { path: "contracts", element: <UnderConstructionPage /> },
-            { path: "ai", element: <AISettingsPage /> },
+      { path: "codemasters", element: <CodeMastersPage /> },
+      { path: "ai", element: <AISettingsPage /> },
       { path: "security", element: <UnderConstructionPage /> },
       { path: "notifications", element: <UnderConstructionPage /> },
       { path: "appearance", element: <UnderConstructionPage /> },
