@@ -4,6 +4,7 @@ import {
   FolderKanban, 
   Boxes, 
   Wrench,
+  ScanText,
   Settings,
   Plus,
   Moon,
@@ -27,6 +28,7 @@ import { setExplicitHomeNavigation } from "@/hooks/use-route-tracker"
 const iconMap: Record<string, LucideIcon> = {
   Home,
   FolderKanban,
+  ScanText,
   Boxes,
   Wrench,
 }

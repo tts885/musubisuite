@@ -506,3 +506,281 @@ export interface Application {
   isActive: boolean;
   order: number;
 }
+
+/**
+ * OCR処理結果の座標情報
+ * 
+ * OCRで検出されたテキストの位置情報を表します。
+ * 画像上でのハイライト表示に使用されます。
+ * 
+ * @interface BoundingBox
+ * 
+ * @property {number} x - X座標(左上からのピクセル数)
+ * @property {number} y - Y座標(左上からのピクセル数)
+ * @property {number} width - 幅(ピクセル)
+ * @property {number} height - 高さ(ピクセル)
+ * 
+ * @example
+ * ```typescript
+ * const box: BoundingBox = {
+ *   x: 100,
+ *   y: 50,
+ *   width: 200,
+ *   height: 30
+ * };
+ * ```
+ */
+export interface BoundingBox {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
+/**
+ * OCRで検出されたフィールド
+ * 
+ * 帳票内の個別フィールド(氏名、住所、金額など)を表します。
+ * 
+ * @interface OcrField
+ * 
+ * @property {string} id - フィールドID(UUID)
+ * @property {string} label - フィールド名(例: "氏名", "住所", "金額")
+ * @property {string} value - 検出されたテキスト値
+ * @property {number} confidence - 信頼度スコア(0-1)
+ * @property {BoundingBox} boundingBox - 画像上の位置情報
+ * @property {string} [type] - フィールドタイプ(text/number/date/email等)
+ * @property {boolean} isEdited - ユーザーによって編集されたか
+ * 
+ * @example
+ * ```typescript
+ * const field: OcrField = {
+ *   id: '123',
+ *   label: '氏名',
+ *   value: '山田太郎',
+ *   confidence: 0.95,
+ *   boundingBox: { x: 100, y: 50, width: 200, height: 30 },
+ *   type: 'text',
+ *   isEdited: false
+ * };
+ * ```
+ */
+export interface OcrField {
+  id: string;
+  label: string;
+  value: string;
+  confidence: number;
+  boundingBox: BoundingBox;
+  type?: 'text' | 'number' | 'date' | 'email' | 'phone' | 'address';
+  isEdited: boolean;
+}
+
+/**
+ * OCR処理結果
+ * 
+ * 1つの帳票に対するOCR処理の全結果を表します。
+ * 
+ * @interface OcrResult
+ * 
+ * @property {string} id - OCR結果ID(UUID)
+ * @property {string} documentId - 関連ドキュメントのID
+ * @property {string} fileName - 元ファイル名
+ * @property {OcrField[]} fields - 検出されたフィールドの配列
+ * @property {string} status - 処理ステータス
+ * @property {Date} processedAt - 処理完了日時
+ * @property {string} [rawText] - 全文テキスト(任意)
+ * @property {number} overallConfidence - 全体の信頼度スコア(0-1)
+ * 
+ * @example
+ * ```typescript
+ * const result: OcrResult = {
+ *   id: '123',
+ *   documentId: '456',
+ *   fileName: '請求書_20250101.pdf',
+ *   fields: [field1, field2, field3],
+ *   status: 'completed',
+ *   processedAt: new Date(),
+ *   rawText: '全文テキスト...',
+ *   overallConfidence: 0.92
+ * };
+ * ```
+ */
+export interface OcrResult {
+  id: string;
+  documentId: string;
+  fileName: string;
+  fields: OcrField[];
+  status: 'processing' | 'completed' | 'failed' | 'pending';
+  processedAt: Date;
+  rawText?: string;
+  overallConfidence: number;
+}
+
+/**
+ * OCRドキュメント
+ * 
+ * アップロードされたOCR対象ドキュメントを表します。
+ * 
+ * @interface OcrDocument
+ * 
+ * @property {string} id - ドキュメントID(UUID)
+ * @property {string} fileName - ファイル名
+ * @property {string} fileType - MIMEタイプ(image/jpeg, image/png, application/pdf等)
+ * @property {number} fileSize - ファイルサイズ(バイト)
+ * @property {string} fileUrl - ファイルURL
+ * @property {string} thumbnailUrl - サムネイル画像URL(任意)
+ * @property {OcrResult | null} ocrResult - OCR処理結果(処理完了後に設定)
+ * @property {string} uploadedBy - アップロードしたユーザーID
+ * @property {Date} uploadedAt - アップロード日時
+ * @property {Date} updatedAt - 最終更新日時
+ * @property {string} [projectId] - 関連プロジェクトID(任意)
+ * @property {string[]} tags - タグの配列
+ * 
+ * @example
+ * ```typescript
+ * const document: OcrDocument = {
+ *   id: '123',
+ *   fileName: '請求書.pdf',
+ *   fileType: 'application/pdf',
+ *   fileSize: 204800,
+ *   fileUrl: '/uploads/invoice.pdf',
+ *   thumbnailUrl: '/uploads/invoice_thumb.jpg',
+ *   ocrResult: result,
+ *   uploadedBy: 'user123',
+ *   uploadedAt: new Date(),
+ *   updatedAt: new Date(),
+ *   projectId: 'project456',
+ *   tags: ['請求書', '2025年1月']
+ * };
+ * ```
+ * 
+ * @remarks
+ * - fileTypeは'image/jpeg', 'image/png', 'application/pdf'をサポート
+ * - thumbnailUrlはPDFの場合に生成されます
+ * - ocrResultは処理完了後に設定されます
+ */
+export interface OcrDocument {
+  id: string;
+  fileName: string;
+  fileType: string;
+  fileSize: number;
+  fileUrl: string;
+  thumbnailUrl?: string;
+  ocrResult: OcrResult | null;
+  uploadedBy: string;
+  uploadedAt: Date;
+  updatedAt: Date;
+  projectId?: string;
+  tags: string[];
+  folderId?: string; // フォルダID
+}
+
+/**
+ * OCRフォルダ
+ * 
+ * ドキュメントを階層構造で管理するフォルダ
+ * 親子関係を持ち、複数階層のフォルダツリーを構築可能
+ * 
+ * @interface OcrFolder
+ * 
+ * @property {string} id - フォルダID
+ * @property {string} name - フォルダ名
+ * @property {string} [description] - フォルダ説明
+ * @property {string} [color] - フォルダカラー(UI表示用)
+ * @property {string | null} parentId - 親フォルダID (nullはルートフォルダ)
+ * @property {string} path - フォルダパス (例: "/請求書/2024年度")
+ * @property {Date} createdAt - 作成日時
+ * @property {Date} updatedAt - 更新日時
+ * @property {string} createdBy - 作成者ID
+ * @property {number} documentCount - フォルダ内のドキュメント数
+ * @property {number} folderCount - 子フォルダ数
+ * @property {boolean} [isExpanded] - UI用: 展開状態
+ */
+export interface OcrFolder {
+  id: string;
+  name: string;
+  description?: string;
+  color?: string;
+  parentId: string | null;
+  path: string;
+  createdAt: Date;
+  updatedAt: Date;
+  createdBy: string;
+  documentCount: number;
+  folderCount: number;
+  isExpanded?: boolean;
+  menuSection?: string; // メニューセクションID(どのメニュー配下か)
+}
+
+/**
+ * OCRタスク
+ * 
+ * OCR処理タスクの情報を表します。
+ * 複数のドキュメントを含むバッチ処理単位。
+ * 
+ * @interface OcrTask
+ * 
+ * @property {string} id - タスクID(UUID)
+ * @property {string} name - タスク名
+ * @property {OcrTaskStatus} status - タスクステータス
+ * @property {OcrDocument[]} documents - 関連ドキュメントの配列
+ * @property {number} totalDocuments - 総ドキュメント数
+ * @property {number} processedDocuments - 処理完了ドキュメント数
+ * @property {number} failedDocuments - 失敗ドキュメント数
+ * @property {Date} createdAt - 作成日時
+ * @property {Date} updatedAt - 最終更新日時
+ * @property {Date} [startedAt] - 処理開始日時
+ * @property {Date} [completedAt] - 処理完了日時
+ * @property {string} createdBy - 作成者ID
+ * @property {string} [projectId] - 関連プロジェクトID(任意)
+ * @property {string} [errorMessage] - エラーメッセージ(失敗時)
+ * 
+ * @example
+ * ```typescript
+ * const task: OcrTask = {
+ *   id: 'task-123',
+ *   name: '請求書バッチ_2025-11',
+ *   status: 'processing',
+ *   documents: [doc1, doc2, doc3],
+ *   totalDocuments: 3,
+ *   processedDocuments: 1,
+ *   failedDocuments: 0,
+ *   createdAt: new Date(),
+ *   updatedAt: new Date(),
+ *   startedAt: new Date(),
+ *   createdBy: 'user123',
+ * };
+ * ```
+ * 
+ * @remarks
+ * - statusはドキュメントの処理状況に応じて自動更新
+ * - 全ドキュメント完了時にcompletedAtが設定される
+ */
+export interface OcrTask {
+  id: string;
+  name: string;
+  status: OcrTaskStatus;
+  documents: OcrDocument[];
+  totalDocuments: number;
+  processedDocuments: number;
+  failedDocuments: number;
+  createdAt: Date;
+  updatedAt: Date;
+  startedAt?: Date;
+  completedAt?: Date;
+  createdBy: string;
+  projectId?: string;
+  errorMessage?: string;
+}
+
+/**
+ * OCRタスクステータス
+ * 
+ * @typedef {'pending' | 'processing' | 'completed' | 'failed' | 'cancelled'} OcrTaskStatus
+ */
+export type OcrTaskStatus = 
+  | 'pending'      // 待機中: OCR処理開始前
+  | 'processing'   // 処理中: OCR実行中
+  | 'completed'    // 完了: 全ドキュメント処理完了
+  | 'failed'       // 失敗: 処理失敗
+  | 'cancelled';   // キャンセル: ユーザーがキャンセル

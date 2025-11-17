@@ -120,7 +120,7 @@ export default function ClientsSettingsPage() {
       const matchesSearch = 
         client.company_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         (client.contact_name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-        client.email.toLowerCase().includes(searchQuery.toLowerCase())
+        (client.email || '').toLowerCase().includes(searchQuery.toLowerCase())
       
       const matchesIndustry = industryFilter === "all" || client.industry === industryFilter
       
@@ -181,7 +181,7 @@ export default function ClientsSettingsPage() {
       const clientData = {
         ...formData,
         company_name: formData.company_name,
-        email: formData.email,
+        email: formData.email || '',
         capital: formData.capital ? formData.capital * 10000 : undefined
       }
       await djangoAPI.createClient(clientData)

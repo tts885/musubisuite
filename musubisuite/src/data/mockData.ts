@@ -38,6 +38,16 @@ export const mockApplications: Application[] = [
     order: 1,
   },
   {
+    id: 'app-ocr',
+    name: 'OCR',
+    description: '帳票OCR処理と管理',
+    icon: 'ScanText',
+    path: '/ocr',
+    color: 'hsl(var(--chart-5))',
+    isActive: false,
+    order: 2,
+  },
+  {
     id: 'app-project-management',
     name: 'プロジェクト管理',
     description: 'タスクとスプリントの管理',
@@ -45,7 +55,7 @@ export const mockApplications: Application[] = [
     path: '/project-management',
     color: 'hsl(var(--chart-2))',
     isActive: false,
-    order: 2,
+    order: 3,
   },
   {
     id: 'app-tool-portal',
@@ -55,7 +65,7 @@ export const mockApplications: Application[] = [
     path: '/tool-portal',
     color: 'hsl(var(--chart-3))',
     isActive: false,
-    order: 3,
+    order: 4,
   },
 ];
 
