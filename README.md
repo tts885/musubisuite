@@ -1,4 +1,4 @@
-# MusubiSuite - 案件管理システム
+# CoreX - 案件管理システム
 
 Modern project management system built with React, TypeScript, and Tailwind CSS for Power Apps.
 
@@ -6,7 +6,7 @@ Modern project management system built with React, TypeScript, and Tailwind CSS 
 
 ## 概要
 
-MusubiSuiteは、案件管理を効率化するためのWebアプリケーションです。FluentSampleの設計パターンを参考に、Shadcn/uiコンポーネントライブラリを使用して構築されています。
+CoreXは、案件管理を効率化するためのWebアプリケーションです。FluentSampleの設計パターンを参考に、Shadcn/uiコンポーネントライブラリを使用して構築されています。
 
 ## 主な機能
 
@@ -79,7 +79,7 @@ npm run build
 ## プロジェクト構造
 
 ```
-musubisuite/
+CoreX/
 ├── src/
 │   ├── components/ui/       # Shadcn/ui コンポーネント
 │   ├── data/mockData.ts     # モックデータ
@@ -102,4 +102,3 @@ musubisuite/
 ## 参考プロジェクト
 
 - **FluentSample**: レイアウトとナビゲーション設計
-- **Plane**: プロジェクト管理のベストプラクティス (https://github.com/makeplane/plane)

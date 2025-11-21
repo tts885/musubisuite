@@ -1,8 +1,8 @@
-# MusubiSuite 開発ガイドライン
+#  開発ガイドライン
 
 ## 📚 ガイドライン索引
 
-本ガイドラインは、MusubiSuiteプロジェクトにおける一貫性のある高品質なコード開発を支援するために作成されました。AI自動コード生成時にこれらのガイドラインを参照することで、実装方針やセキュリティ対策のばらつきを防ぎます。
+本ガイドラインは、プロジェクトにおける一貫性のある高品質なコード開発を支援するために作成されました。AI自動コード生成時にこれらのガイドラインを参照することで、実装方針やセキュリティ対策のばらつきを防ぎます。
 
 ### ガイドライン構成
 
@@ -134,8 +134,8 @@ AI自動コード生成時に該当ガイドラインを参照指示に含める
 ### プロジェクト固有ドキュメント
 - [README.md](../README.md) - プロジェクト概要
 - [INTEGRATION.md](../INTEGRATION.md) - 統合ガイド
-- [musubisuite/README.md](../musubisuite/README.md) - フロントエンド詳細
-- [musubisuite_back/README.md](../musubisuite_back/README.md) - バックエンド詳細
+- [/README.md](..//README.md) - フロントエンド詳細
+- [/README.md](..//README.md) - バックエンド詳細
 
 ## 📞 質問・フィードバック
 
@@ -158,4 +158,4 @@ AI自動コード生成時に該当ガイドラインを参照指示に含める
 
 **Last Updated**: 2025年11月17日  
 **Version**: 1.1.0  
-**Maintainer**: MusubiSuite Development Team
+**Maintainer**:  Development Team

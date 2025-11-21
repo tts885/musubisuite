@@ -10,7 +10,7 @@
 ## プロジェクト概要
 
 ### プロジェクト名
-**MusubiSuite** - 統合プロジェクト・メンバー・タスク管理システム
+**** - 統合プロジェクト・メンバー・タスク管理システム
 
 ### ビジョン
 Power Apps Code Componentとして統合・デプロイされることを前提とした、モダンなフルスタックWebアプリケーション。プロジェクト管理、メンバー管理、クライアント管理、活動管理を一元化し、効率的なチームコラボレーションを実現する。
@@ -73,7 +73,7 @@ graph TB
         PAH["Power Apps Host"]
         DV[Dataverse]
         
-        subgraph "Code App (musubisuite)"
+        subgraph "Code App ()"
             A[React + TypeScript]
             B[Vite Build Tool]
             C[TanStack Query]
@@ -103,7 +103,7 @@ graph TB
 
 ## 技術スタック
 
-### フロントエンド (musubisuite)
+### フロントエンド ()
 
 #### コアフレームワーク
 | 技術 | バージョン | 用途 |
@@ -143,7 +143,7 @@ graph TB
 | Sonner | トースト通知 |
 | date-fns | 日付操作 |
 
-### バックエンド (musubisuite_back)
+### バックエンド ()
 
 #### コアフレームワーク
 | 技術 | バージョン | 用途 |
@@ -265,11 +265,11 @@ pac auth create --url https://your-org.crm.dynamics.com
 #### フロントエンド
 ```powershell
 # 依存関係のインストール
-cd musubisuite
+cd 
 npm install
 
 # Code Appプロジェクトとして初期化 (初回のみ)
-pac code init --name musubisuite --template react
+pac code init --name  --template react
 
 # 開発サーバー起動 (Vite + Power Apps Host)
 npm run dev:pac
@@ -277,7 +277,7 @@ npm run dev:pac
 
 #### バックエンド
 ```powershell
-cd musubisuite_back
+cd 
 python -m venv venv
 .\venv\Scripts\Activate.ps1
 pip install -r requirements.txt
@@ -313,9 +313,9 @@ CORS_ALLOWED_ORIGINS=http://localhost:5173,http://localhost:8181
 
 ## ディレクトリ構造
 
-### フロントエンド (musubisuite/)
+### フロントエンド (/)
 ```
-musubisuite/
+/
 ├── src/
 │   ├── components/      # 再利用可能なUIコンポーネント
 │   ├── pages/          # ページコンポーネント
@@ -329,9 +329,9 @@ musubisuite/
 └── public/             # 静的アセット
 ```
 
-### バックエンド (musubisuite_back/)
+### バックエンド (/)
 ```
-musubisuite_back/
+/
 ├── config/             # Django設定
 ├── projects/           # プロジェクトアプリ
 ├── members/            # メンバーアプリ

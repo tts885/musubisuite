@@ -1,4 +1,4 @@
-# MusubiSuite Backend - Quick Start Guide
+# CoreXAPI - Quick Start Guide
 
 ## セットアップ手順
 
@@ -46,7 +46,7 @@ python manage.py runserver
 
 ## フロントエンドとの連携
 
-フロントエンド(musubisuite)のAPIベースURLを以下に設定:
+フロントエンド(CoreX)のAPIベースURLを以下に設定:
 ```
 http://127.0.0.1:8000/api/
 ```

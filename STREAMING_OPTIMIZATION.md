@@ -195,13 +195,13 @@ for (const line of lines) {
 
 1. **Backend起動:**
 ```bash
-cd musubisuite_back
+cd CoreXAPI
 python manage.py runserver
 ```
 
 2. **Frontend起動:**
 ```bash
-cd musubisuite
+cd CoreX
 npm run dev
 ```
 

@@ -54,7 +54,7 @@ flake8 .
 
 ### ディレクトリ構成
 ```
-musubisuite_back/
+/
 ├── manage.py                # Django管理スクリプト
 ├── db.sqlite3              # SQLiteデータベース
 ├── requirements.txt        # Python依存関係
@@ -1132,7 +1132,7 @@ ALLOWED_HOSTS=localhost,127.0.0.1
 CORS_ALLOWED_ORIGINS=http://localhost:5173,http://127.0.0.1:5173
 
 # データベース (本番環境)
-DB_NAME=musubisuite_db
+DB_NAME=_db
 DB_USER=postgres
 DB_PASSWORD=your-password
 DB_HOST=localhost

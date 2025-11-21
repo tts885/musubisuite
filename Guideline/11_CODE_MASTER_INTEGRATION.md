@@ -54,7 +54,7 @@ Backend (Django + DRF)
 
 ### サービス仕様
 
-**ファイル**: `musubisuite/src/services/codemaster.ts`
+**ファイル**: `/src/services/codemaster.ts`
 
 #### 主要機能
 
@@ -240,7 +240,7 @@ const fetchAllCodes = async () => {
 
 ### 実装内容
 
-クライアント管理画面 (`musubisuite/src/pages/settings/clients.tsx`) で業種ドロップダウンをコードマスタと統合しました。
+クライアント管理画面 (`/src/pages/settings/clients.tsx`) で業種ドロップダウンをコードマスタと統合しました。
 
 #### 実装手順
 
@@ -488,7 +488,7 @@ const fetchCodes = async () => {
 
 #### 管理コマンド作成
 
-**ファイル**: `musubisuite_back/masters/management/commands/create_industry_master.py`
+**ファイル**: `/masters/management/commands/create_industry_master.py`
 
 ```python
 from django.core.management.base import BaseCommand
@@ -536,7 +536,7 @@ class Command(BaseCommand):
 
 ```bash
 # Pythonターミナルで実行
-cd musubisuite_back
+cd 
 python manage.py create_industry_master
 ```
 
@@ -592,7 +592,7 @@ GET /api/codemasters/bulk/?categories=industry,project_status,priority
 再利用性を高めるため、共通コンポーネントを作成予定。
 
 ```typescript
-// musubisuite/src/components/shared/CodeMasterSelect.tsx
+// /src/components/shared/CodeMasterSelect.tsx
 interface CodeMasterSelectProps {
   category: string
   value: string
@@ -654,7 +654,7 @@ export function CodeMasterSelect({
 ### カスタムフック化
 
 ```typescript
-// musubisuite/src/hooks/use-code-master.ts
+// /src/hooks/use-code-master.ts
 export function useCodeMaster(category: string) {
   const [codes, setCodes] = useState<CodeMaster[]>([])
   const [loading, setLoading] = useState(false)

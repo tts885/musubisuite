@@ -9,10 +9,10 @@
 - ✅ `OCR_Dataverse_Tables_Setup_Guide.md` - セットアップガイド
 
 ### 2. サービス層
-- ✅ `musubisuite/src/services/ocrDataverseService.ts` - Dataverse CRUD操作
+- ✅ `CoreX/src/services/ocrDataverseService.ts` - Dataverse CRUD操作
 
 ### 3. フック層
-- ✅ `musubisuite/src/hooks/useOcrDataverse.ts` - React統合フック
+- ✅ `CoreX/src/hooks/useOcrDataverse.ts` - React統合フック
 
 ---
 
@@ -23,7 +23,7 @@
 #### ステップ1: Power Apps CLI でログイン
 
 ```powershell
-cd musubisuite
+cd CoreX
 
 # Dataverse環境にログイン
 pac auth create
@@ -53,7 +53,7 @@ pac code add-data-source -a dataverse -t cr_ocrfields
 
 **生成されるファイル:**
 ```
-musubisuite/
+CoreX/
 ├── .power/
 │   └── schemas/
 │       └── dataverse/

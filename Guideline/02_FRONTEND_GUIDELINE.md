@@ -34,7 +34,7 @@
 ### セットアップ
 ```powershell
 # プロジェクトのクローン
-cd musubisuite
+cd 
 
 # 依存関係のインストール
 npm install
@@ -53,7 +53,7 @@ npm run lint
 
 ### ディレクトリ構成
 ```
-musubisuite/
+/
 ├── src/
 │   ├── main.tsx              # エントリーポイント
 │   ├── App.tsx               # ルートコンポーネント

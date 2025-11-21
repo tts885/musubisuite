@@ -467,7 +467,7 @@ text-4xl  (2.25rem / 36px)
 #### 5. 代替テキスト
 ```typescript
 // 画像
-<img src="logo.png" alt="MusubiSuite ロゴ" />
+<img src="logo.png" alt=" ロゴ" />
 
 // アイコン（装飾的）
 <ChevronRight aria-hidden="true" />

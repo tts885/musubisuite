@@ -533,7 +533,7 @@ function ClientLink({ clientId }: { clientId: string }) {
 
 ```powershell
 # Power Apps Host と Vite を同時に起動
-cd musubisuite
+cd 
 pac code run
 
 # オプション指定
@@ -570,7 +570,7 @@ pac code run --port 8181 --browser chrome
       "request": "launch",
       "name": "Launch Code App",
       "url": "http://localhost:8181",
-      "webRoot": "${workspaceFolder}/musubisuite/src",
+      "webRoot": "${workspaceFolder}//src",
       "preLaunchTask": "pac-code-run"
     }
   ]
@@ -850,19 +850,19 @@ export function ProjectCard({ projectId }: { projectId: string }) {
 pac solution init --publisher-name "YourPublisher" --publisher-prefix "musubi"
 
 # Code Appをソリューションに追加
-pac solution add-reference --path ./musubisuite
+pac solution add-reference --path ./
 ```
 
 ### 12.2 ビルドとパッケージング
 
 ```powershell
 # Code Appのビルド
-cd musubisuite
+cd 
 npm run build
 
 # ソリューションのパッケージ化
 cd ..
-pac solution pack --zipfile MusubiSuite.zip --folder ./solution --packagetype Managed
+pac solution pack --zipfile .zip --folder ./solution --packagetype Managed
 ```
 
 ### 12.3 環境への展開
@@ -870,11 +870,11 @@ pac solution pack --zipfile MusubiSuite.zip --folder ./solution --packagetype Ma
 ```powershell
 # 開発環境への展開
 pac auth create --url https://dev-org.crm.dynamics.com
-pac solution import --path MusubiSuite.zip
+pac solution import --path .zip
 
 # 本番環境への展開
 pac auth create --url https://prod-org.crm.dynamics.com
-pac solution import --path MusubiSuite.zip --publish-changes
+pac solution import --path .zip --publish-changes
 ```
 
 ### 12.4 CI/CD パイプライン (GitHub Actions)
@@ -899,15 +899,15 @@ jobs:
         with:
           node-version: '20'
           cache: 'npm'
-          cache-dependency-path: musubisuite/package-lock.json
+          cache-dependency-path: /package-lock.json
 
       - name: Install dependencies
         run: npm ci
-        working-directory: musubisuite
+        working-directory: 
 
       - name: Build Code App
         run: npm run build
-        working-directory: musubisuite
+        working-directory: 
 
       - name: Setup Power Platform CLI
         uses: microsoft/powerplatform-actions/actions-install@v1
@@ -921,7 +921,7 @@ jobs:
           tenant-id: ${{ secrets.POWER_PLATFORM_TENANT_ID }}
 
       - name: Pack solution
-        run: pac solution pack --zipfile MusubiSuite.zip --folder ./solution --packagetype Managed
+        run: pac solution pack --zipfile .zip --folder ./solution --packagetype Managed
 
       - name: Import solution
         uses: microsoft/powerplatform-actions/import-solution@v1
@@ -930,7 +930,7 @@ jobs:
           app-id: ${{ secrets.POWER_PLATFORM_APP_ID }}
           client-secret: ${{ secrets.POWER_PLATFORM_CLIENT_SECRET }}
           tenant-id: ${{ secrets.POWER_PLATFORM_TENANT_ID }}
-          solution-file: MusubiSuite.zip
+          solution-file: .zip
           force-overwrite: true
           publish-changes: true
 ```

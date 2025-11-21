@@ -39,7 +39,7 @@ interface MenuSection {
 
 /**
  * OCRアプリケーションのサイドバー
- * Plane風の現代的なサイドバーデザイン
+ * 現代的なサイドバーデザイン
  */
 export default function OcrSidebar({ sidebarCollapsed, setSidebarCollapsed, sidebarOpen, setSidebarOpen }: OcrSidebarProps) {
   const navigate = useNavigate()
@@ -540,7 +540,7 @@ export default function OcrSidebar({ sidebarCollapsed, setSidebarCollapsed, side
           )}
         </div>
 
-        {/* Navigation - Plane風のナビゲーションスタイル */}
+        {/* Navigation - ナビゲーション */}
         <nav className="flex-1 px-4 py-6 space-y-1 overflow-y-auto">
           <button
             onClick={() => {

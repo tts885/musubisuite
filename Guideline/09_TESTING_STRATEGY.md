@@ -967,20 +967,20 @@ jobs:
         with:
           node-version: '18'
           cache: 'npm'
-          cache-dependency-path: musubisuite/package-lock.json
+          cache-dependency-path: /package-lock.json
       
       - name: Install dependencies
         run: npm ci
-        working-directory: musubisuite
+        working-directory: 
       
       - name: Run tests
         run: npm test -- --coverage
-        working-directory: musubisuite
+        working-directory: 
       
       - name: Upload coverage
         uses: codecov/codecov-action@v3
         with:
-          files: ./musubisuite/coverage/coverage-final.json
+          files: .//coverage/coverage-final.json
 
   backend-tests:
     runs-on: ubuntu-latest
@@ -998,18 +998,18 @@ jobs:
         run: |
           pip install -r requirements.txt
           pip install coverage
-        working-directory: musubisuite_back
+        working-directory: 
       
       - name: Run tests
         run: |
           coverage run --source='.' manage.py test
           coverage xml
-        working-directory: musubisuite_back
+        working-directory: 
       
       - name: Upload coverage
         uses: codecov/codecov-action@v3
         with:
-          files: ./musubisuite_back/coverage.xml
+          files: .//coverage.xml
 
   e2e-tests:
     runs-on: ubuntu-latest
@@ -1026,18 +1026,18 @@ jobs:
         run: |
           npm ci
           npx playwright install --with-deps
-        working-directory: musubisuite
+        working-directory: 
       
       - name: Run E2E tests
         run: npx playwright test
-        working-directory: musubisuite
+        working-directory: 
       
       - name: Upload test results
         if: always()
         uses: actions/upload-artifact@v3
         with:
           name: playwright-report
-          path: musubisuite/playwright-report/
+          path: /playwright-report/
 ```
 
 ---
@@ -1059,12 +1059,12 @@ jobs:
 ```bash
 # フロントエンド
 npm test -- --coverage
-open musubisuite/coverage/index.html
+open /coverage/index.html
 
 # バックエンド
 coverage run --source='.' manage.py test
 coverage html
-open musubisuite_back/htmlcov/index.html
+open /htmlcov/index.html
 ```
 
 ---

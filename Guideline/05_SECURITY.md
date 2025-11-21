@@ -730,7 +730,7 @@ DEBUG=True
 ALLOWED_HOSTS=localhost,127.0.0.1
 
 # データベース
-DB_NAME=musubisuite_db
+DB_NAME=_db
 DB_USER=postgres
 DB_PASSWORD=your-secure-password
 DB_HOST=localhost

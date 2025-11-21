@@ -38,7 +38,7 @@ import {
  * @remarks
  * - 404エラーの代わりに使用
  * - ユーザー体験を向上
- * - Plane風の現代的なデザイン
+ * - 現代的なデザイン
  */
 export default function UnderConstructionPage() {
   const navigate = useNavigate()

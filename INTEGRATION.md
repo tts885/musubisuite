@@ -2,16 +2,16 @@
 
 ## 概要
 
-musubisuiteフロントエンドとmusubisuite_backバックエンドが連携して動作するように設定されました。
+CoreXフロントエンドとCoreXAPIバックエンドが連携して動作するように設定されました。
 
 ## セットアップ
 
 ### 1. バックエンド (Django)
 
 ```powershell
-cd musubisuite_back
+cd CoreXAPI
 # 仮想環境がまだ有効でない場合
-..\. venv\Scripts\Activate.ps1
+..\.venv\Scripts\Activate.ps1
 # サーバーを起動
 python manage.py runserver
 ```
@@ -21,7 +21,7 @@ python manage.py runserver
 ### 2. フロントエンド (Vite + React)
 
 ```powershell
-cd musubisuite
+cd CoreX
 npm run dev
 ```
 

@@ -256,7 +256,7 @@ pac solution import --path "OcrManagementSolution.zip"
 ### ステップ1: Dataverseテーブル作成
 
 ```powershell
-cd musubisuite
+cd CoreX
 
 # 環境URLを設定
 $env:DATAVERSE_ENVIRONMENT_URL = "https://your-org.crm.dynamics.com/"
@@ -271,7 +271,7 @@ pac code add-data-source -a dataverse -t cr_ocrfields
 
 **生成されるファイル:**
 ```
-musubisuite/
+CoreX/
 ├── .power/
 │   └── schemas/
 │       └── dataverse/

@@ -16,7 +16,7 @@ type LayoutProps = { showHeader?: boolean }
 
 /**
  * ナビゲーションアイテムの定義
- * Plane風の現代的なUIデザインを採用
+ * 現代的なUIデザインを採用
  */
 const navItems = [
   { 
@@ -35,7 +35,7 @@ const navItems = [
 
 /**
  * メインレイアウトコンポーネント
- * Plane風の現代的なWebUIデザインを採用
+ * 現代的なWebUIデザインを採用
  * Wide表示を基本とし、コンパクト表示は使用しない
  */
 export default function Layout({ showHeader = true }: LayoutProps) {
@@ -86,10 +86,10 @@ export default function Layout({ showHeader = true }: LayoutProps) {
 
   return (
     <div className="h-screen flex overflow-hidden bg-background">
-      {/* App Switcher - Plane風の縦型アプリ切り替え (デスクトップのみ) */}
+      {/* App Switcher - 縦型アプリ切り替え (デスクトップのみ) */}
       <AppSwitcher />
 
-      {/* Sidebar - Plane風の現代的なサイドバー (折りたたみ時はAppSwitcherと同じ幅) */}
+      {/* Sidebar - 現代的なサイドバー (折りたたみ時はAppSwitcherと同じ幅) */}
       <aside 
         className={`
           bg-sidebar border-r border-sidebar-border
@@ -122,7 +122,7 @@ export default function Layout({ showHeader = true }: LayoutProps) {
             )}
           </div>
           
-          {/* Navigation - Plane風のナビゲーションスタイル */}
+          {/* Navigation - ナビゲーション */}
           <nav className="flex-1 px-4 py-6 space-y-1 overflow-y-auto">
             {navItems.map((item) => {
               const Icon = item.icon

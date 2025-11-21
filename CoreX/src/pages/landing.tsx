@@ -19,7 +19,7 @@ import { getLastVisitedPath, isExplicitHomeNavigation } from "@/hooks/use-route-
 /**
  * ランディングページコンポーネント
  * 
- * MusubiSuiteのホーム画面で、3つのメインツールを紹介します。
+ * CoreXのホーム画面で、3つのメインツールを紹介します。
  * 以下の要素を含みます:
  * - ヒーローセクション
  * - ツールカード(3つのアプリ)
@@ -40,7 +40,7 @@ import { getLastVisitedPath, isExplicitHomeNavigation } from "@/hooks/use-route-
  * - 3つのアプリ: 案件管理、プロジェクト管理、ツールPortal
  * - レスポンシブデザイン
  * - グラデーション背景とアニメーション効果
- * - Plane風の現代的なWebUIデザイン
+ * - 現代的なWebUIデザイン
  * - 再訪問時は最後に訪問したページにリダイレクト
  */
 export default function LandingPage() {

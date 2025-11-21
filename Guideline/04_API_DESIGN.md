@@ -134,7 +134,7 @@ Authorization: Bearer {access_token}
 ```http
 Accept-Language: ja
 X-Request-ID: {uuid}  # リクエスト追跡用
-User-Agent: MusubiSuite/1.0.0
+User-Agent: /1.0.0
 ```
 
 ### リクエストボディ
@@ -691,7 +691,7 @@ urlpatterns = [
 
 ```http
 GET /api/projects/
-Accept: application/vnd.musubisuite.v1+json
+Accept: application/vnd..v1+json
 ```
 
 ### バージョン管理戦略

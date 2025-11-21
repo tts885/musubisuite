@@ -1,10 +1,10 @@
-# MusubiSuite Backend
+# CoreXAPI
 
-MusubiSuite案件管理システムのDjango REST Frameworkバックエンド
+CoreX案件管理システムのDjango REST Frameworkバックエンド
 
 ## 概要
 
-このプロジェクトは、React + TypeScriptで構築されたフロントエンド（musubisuite）のバックエンドAPIを提供します。
+このプロジェクトは、React + TypeScriptで構築されたフロントエンド（CoreX）のバックエンドAPIを提供します。
 
 ### 主な機能
 
@@ -30,7 +30,7 @@ MusubiSuite案件管理システムのDjango REST Frameworkバックエンド
 ## プロジェクト構造
 
 ```
-musubisuite_back/
+CoreXAPI/
 ├── config/                 # プロジェクト設定
 │   ├── settings.py        # Django設定
 │   ├── urls.py           # URLルーティング
@@ -150,7 +150,7 @@ python manage.py runserver
 
 ### CORS設定
 
-フロントエンド（musubisuite）のURLは`settings.py`の`CORS_ALLOWED_ORIGINS`に設定されています:
+フロントエンド（CoreX）のURLは`settings.py`の`CORS_ALLOWED_ORIGINS`に設定されています:
 
 ```python
 CORS_ALLOWED_ORIGINS = [
@@ -227,7 +227,7 @@ gunicorn config.wsgi:application --bind 0.0.0.0:8000
 
 ## ライセンス
 
-Proprietary - MusubiSuite Project
+Proprietary - CoreX Project
 
 ## サポート
 

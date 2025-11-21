@@ -1,4 +1,4 @@
-# Django Backend Requirements for MusubiSuite
+# Django Backend Requirements for CoreXAPI
 
 # Core Framework
 Django==5.0.0

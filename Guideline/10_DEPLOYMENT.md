@@ -15,7 +15,7 @@
 - [デプロイ前チェックリスト](#デプロイ前チェックリスト)
 
 ## 目的と適用範囲
-- MusubiSuite (フロントエンド) と MusubiSuite Back (Django API)、ならびに Power Platform コンポーネントのデプロイメント標準を定義する。
+-  (フロントエンド) と  (Django API)、ならびに Power Platform コンポーネントのデプロイメント標準を定義する。
 - 手動／自動デプロイのいずれにも適用し、環境ごとの一貫性、トレーサビリティ、再現性を担保する。
 - 本ガイドは Azure を標準ターゲットとし、他クラウドへ展開する場合も同等のコントロールを維持する。
 
@@ -101,7 +101,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 18
-      - working-directory: musubisuite
+      - working-directory: 
         run: |
           npm ci
           npm run lint
@@ -109,8 +109,8 @@ jobs:
       - uses: Azure/static-web-apps-deploy@v1
         with:
           azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
-          app_location: musubisuite
-          output_location: musubisuite/dist
+          app_location: 
+          output_location: /dist
 
   backend:
     runs-on: ubuntu-latest
@@ -120,7 +120,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: 3.11
-      - working-directory: musubisuite_back
+      - working-directory: 
         run: |
           pip install -r requirements.txt
           python manage.py test
@@ -128,7 +128,7 @@ jobs:
         with:
           app-name: ${{ secrets.AZURE_WEBAPP_NAME }}
           publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
-          package: musubisuite_back
+          package: 
 ```
 - Secrets は GitHub Environments を用い、環境ごとに分離する。
 - CI が失敗したコミットはデプロイ禁止。
