@@ -1,0 +1,1388 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>総合設定・Power Platform接続 UI設計書</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: "Segoe UI", "Hiragino Sans", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+      background: linear-gradient(135deg, #0f172a 0%, #1d4ed8 50%, #9333ea 100%);
+      padding: 32px;
+      color: #0f172a;
+    }
+    .canvas {
+      max-width: 1600px;
+      margin: 0 auto;
+      background: #fff;
+      border-radius: 20px;
+      box-shadow: 0 30px 80px rgba(15, 23, 42, 0.35);
+      overflow: hidden;
+    }
+    header {
+      background: linear-gradient(135deg, #312e81, #1d4ed8 60%, #10b981);
+      color: #fff;
+      padding: 48px 56px;
+    }
+    header h1 {
+      font-size: 2.8rem;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    header p { font-size: 1.1rem; opacity: 0.9; line-height: 1.6; }
+    main { padding: 48px 56px; display: flex; flex-direction: column; gap: 40px; }
+    section { border: 1px solid #e2e8f0; border-radius: 16px; padding: 32px; background: #f8fafc; }
+    section h2 { font-size: 1.5rem; color: #0f172a; margin-bottom: 16px; display: flex; align-items: center; gap: 10px; }
+    section p, section li { color: #334155; line-height: 1.7; }
+    ul { padding-left: 20px; }
+    .tag { display: inline-block; padding: 5px 14px; border-radius: 999px; font-size: 0.85rem; font-weight: 600; background: #dbeafe; color: #1d4ed8; margin-right: 8px; margin-bottom: 8px; }
+    .tag.now { background: #22c55e; color: #fff; }
+    .tag.next { background: #f59e0b; color: #fff; }
+    .tag.future { background: #8b5cf6; color: #fff; }
+    .grid { display: grid; gap: 16px; }
+    .grid.two { grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); }
+    .grid.three { grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
+    .grid.four { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
+    .card { background: #fff; border-radius: 14px; border: 1px solid #e2e8f0; padding: 24px; box-shadow: 0 10px 30px rgba(15, 23, 42, 0.1); transition: transform 0.2s; }
+    .card:hover { transform: translateY(-4px); box-shadow: 0 15px 40px rgba(15, 23, 42, 0.15); }
+    .card h3 { font-size: 1.15rem; margin-bottom: 12px; color: #0f172a; font-weight: 700; }
+    .card h4 { font-size: 1rem; margin-top: 16px; margin-bottom: 8px; color: #1e293b; font-weight: 600; }
+    .flow { background: #0f172a; color: #e0f2fe; border-radius: 16px; padding: 24px; }
+    .flow-step { display: flex; gap: 16px; align-items: flex-start; margin-bottom: 18px; }
+    .flow-index { width: 36px; height: 36px; border-radius: 12px; background: #38bdf8; color: #0f172a; display: flex; align-items: center; justify-content: center; font-weight: 700; flex-shrink: 0; }
+    table { width: 100%; border-collapse: collapse; margin-top: 18px; }
+    th, td { padding: 12px 14px; border-bottom: 1px solid #e2e8f0; text-align: left; font-size: 0.95rem; }
+    th { background: #e0f2fe; color: #0f172a; font-weight: 600; }
+    tr:hover { background: #f8fafc; }
+    .reference { font-size: 0.9rem; color: #0f172a; margin-top: 16px; }
+    a { color: #2563eb; text-decoration: underline; }
+    a:hover { color: #1d4ed8; }
+    .mockup { background: #f1f5f9; border-radius: 12px; padding: 24px; margin-top: 20px; border: 2px solid #cbd5e1; }
+    .mockup-header { background: #e2e8f0; padding: 12px 16px; border-radius: 8px; margin-bottom: 16px; font-weight: 600; color: #1e293b; }
+    .mockup-section { background: #fff; padding: 20px; border-radius: 10px; margin-bottom: 16px; border: 1px solid #e2e8f0; }
+    .mockup-label { font-weight: 600; color: #475569; font-size: 0.9rem; margin-bottom: 6px; }
+    .mockup-input { background: #fff; border: 1px solid #cbd5e1; padding: 10px 12px; border-radius: 6px; width: 100%; font-size: 0.9rem; color: #64748b; margin-bottom: 12px; }
+    .mockup-button { display: inline-block; padding: 10px 20px; background: #3b82f6; color: #fff; border-radius: 8px; font-weight: 600; font-size: 0.9rem; margin-right: 8px; cursor: pointer; border: none; }
+    .mockup-button.secondary { background: #e2e8f0; color: #475569; }
+    .mockup-button.success { background: #22c55e; }
+    .mockup-button.danger { background: #ef4444; }
+    .mockup-badge { display: inline-block; padding: 4px 10px; border-radius: 12px; font-size: 0.8rem; font-weight: 600; margin-left: 8px; }
+    .mockup-badge.success { background: #dcfce7; color: #16a34a; }
+    .mockup-badge.warning { background: #fef3c7; color: #d97706; }
+    .mockup-badge.danger { background: #fee2e2; color: #dc2626; }
+    .mockup-card { background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 16px; margin-bottom: 12px; }
+    .code-block { background: #1e293b; color: #e2e8f0; padding: 16px; border-radius: 8px; font-family: 'Courier New', monospace; font-size: 0.85rem; overflow-x: auto; margin-top: 12px; white-space: pre-wrap; word-wrap: break-word; }
+    .icon-demo { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; background: #dbeafe; border-radius: 8px; margin-right: 8px; }
+    .stats-row { display: flex; gap: 12px; margin-bottom: 16px; }
+    .stat-box { flex: 1; background: linear-gradient(135deg, #3b82f6, #1d4ed8); color: #fff; padding: 16px; border-radius: 10px; text-align: center; }
+    .stat-label { font-size: 0.85rem; opacity: 0.9; margin-bottom: 6px; }
+    .stat-value { font-size: 1.8rem; font-weight: 700; }
+    @media (max-width: 768px) {
+      header, main { padding: 32px 24px; }
+      section { padding: 24px; }
+      .grid.two, .grid.three, .grid.four { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="canvas">
+    <header>
+      <h1>⚙️ 総合設定・Power Platform接続 UI設計書</h1>
+      <p>Dataverse接続テストを起点に、将来的なPower Platform連携を一元管理する設定エクスペリエンスの情報設計・UI仕様</p>
+    </header>
+    <main>
+      <section>
+        <h2>🧭 1. コンテキストとゴール</h2>
+        <div class="grid two">
+          <div class="card">
+            <h3>現状の課題</h3>
+            <ul>
+              <li>設定ページにDataverse接続UIが存在しないため、Power Platform CLIや環境変数の知識がない運用担当者はテスト実行ができない。</li>
+              <li>接続設定はLocalStorage管理のみで、状態把握・テストログ・将来の連携メニュー拡張に備えた設計が不足している。</li>
+              <li>設定ナビゲーション上で"Dataverse"という単一メニューのみが存在し、Azure SQLやカスタムコネクタなど他のPower Platform接続の受け皿がない。</li>
+            </ul>
+          </div>
+          <div class="card">
+            <h3>目標 (MVP + 拡張)</h3>
+            <ul>
+              <li class="tag">MVP</li> Dataverse接続の登録・アクティブ化・接続テストのUI/UXを提供し、フロントエンドからWeb API呼び出しで通信確認できるようにする。
+              <li class="tag">Next</li> Azure SQL や Office 365 コネクション等を追加できるメニュー設計と、テレメトリ収集・エラーパターン別ガイダンスを提供する。
+              <li class="tag">Future</li> ALM (pac code push) を見据え、環境ごとの接続テンプレート、Power Platform Solution設定差分の可視化を提供する。</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <h2>👥 2. ペルソナ / 利用シナリオ</h2>
+        <div class="grid three">
+          <div class="card">
+            <h3>Power Platform 管理者</h3>
+            <p>Dataverse環境や接続を事前に作成済み。コードアプリのUIからテストしてMakerへ共有したい。CLIコマンドなしで動作保証を確認するのがゴール。</p>
+          </div>
+          <div class="card">
+            <h3>アプリ運用担当</h3>
+            <p>日次で接続ヘルスチェックを行い、失敗時にはアクションログをエクスポートして開発者に伝える役割。UI内で結果を可視化したい。</p>
+          </div>
+          <div class="card">
+            <h3>フルスタック開発者</h3>
+            <p>Dataverse/APIを横断する複合連携を実装予定。設定画面でコネクションプレイブックや各FFEモジュールの責務を確認したい。</p>
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <h2>🗺️ 3. ナビゲーション & 情報設計</h2>
+        <div class="grid two">
+          <div class="card">
+            <h3>左サイドバー (既存レイアウト継承)</h3>
+            <ul>
+              <li>セクション: 「統合設定」配下に <strong>Power Platform接続</strong> を新設。</li>
+              <li>子メニュー構成:
+                <ul style="margin-top: 8px;">
+                  <li>→ Dataverse接続 (現在実装)</li>
+                  <li>→ Azure SQL (Next)</li>
+                  <li>→ カスタムコネクタ (Next)</li>
+                  <li>→ ALM & Diagnostics (Future)</li>
+                </ul>
+              </li>
+              <li>Shadcn/ui Buttonコンポーネント + lucideアイコンで状態バッジを表示。</li>
+            </ul>
+          </div>
+          <div class="card">
+            <h3>メインコンテンツレイアウト</h3>
+            <ul>
+              <li>ページヘッダー: タイトル + サブタイトル + Microsoft Learn リンク。</li>
+              <li>ステータスサマリカード群: 接続数、アクティブ接続、最終テスト日時、成功率。</li>
+              <li>タブナビゲーション: 「接続管理」「テスト履歴」「テンプレート」「ドキュメント」。</li>
+              <li>セクションカード内に詳細フォーム/テーブル/アクションボタンを配置し、1画面で完結。</li>
+            </ul>
+          </div>
+        </div>
+        
+        <!-- サイドバーナビゲーションのモックアップ -->
+        <div class="mockup" style="margin-top: 24px;">
+          <div class="mockup-header">サイドバーナビゲーション構成</div>
+          <div style="display: flex; gap: 20px;">
+            <div style="flex: 0 0 280px; background: #f8fafc; padding: 16px; border-radius: 8px; border: 1px solid #e2e8f0;">
+              <div style="font-size: 0.75rem; font-weight: 600; color: #64748b; text-transform: uppercase; margin-bottom: 12px; letter-spacing: 0.5px;">統合設定</div>
+              <div style="background: #667eea; color: #fff; padding: 10px 12px; border-radius: 6px; margin-bottom: 6px; font-weight: 600; cursor: pointer;">
+                <span style="margin-right: 8px;">🗄️</span>Power Platform接続
+              </div>
+              <div style="padding: 10px 12px 10px 32px; color: #475569; border-radius: 6px; margin-bottom: 4px; font-size: 0.9rem;">
+                Dataverse接続<span class="mockup-badge success" style="margin-left: 8px;">設定済</span>
+              </div>
+              <div style="padding: 10px 12px 10px 32px; color: #94a3b8; border-radius: 6px; margin-bottom: 4px; font-size: 0.9rem;">
+                Azure SQL<span class="mockup-badge" style="background: #f1f5f9; color: #64748b; margin-left: 8px;">未設定</span>
+              </div>
+              <div style="padding: 10px 12px 10px 32px; color: #94a3b8; border-radius: 6px; margin-bottom: 4px; font-size: 0.9rem;">
+                カスタムコネクタ<span class="mockup-badge" style="background: #f1f5f9; color: #64748b; margin-left: 8px;">未設定</span>
+              </div>
+              <div style="padding: 10px 12px; color: #475569; border-radius: 6px; margin-bottom: 6px; font-size: 0.9rem; cursor: pointer;">
+                <span style="margin-right: 8px;">🔌</span>API設定
+              </div>
+            </div>
+            <div style="flex: 1; padding: 8px;">
+              <div style="font-size: 0.9rem; color: #64748b; line-height: 1.6;">
+                <strong>設計ポイント:</strong><br/>
+                ✓ アクティブメニューは青紫グラデーション背景でハイライト<br/>
+                ✓ 設定済み/未設定をバッジで即座に判別可能<br/>
+                ✓ アイコンは lucide-react から Database, Server, Plug を使用<br/>
+                ✓ 折りたたみ対応で、アイコンのみ表示モードもサポート
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <p class="reference">参考: Guideline/07_UI_UX_GUIDELINE.md の一貫性原則を踏襲し、shadcn/uiのセクションカード + グリッドで視認性を担保。</p>
+      </section>
+
+      <section>
+        <h2>🧩 4. UIモジュール定義</h2>
+        <div class="grid three">
+          <div class="card">
+            <h3>接続サマリカード</h3>
+            <ul>
+              <li>リアルタイムにActive Connection名・環境URL・APIバージョンを表示。</li>
+              <li>Badgeの色分け: 成功=green、要確認=amber、失敗=red。</li>
+              <li>補助メニュー: 「Power Apps 環境を同期」「接続テンプレートを読み込み」。</li>
+            </ul>
+            <h4>コンポーネント</h4>
+            <div style="font-size: 0.85rem; color: #64748b; margin-top: 8px;">
+              • Card (shadcn/ui)<br/>
+              • Badge (shadcn/ui)<br/>
+              • Button (shadcn/ui)<br/>
+              • CheckCircle2, Database アイコン (lucide-react)
+            </div>
+          </div>
+          <div class="card">
+            <h3>接続フォーム + テスト</h3>
+            <ul>
+              <li>React Hook Form + Zodでバリデーション。</li>
+              <li>フィールド: 接続名、環境ID、ベースURL、APIバージョン、接続メモ。</li>
+              <li>テストボタン押下で WebApiClient (Power Apps SDK) or Django API 経由の接続テストを実行し、Sonnerで結果を通知。</li>
+            </ul>
+            <h4>コンポーネント</h4>
+            <div style="font-size: 0.85rem; color: #64748b; margin-top: 8px;">
+              • Form, FormField (shadcn/ui + RHF)<br/>
+              • Input, Label (shadcn/ui)<br/>
+              • toast (sonner)<br/>
+              • Loader2 アイコン (loading状態)
+            </div>
+          </div>
+          <div class="card">
+            <h3>テスト結果ログ</h3>
+            <ul>
+              <li>TanStack Query + SQLite(バックエンド) で履歴を取得。</li>
+              <li>リクエストID、開始時刻、レスポンス時間、HTTPステータス、詳細JSON。</li>
+              <li>CSVエクスポート + "再テスト"アクション。</li>
+            </ul>
+            <h4>コンポーネント</h4>
+            <div style="font-size: 0.85rem; color: #64748b; margin-top: 8px;">
+              • Table (shadcn/ui)<br/>
+              • ScrollArea (shadcn/ui)<br/>
+              • DropdownMenu (アクション)<br/>
+              • Download, RefreshCw アイコン
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <h2>🎨 5. 詳細UI設計 & モックアップ</h2>
+        
+        <!-- ページヘッダー -->
+        <div class="mockup">
+          <div class="mockup-header">📋 ページヘッダーエリア</div>
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 24px;">
+            <div>
+              <h3 style="font-size: 1.75rem; font-weight: 700; color: #0f172a; margin-bottom: 8px;">Power Platform 接続設定</h3>
+              <p style="font-size: 1rem; color: #64748b;">Dataverse・Azure SQL・カスタムコネクタの接続管理とテスト機能</p>
+            </div>
+            <div>
+              <button class="mockup-button secondary">📚 ドキュメント</button>
+              <button class="mockup-button">➕ 新しい接続</button>
+            </div>
+          </div>
+          
+          <!-- ステータスカード -->
+          <div class="stats-row">
+            <div class="stat-box">
+              <div class="stat-label">総接続数</div>
+              <div class="stat-value">3</div>
+            </div>
+            <div class="stat-box" style="background: linear-gradient(135deg, #22c55e, #16a34a);">
+              <div class="stat-label">アクティブ接続</div>
+              <div class="stat-value">本番環境</div>
+            </div>
+            <div class="stat-box" style="background: linear-gradient(135deg, #f59e0b, #d97706);">
+              <div class="stat-label">最終テスト</div>
+              <div class="stat-value">2時間前</div>
+            </div>
+            <div class="stat-box" style="background: linear-gradient(135deg, #10b981, #059669);">
+              <div class="stat-label">成功率</div>
+              <div class="stat-value">98%</div>
+            </div>
+          </div>
+          
+          <div class="code-block" style="margin-top: 16px;">
+// TypeScript型定義
+interface PageHeaderProps {
+  title: string;
+  description: string;
+  actions: React.ReactNode;
+  stats: Array&lt;{ label: string; value: string | number; variant?: 'default' | 'success' | 'warning' }&gt;;
+}</div>
+        </div>
+
+        <!-- タブナビゲーション -->
+        <div class="mockup" style="margin-top: 24px;">
+          <div class="mockup-header">🗂️ タブナビゲーション</div>
+          <div style="display: flex; gap: 4px; border-bottom: 2px solid #e2e8f0; margin-bottom: 20px;">
+            <div style="padding: 12px 24px; border-bottom: 3px solid #3b82f6; color: #3b82f6; font-weight: 600; margin-bottom: -2px; cursor: pointer;">
+              接続管理
+            </div>
+            <div style="padding: 12px 24px; color: #64748b; font-weight: 600; cursor: pointer;">
+              テスト履歴
+            </div>
+            <div style="padding: 12px 24px; color: #64748b; font-weight: 600; cursor: pointer;">
+              テンプレート
+            </div>
+            <div style="padding: 12px 24px; color: #64748b; font-weight: 600; cursor: pointer;">
+              ドキュメント
+            </div>
+          </div>
+          
+          <div class="code-block">
+// shadcn/ui Tabs コンポーネント使用
+&lt;Tabs defaultValue="connections"&gt;
+  &lt;TabsList&gt;
+    &lt;TabsTrigger value="connections"&gt;接続管理&lt;/TabsTrigger&gt;
+    &lt;TabsTrigger value="history"&gt;テスト履歴&lt;/TabsTrigger&gt;
+    &lt;TabsTrigger value="templates"&gt;テンプレート&lt;/TabsTrigger&gt;
+    &lt;TabsTrigger value="docs"&gt;ドキュメント&lt;/TabsTrigger&gt;
+  &lt;/TabsList&gt;
+&lt;/Tabs&gt;</div>
+        </div>
+
+        <!-- 接続一覧カード -->
+        <div class="mockup" style="margin-top: 24px;">
+          <div class="mockup-header">📂 接続一覧カード</div>
+          
+          <div class="mockup-section">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+              <h4 style="font-size: 1.1rem; font-weight: 600;">登録済み接続</h4>
+              <div>
+                <input type="text" placeholder="🔍 接続名で検索..." class="mockup-input" style="display: inline-block; width: 250px; margin: 0; margin-right: 8px;" />
+                <button class="mockup-button">➕ 追加</button>
+              </div>
+            </div>
+            
+            <!-- 接続カード1 (アクティブ) -->
+            <div class="mockup-card" style="border-left: 4px solid #3b82f6; background: #eff6ff;">
+              <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                <div style="flex: 1;">
+                  <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
+                    <span class="icon-demo" style="background: #3b82f6; color: #fff;">🗄️</span>
+                    <h5 style="font-size: 1rem; font-weight: 600; color: #0f172a;">本番環境 (Dataverse)</h5>
+                    <span class="mockup-badge success">アクティブ</span>
+                    <span class="mockup-badge success">接続済</span>
+                  </div>
+                  <div style="font-size: 0.85rem; color: #64748b; margin-left: 42px;">
+                    <div><strong>URL:</strong> https://org288e66ae.crm.dynamics.com</div>
+                    <div><strong>環境ID:</strong> 84b2150b-4384-eee2-b20e-ee25b862d314</div>
+                    <div><strong>APIバージョン:</strong> 9.2 | <strong>最終テスト:</strong> 2025-11-18 10:30 (成功)</div>
+                  </div>
+                </div>
+                <div style="display: flex; gap: 8px;">
+                  <button class="mockup-button secondary" style="padding: 8px 16px;">✏️ 編集</button>
+                  <button class="mockup-button success" style="padding: 8px 16px;">🔄 テスト</button>
+                  <button class="mockup-button secondary" style="padding: 8px 16px;">⋯</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- 接続カード2 (非アクティブ) -->
+            <div class="mockup-card">
+              <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                <div style="flex: 1;">
+                  <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
+                    <span class="icon-demo">🗄️</span>
+                    <h5 style="font-size: 1rem; font-weight: 600; color: #0f172a;">開発環境 (Dataverse)</h5>
+                    <span class="mockup-badge warning">要テスト</span>
+                  </div>
+                  <div style="font-size: 0.85rem; color: #64748b; margin-left: 42px;">
+                    <div><strong>URL:</strong> https://dev-org.crm.dynamics.com</div>
+                    <div><strong>環境ID:</strong> a1b2c3d4-5678-90ab-cdef-1234567890ab</div>
+                    <div><strong>APIバージョン:</strong> 9.2 | <strong>最終テスト:</strong> 未実施</div>
+                  </div>
+                </div>
+                <div style="display: flex; gap: 8px;">
+                  <button class="mockup-button secondary" style="padding: 8px 16px;">アクティブ化</button>
+                  <button class="mockup-button success" style="padding: 8px 16px;">🔄 テスト</button>
+                  <button class="mockup-button danger" style="padding: 8px 16px;">🗑️</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="code-block">
+// コンポーネント構成
+&lt;Card&gt;
+  &lt;CardHeader&gt;
+    &lt;CardTitle&gt;登録済み接続&lt;/CardTitle&gt;
+  &lt;/CardHeader&gt;
+  &lt;CardContent&gt;
+    {connections.map(conn =&gt; (
+      &lt;ConnectionCard 
+        key={conn.id}
+        connection={conn}
+        isActive={conn.id === activeId}
+        onTest={handleTest}
+        onEdit={handleEdit}
+        onDelete={handleDelete}
+      /&gt;
+    ))}
+  &lt;/CardContent&gt;
+&lt;/Card&gt;</div>
+        </div>
+
+        <!-- 接続作成フォーム -->
+        <div class="mockup" style="margin-top: 24px;">
+          <div class="mockup-header">📝 接続作成・編集フォーム</div>
+          
+          <div class="mockup-section">
+            <h4 style="margin-bottom: 16px; font-weight: 600;">新しいDataverse接続を作成</h4>
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+              <div>
+                <div class="mockup-label">接続名 <span style="color: #ef4444;">*</span></div>
+                <input type="text" placeholder="例: 本番環境" class="mockup-input" />
+              </div>
+              
+              <div>
+                <div class="mockup-label">環境ID <span style="color: #ef4444;">*</span></div>
+                <input type="text" placeholder="例: 12345678-1234-1234-1234-123456789012" class="mockup-input" />
+              </div>
+            </div>
+
+            <div>
+              <div class="mockup-label">ベースURL <span style="color: #ef4444;">*</span></div>
+              <input type="text" placeholder="例: https://org12345.crm.dynamics.com" class="mockup-input" />
+              <div style="font-size: 0.8rem; color: #64748b; margin-top: 4px;">
+                💡 Power Apps の環境詳細ページで確認できます
+              </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+              <div>
+                <div class="mockup-label">APIバージョン</div>
+                <select class="mockup-input">
+                  <option>9.2 (推奨)</option>
+                  <option>9.1</option>
+                  <option>9.0</option>
+                </select>
+              </div>
+              
+              <div>
+                <div class="mockup-label">接続タイプ</div>
+                <select class="mockup-input">
+                  <option>Dataverse Web API</option>
+                  <option>Dataverse (legacy)</option>
+                </select>
+              </div>
+            </div>
+
+            <div>
+              <div class="mockup-label">接続メモ (任意)</div>
+              <textarea class="mockup-input" rows="3" placeholder="この接続に関する補足情報..."></textarea>
+            </div>
+
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 20px; padding-top: 20px; border-top: 1px solid #e2e8f0;">
+              <div>
+                <button class="mockup-button secondary">
+                  <span style="margin-right: 6px;">⚙️</span>Power Apps環境から取得
+                </button>
+              </div>
+              <div style="display: flex; gap: 10px;">
+                <button class="mockup-button secondary">キャンセル</button>
+                <button class="mockup-button success">
+                  <span style="margin-right: 6px;">🔄</span>接続テスト
+                </button>
+                <button class="mockup-button">保存</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="code-block">
+// React Hook Form + Zod バリデーション
+const connectionSchema = z.object({
+  name: z.string().min(1, "接続名は必須です"),
+  environment: z.string().uuid("有効な環境IDを入力してください"),
+  baseUrl: z.string().url("有効なURLを入力してください")
+    .refine(url =&gt; url.includes('.crm.dynamics.com'), {
+      message: "Dataverse URLの形式が正しくありません"
+    }),
+  apiVersion: z.string().default("9.2"),
+  memo: z.string().optional()
+});
+
+const form = useForm&lt;z.infer&lt;typeof connectionSchema&gt;&gt;({
+  resolver: zodResolver(connectionSchema),
+  defaultValues: { apiVersion: "9.2" }
+});</div>
+        </div>
+
+        <!-- テスト実行モーダル -->
+        <div class="mockup" style="margin-top: 24px;">
+          <div class="mockup-header">🧪 接続テスト実行ダイアログ</div>
+          
+          <div style="background: #fff; border: 2px solid #3b82f6; border-radius: 12px; padding: 24px; max-width: 500px; margin: 20px auto; box-shadow: 0 20px 60px rgba(0,0,0,0.2);">
+            <h4 style="font-size: 1.2rem; font-weight: 600; margin-bottom: 16px; text-align: center;">
+              接続テストを実行中...
+            </h4>
+            
+            <div style="margin: 20px 0;">
+              <div style="display: flex; align-items: center; gap: 12px; padding: 12px; background: #f8fafc; border-radius: 8px; margin-bottom: 10px;">
+                <div style="width: 24px; height: 24px; border: 3px solid #3b82f6; border-top-color: transparent; border-radius: 50%; animation: spin 1s linear infinite;"></div>
+                <div style="flex: 1;">
+                  <div style="font-weight: 600; color: #0f172a;">Power Apps SDK 初期化中...</div>
+                  <div style="font-size: 0.85rem; color: #64748b;">initialize() を待機</div>
+                </div>
+                <span class="mockup-badge success">完了</span>
+              </div>
+
+              <div style="display: flex; align-items: center; gap: 12px; padding: 12px; background: #eff6ff; border-radius: 8px; margin-bottom: 10px; border: 1px solid #3b82f6;">
+                <div style="width: 24px; height: 24px; border: 3px solid #3b82f6; border-top-color: transparent; border-radius: 50%; animation: spin 1s linear infinite;"></div>
+                <div style="flex: 1;">
+                  <div style="font-weight: 600; color: #0f172a;">WhoAmI リクエスト実行中...</div>
+                  <div style="font-size: 0.85rem; color: #64748b;">認証とアクセス権限を確認</div>
+                </div>
+                <span class="mockup-badge" style="background: #dbeafe; color: #3b82f6;">実行中</span>
+              </div>
+
+              <div style="display: flex; align-items: center; gap: 12px; padding: 12px; background: #f8fafc; border-radius: 8px; opacity: 0.5;">
+                <div style="width: 24px; height: 24px; border: 2px solid #cbd5e1; border-radius: 50%;"></div>
+                <div style="flex: 1;">
+                  <div style="font-weight: 600; color: #64748b;">テーブルアクセステスト</div>
+                  <div style="font-size: 0.85rem; color: #94a3b8;">cr0d2_projects へのクエリ実行</div>
+                </div>
+                <span class="mockup-badge" style="background: #f1f5f9; color: #64748b;">待機中</span>
+              </div>
+            </div>
+
+            <div style="background: #f0fdf4; border: 1px solid #86efac; border-radius: 8px; padding: 16px; margin-top: 20px;">
+              <div style="font-weight: 600; color: #16a34a; margin-bottom: 8px;">✅ テスト成功</div>
+              <div style="font-size: 0.85rem; color: #15803d;">
+                レスポンス時間: 245ms | ステータス: 200 OK
+              </div>
+            </div>
+
+            <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px;">
+              <button class="mockup-button secondary">詳細を表示</button>
+              <button class="mockup-button">閉じる</button>
+            </div>
+          </div>
+
+          <div class="code-block">
+// テスト実行フロー
+const handleTestConnection = async () =&gt; {
+  setTestStatus('initializing');
+  
+  try {
+    // 1. Power Apps SDK 初期化
+    await initialize();
+    setTestStatus('testing-auth');
+    
+    // 2. WhoAmI リクエスト
+    const whoAmI = await WebApiClient.execute('WhoAmI');
+    setTestStatus('testing-table');
+    
+    // 3. テーブルアクセステスト
+    const result = await WebApiClient.retrieveMultipleRecords(
+      'cr0d2_projects', 
+      { top: 1, select: ['cr0d2_projectid'] }
+    );
+    
+    toast.success('接続テスト成功');
+    saveTestLog(connection.id, 'success', { whoAmI, result });
+  } catch (error) {
+    toast.error('接続テスト失敗: ' + error.message);
+    saveTestLog(connection.id, 'failure', { error });
+  }
+};</div>
+        </div>
+      </section>
+
+      <section>
+        <h2>📊 6. テスト履歴・ログビュー</h2>
+        
+        <div class="mockup">
+          <div class="mockup-header">📈 テスト履歴タブ UI</div>
+          
+          <div class="mockup-section">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+              <h4 style="font-weight: 600;">接続テスト履歴</h4>
+              <div style="display: flex; gap: 8px;">
+                <select class="mockup-input" style="width: 150px; display: inline-block; margin: 0;">
+                  <option>すべての接続</option>
+                  <option>本番環境</option>
+                  <option>開発環境</option>
+                </select>
+                <select class="mockup-input" style="width: 120px; display: inline-block; margin: 0;">
+                  <option>すべて</option>
+                  <option>成功のみ</option>
+                  <option>失敗のみ</option>
+                </select>
+                <button class="mockup-button secondary">📥 CSVエクスポート</button>
+              </div>
+            </div>
+
+            <div style="overflow-x: auto;">
+              <table style="width: 100%; border-collapse: collapse;">
+                <thead style="background: #f8fafc;">
+                  <tr>
+                    <th style="padding: 12px; text-align: left; border-bottom: 2px solid #e2e8f0; font-weight: 600;">実行日時</th>
+                    <th style="padding: 12px; text-align: left; border-bottom: 2px solid #e2e8f0; font-weight: 600;">接続名</th>
+                    <th style="padding: 12px; text-align: left; border-bottom: 2px solid #e2e8f0; font-weight: 600;">テストタイプ</th>
+                    <th style="padding: 12px; text-align: left; border-bottom: 2px solid #e2e8f0; font-weight: 600;">ステータス</th>
+                    <th style="padding: 12px; text-align: left; border-bottom: 2px solid #e2e8f0; font-weight: 600;">応答時間</th>
+                    <th style="padding: 12px; text-align: left; border-bottom: 2px solid #e2e8f0; font-weight: 600;">アクション</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr style="border-bottom: 1px solid #f1f5f9;">
+                    <td style="padding: 12px; font-size: 0.9rem;">2025-11-18 10:30:45</td>
+                    <td style="padding: 12px; font-weight: 600;">本番環境</td>
+                    <td style="padding: 12px; font-size: 0.9rem;">WhoAmI + CRUD</td>
+                    <td style="padding: 12px;"><span class="mockup-badge success">成功</span></td>
+                    <td style="padding: 12px; font-size: 0.9rem;">245ms</td>
+                    <td style="padding: 12px;">
+                      <button class="mockup-button secondary" style="padding: 6px 12px; font-size: 0.85rem;">詳細</button>
+                      <button class="mockup-button secondary" style="padding: 6px 12px; font-size: 0.85rem;">🔄</button>
+                    </td>
+                  </tr>
+                  <tr style="border-bottom: 1px solid #f1f5f9;">
+                    <td style="padding: 12px; font-size: 0.9rem;">2025-11-18 09:15:22</td>
+                    <td style="padding: 12px; font-weight: 600;">開発環境</td>
+                    <td style="padding: 12px; font-size: 0.9rem;">WhoAmI</td>
+                    <td style="padding: 12px;"><span class="mockup-badge danger">失敗</span></td>
+                    <td style="padding: 12px; font-size: 0.9rem;">-</td>
+                    <td style="padding: 12px;">
+                      <button class="mockup-button secondary" style="padding: 6px 12px; font-size: 0.85rem;">詳細</button>
+                      <button class="mockup-button secondary" style="padding: 6px 12px; font-size: 0.85rem;">🔄</button>
+                    </td>
+                  </tr>
+                  <tr style="border-bottom: 1px solid #f1f5f9;">
+                    <td style="padding: 12px; font-size: 0.9rem;">2025-11-18 08:00:11</td>
+                    <td style="padding: 12px; font-weight: 600;">本番環境</td>
+                    <td style="padding: 12px; font-size: 0.9rem;">テーブルアクセス</td>
+                    <td style="padding: 12px;"><span class="mockup-badge success">成功</span></td>
+                    <td style="padding: 12px; font-size: 0.9rem;">312ms</td>
+                    <td style="padding: 12px;">
+                      <button class="mockup-button secondary" style="padding: 6px 12px; font-size: 0.85rem;">詳細</button>
+                      <button class="mockup-button secondary" style="padding: 6px 12px; font-size: 0.85rem;">🔄</button>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <!-- ページネーション -->
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 16px; padding-top: 16px; border-top: 1px solid #e2e8f0;">
+              <div style="font-size: 0.9rem; color: #64748b;">
+                全 47 件中 1-10 件を表示
+              </div>
+              <div style="display: flex; gap: 4px;">
+                <button class="mockup-button secondary" style="padding: 6px 12px;">←</button>
+                <button class="mockup-button" style="padding: 6px 12px; background: #3b82f6;">1</button>
+                <button class="mockup-button secondary" style="padding: 6px 12px;">2</button>
+                <button class="mockup-button secondary" style="padding: 6px 12px;">3</button>
+                <button class="mockup-button secondary" style="padding: 6px 12px;">→</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="code-block">
+// TanStack Query でテスト履歴取得
+const { data: testHistory } = useQuery({
+  queryKey: ['connection-tests', connectionId, filters],
+  queryFn: () => fetchTestHistory({ connectionId, ...filters }),
+  staleTime: 30000 // 30秒
+});
+
+// CSVエクスポート
+const exportToCsv = () =&gt; {
+  const csv = testHistory.map(log =&gt; 
+    [log.timestamp, log.connection, log.status, log.responseTime].join(',')
+  ).join('\n');
+  downloadFile(csv, 'test-history.csv');
+};</div>
+        </div>
+
+        <!-- テスト詳細モーダル -->
+        <div class="mockup" style="margin-top: 24px;">
+          <div class="mockup-header">🔍 テスト詳細ダイアログ</div>
+          
+          <div style="background: #fff; border: 2px solid #e2e8f0; border-radius: 12px; padding: 24px; max-width: 700px; margin: 20px auto; box-shadow: 0 20px 60px rgba(0,0,0,0.2);">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px;">
+              <div>
+                <h4 style="font-size: 1.3rem; font-weight: 600; margin-bottom: 8px;">テスト実行詳細</h4>
+                <div style="font-size: 0.9rem; color: #64748b;">2025-11-18 10:30:45 | リクエストID: req_abc123xyz</div>
+              </div>
+              <span class="mockup-badge success" style="font-size: 1rem; padding: 6px 14px;">成功</span>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px;">
+              <div style="background: #f8fafc; padding: 14px; border-radius: 8px;">
+                <div style="font-size: 0.85rem; color: #64748b; margin-bottom: 4px;">接続名</div>
+                <div style="font-weight: 600;">本番環境 (Dataverse)</div>
+              </div>
+              <div style="background: #f8fafc; padding: 14px; border-radius: 8px;">
+                <div style="font-size: 0.85rem; color: #64748b; margin-bottom: 4px;">応答時間</div>
+                <div style="font-weight: 600;">245ms</div>
+              </div>
+              <div style="background: #f8fafc; padding: 14px; border-radius: 8px;">
+                <div style="font-size: 0.85rem; color: #64748b; margin-bottom: 4px;">HTTPステータス</div>
+                <div style="font-weight: 600;">200 OK</div>
+              </div>
+              <div style="background: #f8fafc; padding: 14px; border-radius: 8px;">
+                <div style="font-size: 0.85rem; color: #64748b; margin-bottom: 4px;">テストタイプ</div>
+                <div style="font-weight: 600;">WhoAmI + CRUD</div>
+              </div>
+            </div>
+
+            <!-- リクエスト詳細 -->
+            <div style="margin-bottom: 20px;">
+              <h5 style="font-weight: 600; margin-bottom: 10px;">リクエスト詳細</h5>
+              <div class="code-block" style="font-size: 0.8rem; max-height: 200px; overflow-y: auto;">
+GET /api/data/v9.2/WhoAmI HTTP/1.1
+Host: org288e66ae.crm.dynamics.com
+Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGc...
+OData-MaxVersion: 4.0
+OData-Version: 4.0
+Accept: application/json
+Content-Type: application/json</div>
+            </div>
+
+            <!-- レスポンス詳細 -->
+            <div style="margin-bottom: 20px;">
+              <h5 style="font-weight: 600; margin-bottom: 10px;">レスポンス詳細</h5>
+              <div class="code-block" style="font-size: 0.8rem; max-height: 200px; overflow-y: auto;">
+{
+  "@odata.context": "https://org288e66ae.crm.dynamics.com/api/data/v9.2/$metadata#Microsoft.Dynamics.CRM.WhoAmIResponse",
+  "BusinessUnitId": "a1b2c3d4-...",
+  "UserId": "e5f6g7h8-...",
+  "OrganizationId": "84b2150b-4384-eee2-b20e-ee25b862d314"
+}</div>
+            </div>
+
+            <div style="display: flex; gap: 10px; justify-content: flex-end;">
+              <button class="mockup-button secondary">📋 JSONをコピー</button>
+              <button class="mockup-button success">🔄 再テスト</button>
+              <button class="mockup-button secondary">閉じる</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <h2>⚠️ 7. エラーハンドリング & ユーザーガイダンス</h2>
+        
+        <div class="grid two">
+          <div class="card">
+            <h3>エラーパターンと表示</h3>
+            <h4>1. 認証エラー (401 Unauthorized)</h4>
+            <div style="background: #fef3c7; border-left: 4px solid #f59e0b; padding: 12px; border-radius: 6px; margin: 10px 0; font-size: 0.9rem;">
+              <strong>⚠️ 認証に失敗しました</strong><br/>
+              Power Apps環境へのアクセス権限がありません。<br/>
+              <a href="#" style="color: #d97706; font-weight: 600;">→ 認証設定を確認</a>
+            </div>
+
+            <h4>2. 権限不足 (403 Forbidden)</h4>
+            <div style="background: #fee2e2; border-left: 4px solid #ef4444; padding: 12px; border-radius: 6px; margin: 10px 0; font-size: 0.9rem;">
+              <strong>🚫 アクセスが拒否されました</strong><br/>
+              Dataverseテーブルへのアクセス権限がありません。<br/>
+              <a href="#" style="color: #dc2626; font-weight: 600;">→ セキュリティロールを確認</a>
+            </div>
+
+            <h4>3. ネットワークエラー</h4>
+            <div style="background: #e0f2fe; border-left: 4px solid #3b82f6; padding: 12px; border-radius: 6px; margin: 10px 0; font-size: 0.9rem;">
+              <strong>🌐 接続タイムアウト</strong><br/>
+              ネットワーク接続を確認してください。<br/>
+              <a href="#" style="color: #1d4ed8; font-weight: 600;">→ 再試行</a> | 
+              <a href="#" style="color: #1d4ed8; font-weight: 600;">診断ログを表示</a>
+            </div>
+          </div>
+
+          <div class="card">
+            <h3>インラインヘルプ & ツールチップ</h3>
+            <div style="background: #f8fafc; padding: 14px; border-radius: 8px; border: 1px solid #e2e8f0; margin: 10px 0;">
+              <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+                <span style="background: #dbeafe; color: #3b82f6; width: 24px; height: 24px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.85rem;">?</span>
+                <strong>環境IDとは？</strong>
+              </div>
+              <div style="font-size: 0.9rem; color: #64748b; line-height: 1.6;">
+                Power Platform環境の一意識別子です。<br/>
+                <strong>確認方法:</strong> Power Platform管理センター → 環境 → 詳細
+              </div>
+            </div>
+
+            <div style="background: #dcfce7; padding: 14px; border-radius: 8px; border: 1px solid #86efac; margin: 10px 0;">
+              <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+                <span style="font-size: 1.2rem;">💡</span>
+                <strong>プロのヒント</strong>
+              </div>
+              <div style="font-size: 0.9rem; color: #15803d; line-height: 1.6;">
+                <code style="background: #bbf7d0; padding: 2px 6px; border-radius: 4px;">pac connection list</code> コマンドで<br/>
+                登録済み接続の一覧を確認できます。
+              </div>
+            </div>
+
+            <div class="code-block" style="font-size: 0.85rem;">
+// ツールチップコンポーネント
+&lt;TooltipProvider&gt;
+  &lt;Tooltip&gt;
+    &lt;TooltipTrigger&gt;
+      &lt;Info className="h-4 w-4" /&gt;
+    &lt;/TooltipTrigger&gt;
+    &lt;TooltipContent&gt;
+      環境IDはPower Platform管理センターで確認できます
+    &lt;/TooltipContent&gt;
+  &lt;/Tooltip&gt;
+&lt;/TooltipProvider&gt;</div>
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <h2>🔗 8. 接続メニュー拡張計画</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>カテゴリ</th>
+              <th>対象</th>
+              <th>対応時期</th>
+              <th>実装ハイライト</th>
+              <th>参照ドキュメント</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Dataverse</td>
+              <td>Web API (CRUD / Batch)</td>
+              <td>Now</td>
+              <td>pac code add-data-source + @microsoft/power-apps WebApiClient</td>
+              <td><a href="https://learn.microsoft.com/en-us/power-apps/developer/code-apps/how-to/connect-to-dataverse" target="_blank">Connect to Dataverse</a></td>
+            </tr>
+            <tr>
+              <td>Azure SQL</td>
+              <td>shared_sql connector</td>
+              <td>Next</td>
+              <td>Power Apps connection metadata + pac connection list + stored procedure</td>
+              <td><a href="https://learn.microsoft.com/en-us/power-apps/developer/code-apps/how-to/connect-to-azure-sql" target="_blank">Azure SQL guide</a></td>
+            </tr>
+            <tr>
+              <td>Custom API</td>
+              <td>Django REST / Azure Functions</td>
+              <td>Next</td>
+              <td>Service Principal auth + request/response tracing</td>
+              <td><a href="https://learn.microsoft.com/en-us/power-apps/developer/code-apps/how-to/connect-to-data" target="_blank">Connect to Data</a></td>
+            </tr>
+            <tr>
+              <td>ALM</td>
+              <td>pac solution push / env diffs</td>
+              <td>Future</td>
+              <td>CI/CDログの可視化と再実行</td>
+              <td><a href="https://learn.microsoft.com/en-us/power-apps/developer/code-apps/how-to/alm" target="_blank">ALM guidance</a></td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section>
+        <h2>🏗️ 9. コンポーネント構成 & ファイル構造</h2>
+        
+        <div class="grid two">
+          <div class="card">
+            <h3>フロントエンド構成</h3>
+            <div class="code-block" style="font-size: 0.85rem;">
+musubisuite/src/
+├── pages/
+│   └── settings/
+│       ├── powerplatform/
+│       │   ├── index.tsx              # メインレイアウト
+│       │   ├── dataverse.tsx          # Dataverse接続タブ
+│       │   ├── azure-sql.tsx          # Azure SQLタブ
+│       │   ├── connectors.tsx         # カスタムコネクタタブ
+│       │   └── test-history.tsx       # テスト履歴タブ
+│       └── settings.tsx               # 設定ルートレイアウト
+│
+├── components/
+│   └── powerplatform/
+│       ├── ConnectionCard.tsx         # 接続カード
+│       ├── ConnectionForm.tsx         # 接続作成/編集フォーム
+│       ├── ConnectionTestDialog.tsx   # テスト実行ダイアログ
+│       ├── TestHistoryTable.tsx       # テスト履歴テーブル
+│       ├── TestDetailDialog.tsx       # テスト詳細モーダル
+│       ├── StatusSummaryCards.tsx     # ステータスカード群
+│       └── ErrorAlert.tsx             # エラー表示コンポーネント
+│
+├── services/
+│   ├── powerplatform/
+│   │   ├── dataverseService.ts        # Dataverse API呼び出し
+│   │   ├── connectionTestService.ts   # 接続テスト実行
+│   │   └── testHistoryService.ts      # テスト履歴取得
+│   └── djangoAPI.ts                   # Django APIクライアント
+│
+├── lib/
+│   ├── dataverseStore.ts              # LocalStorage管理
+│   └── powerAppsSDK.ts                # Power Apps SDK ラッパー
+│
+└── types/
+    └── powerplatform.ts               # 型定義</div>
+          </div>
+
+          <div class="card">
+            <h3>バックエンド構成 (Django)</h3>
+            <div class="code-block" style="font-size: 0.85rem;">
+musubisuite_back/
+├── powerplatform/              # 新規アプリ
+│   ├── __init__.py
+│   ├── models.py
+│   │   ├── Connection          # 接続情報モデル
+│   │   ├── TestLog             # テスト履歴モデル
+│   │   └── ConnectionTemplate  # テンプレートモデル
+│   ├── serializers.py
+│   │   ├── ConnectionSerializer
+│   │   ├── TestLogSerializer
+│   │   └── ConnectionTemplateSerializer
+│   ├── views.py
+│   │   ├── ConnectionViewSet
+│   │   ├── TestConnectionView
+│   │   ├── TestLogViewSet
+│   │   └── ExportHistoryView
+│   └── urls.py
+│
+└── config/
+    └── urls.py                 # API ルート追加</div>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top: 20px;">
+          <h3>主要コンポーネント詳細</h3>
+          <table>
+            <thead>
+              <tr>
+                <th>コンポーネント</th>
+                <th>責務</th>
+                <th>依存ライブラリ</th>
+                <th>状態管理</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>ConnectionCard</strong></td>
+                <td>接続情報の表示、アクティブ化、削除</td>
+                <td>shadcn/ui (Card, Badge, Button)</td>
+                <td>dataverseStore</td>
+              </tr>
+              <tr>
+                <td><strong>ConnectionForm</strong></td>
+                <td>接続作成・編集フォーム</td>
+                <td>RHF + Zod + shadcn/ui Form</td>
+                <td>React Hook Form</td>
+              </tr>
+              <tr>
+                <td><strong>ConnectionTestDialog</strong></td>
+                <td>接続テスト実行と進捗表示</td>
+                <td>shadcn/ui (Dialog), Power Apps SDK</td>
+                <td>useState (test status)</td>
+              </tr>
+              <tr>
+                <td><strong>TestHistoryTable</strong></td>
+                <td>テスト履歴の表示とフィルタリング</td>
+                <td>TanStack Query, shadcn/ui Table</td>
+                <td>TanStack Query cache</td>
+              </tr>
+              <tr>
+                <td><strong>StatusSummaryCards</strong></td>
+                <td>統計情報の表示</td>
+                <td>shadcn/ui Card</td>
+                <td>computed from store</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section>
+        <h2>⚙️ 10. 状態管理 & データフロー</h2>
+        <div class="card" style="background:#e0f2fe;">
+          <h3>主要モジュール</h3>
+          <ul>
+            <li><strong>dataverseStore</strong>: LocalStorage永続化、接続CRUD、アクティブID管理。</li>
+            <li><strong>Power Apps SDK</strong>: WebApiClient.retrieveMultipleRecords でテストクエリを実行。</li>
+            <li><strong>Django API</strong>: /api/dataverse/test 接続 (バックエンドからトークン発行が必要な場合に利用)。</li>
+            <li><strong>TanStack Query</strong>: テスト履歴や外部接続メタデータのフェッチ&キャッシュ。</li>
+          </ul>
+        </div>
+        <div class="flow" style="margin-top:20px;">
+          <div class="flow-step">
+            <div class="flow-index">1</div>
+            <p>ユーザーが接続フォームを編集 → RHFでバリデーション → dataverseStore.saveConnection()</p>
+          </div>
+          <div class="flow-step">
+            <div class="flow-index">2</div>
+            <p>「接続テスト」押下 → Power Apps SDK initialize() 完了を待機 → WebApiClientで WhoAmI or テストテーブル呼び出し。</p>
+          </div>
+          <div class="flow-step">
+            <div class="flow-index">3</div>
+            <p>成功/失敗レスポンスをUIへ反映し、同時に `/api/dataverse/tests` へPOSTして履歴を保存 (将来のアラート分析用)。</p>
+          </div>
+          <div class="flow-step">
+            <div class="flow-index">4</div>
+            <p>テスト履歴タブでTanStack Queryが最新履歴を取得し、フィルター/再テストを提供。</p>
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <h2>🧪 7. Dataverse接続テストUX</h2>
+        <div class="grid two">
+          <div class="card">
+            <h3>テストケース</h3>
+            <ul>
+              <li><strong>WhoAmIチェック:</strong> 認証・環境スコープ確認。</li>
+              <li><strong>指定テーブルPing:</strong> 例として cr0d2_projects への retrieveMultiple top=1。</li>
+              <li><strong>CRUDシミュレーション:</strong> 任意レコードの upsert (オプション: サンドボックス環境のみ)。</li>
+            </ul>
+          </div>
+          <div class="card">
+            <h3>フィードバックパターン</h3>
+            <ul>
+              <li>成功: 緑のToast + ログ行のステータス更新。</li>
+              <li>AuthenticationError: Power Apps authリンク案内 + ドキュメントURL。</li>
+              <li>PermissionDenied: テーブルセキュリティロールの説明。</li>
+              <li>NetworkTimeout: リトライ提案 + CLIチェックコマンド表示。</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <h2>🔒 8. セキュリティ & 可観測性</h2>
+        <div class="grid two">
+          <div class="card">
+            <h3>セキュリティ</h3>
+            <ul>
+              <li>接続メタデータのみLocalStorage保存。アクセストークン/シークレットは保存しない (Power Apps ホスト経由で取得)。</li>
+              <li>バックアップ export/import 実装時は暗号化 (AES-GCM) と環境タグ付与。</li>
+              <li>操作ログをDjango APIで保存し、Role-Based Access Controlを適用。</li>
+            </ul>
+          </div>
+          <div class="card">
+            <h3>可観測性</h3>
+            <ul>
+              <li>接続テスト結果をactivitiesアプリへ統合し、失敗時に通知 (将来的にPower Automateへトリガー可)。</li>
+              <li>Diagnostics.enableNetworkTrace() をDEVモードのみ有効化し、ログをダウンロードできるUIを配置。</li>
+              <li>メトリクス: 成功率、平均応答時間、エラーコードTOP5。</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <h2>⚙️ 10. 状態管理 & データフロー</h2>
+        
+        <div class="card">
+          <h3>🔄 接続テスト実行フロー</h3>
+          <div style="background: white; border: 1px solid #e5e7eb; border-radius: 8px; padding: 24px; margin-top: 16px;">
+            <div style="display: flex; align-items: center; gap: 20px;">
+              <div style="background: #3b82f6; color: white; padding: 12px; border-radius: 8px; min-width: 140px; text-align: center;">
+                <strong>1. ユーザー操作</strong><br/>
+                <small style="opacity: 0.9;">テストボタンクリック</small>
+              </div>
+              <div style="font-size: 24px; color: #9ca3af;">→</div>
+              <div style="background: #8b5cf6; color: white; padding: 12px; border-radius: 8px; min-width: 140px; text-align: center;">
+                <strong>2. State 更新</strong><br/>
+                <small style="opacity: 0.9;">useState(isLoading)</small>
+              </div>
+              <div style="font-size: 24px; color: #9ca3af;">→</div>
+              <div style="background: #ec4899; color: white; padding: 12px; border-radius: 8px; min-width: 140px; text-align: center;">
+                <strong>3. SDK 呼び出し</strong><br/>
+                <small style="opacity: 0.9;">WebApiClient.init()</small>
+              </div>
+              <div style="font-size: 24px; color: #9ca3af;">→</div>
+              <div style="background: #10b981; color: white; padding: 12px; border-radius: 8px; min-width: 140px; text-align: center;">
+                <strong>4. 結果表示</strong><br/>
+                <small style="opacity: 0.9;">Sonner toast</small>
+              </div>
+            </div>
+            
+            <div style="margin-top: 24px; padding: 16px; background: #f9fafb; border-radius: 8px;">
+              <strong>📝 コード例:</strong>
+              <div class="code-block" style="margin-top: 8px;">
+const handleTest = async (connectionId: string) => {
+  setTestStatus({ status: 'loading', message: '接続中...' });
+  
+  try {
+    // 1. LocalStorageから接続情報取得
+    const connection = dataverseStore.getConnection(connectionId);
+    
+    // 2. Power Apps SDK 初期化
+    const client = await WebApiClient.init({
+      environmentId: connection.environmentId,
+      apiVersion: connection.apiVersion
+    });
+    
+    // 3. テストクエリ実行 (whoami or systemuser取得)
+    const response = await client.retrieveMultiple('systemusers', {
+      select: ['fullname'],
+      top: 1
+    });
+    
+    // 4. 成功時の処理
+    setTestStatus({ status: 'success', message: '接続成功' });
+    toast.success('Dataverseに正常に接続されました');
+    
+    // 5. テスト履歴をDjango APIに保存
+    await testHistoryService.saveTestLog({
+      connectionId,
+      result: 'success',
+      responseTime: response.duration
+    });
+    
+  } catch (error) {
+    // エラーハンドリング
+    setTestStatus({ status: 'error', message: error.message });
+    toast.error(`接続失敗: ${error.message}`);
+    
+    await testHistoryService.saveTestLog({
+      connectionId,
+      result: 'failure',
+      errorMessage: error.message
+    });
+  }
+};</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="grid two" style="margin-top: 20px;">
+          <div class="card">
+            <h3>📦 dataverseStore (LocalStorage)</h3>
+            <p>接続設定の永続化とクライアントサイド管理</p>
+            <div class="code-block" style="font-size: 0.85rem;">
+// lib/dataverseStore.ts
+export const dataverseStore = {
+  // 接続の保存 (環境ID, URL, 表示名のみ)
+  saveConnection(config: DataverseConnection) {
+    const connections = this.getConnections();
+    connections.push(config);
+    localStorage.setItem(
+      'dataverse_connections', 
+      JSON.stringify(connections)
+    );
+  },
+  
+  // 接続一覧取得
+  getConnections(): DataverseConnection[] {
+    const data = localStorage.getItem('dataverse_connections');
+    return data ? JSON.parse(data) : [];
+  },
+  
+  // アクティブ接続設定
+  setActiveConnection(id: string) {
+    localStorage.setItem('dataverse_active_id', id);
+  },
+  
+  // アクティブ接続取得
+  getActiveConnection(): DataverseConnection | null {
+    const activeId = localStorage.getItem('dataverse_active_id');
+    return this.getConnections().find(c => c.id === activeId) || null;
+  }
+};</div>
+            <div style="margin-top: 12px; padding: 12px; background: #fef3c7; border-left: 4px solid #f59e0b; border-radius: 4px;">
+              <strong>⚠️ セキュリティ注意:</strong> LocalStorageには認証トークンを保存しない。環境IDとURLのみ保存し、実際の認証はPower Apps SDKに委譲。
+            </div>
+          </div>
+
+          <div class="card">
+            <h3>🌐 TanStack Query (サーバーステート)</h3>
+            <p>Django API からのテスト履歴取得とキャッシュ管理</p>
+            <div class="code-block" style="font-size: 0.85rem;">
+// hooks/useTestHistory.ts
+export const useTestHistory = (connectionId?: string) => {
+  return useQuery({
+    queryKey: ['testHistory', connectionId],
+    queryFn: async () => {
+      const params = connectionId 
+        ? { connection_id: connectionId } 
+        : {};
+      
+      const response = await fetch(
+        `/api/powerplatform/test-logs/?${new URLSearchParams(params)}`
+      );
+      
+      if (!response.ok) throw new Error('Failed to fetch');
+      return response.json();
+    },
+    staleTime: 1000 * 60 * 5, // 5分間キャッシュ
+    refetchOnWindowFocus: true
+  });
+};
+
+// コンポーネントでの使用
+const { data: history, isLoading } = useTestHistory(activeConnectionId);</div>
+            <div style="margin-top: 12px; padding: 12px; background: #dbeafe; border-left: 4px solid #3b82f6; border-radius: 4px;">
+              <strong>💡 Pro tip:</strong> テスト実行後は <code>queryClient.invalidateQueries(['testHistory'])</code> でキャッシュを無効化し、最新データを再取得。
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <h2>🚀 11. 実装ロードマップ</h2>
+        
+        <div class="card">
+          <h3>📅 Phase 1: Dataverse接続UI刷新 (優先度: 最高)</h3>
+          <table>
+            <thead>
+              <tr>
+                <th style="width: 30%;">タスク</th>
+                <th style="width: 40%;">実装内容</th>
+                <th style="width: 15%;">工数</th>
+                <th style="width: 15%;">依存関係</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>1.1 バックエンドAPI実装</strong></td>
+                <td>
+                  • Django powerplatform アプリ作成<br/>
+                  • Connection, TestLog モデル定義<br/>
+                  • REST API エンドポイント実装<br/>
+                  • Swagger ドキュメント生成
+                </td>
+                <td>2日</td>
+                <td>-</td>
+              </tr>
+              <tr>
+                <td><strong>1.2 接続管理UI実装</strong></td>
+                <td>
+                  • ConnectionCard, ConnectionForm 実装<br/>
+                  • dataverseStore との統合<br/>
+                  • CRUD操作の実装<br/>
+                  • バリデーションエラー表示
+                </td>
+                <td>3日</td>
+                <td>1.1</td>
+              </tr>
+              <tr>
+                <td><strong>1.3 接続テスト機能実装</strong></td>
+                <td>
+                  • Power Apps SDK WebApiClient 統合<br/>
+                  • ConnectionTestDialog 実装<br/>
+                  • 進捗表示とエラーハンドリング<br/>
+                  • Sonner toast 通知
+                </td>
+                <td>2日</td>
+                <td>1.2</td>
+              </tr>
+              <tr>
+                <td><strong>1.4 テスト履歴UI実装</strong></td>
+                <td>
+                  • TestHistoryTable 実装<br/>
+                  • TanStack Query による履歴取得<br/>
+                  • フィルタ・ソート・ページネーション<br/>
+                  • CSV エクスポート機能
+                </td>
+                <td>2日</td>
+                <td>1.1, 1.3</td>
+              </tr>
+              <tr>
+                <td><strong>1.5 エラーハンドリング実装</strong></td>
+                <td>
+                  • ErrorAlert コンポーネント実装<br/>
+                  • 401/403/5xx エラー処理<br/>
+                  • インラインヘルプ追加<br/>
+                  • トラブルシューティングガイド
+                </td>
+                <td>1日</td>
+                <td>1.2, 1.3</td>
+              </tr>
+            </tbody>
+          </table>
+          <p><strong>合計工数: 10日 | スプリント: 2週間 (バッファ含む)</strong></p>
+        </div>
+
+        <div class="card" style="margin-top: 20px;">
+          <h3>📅 Phase 2: Azure SQL & カスタムコネクタ対応 (優先度: 高)</h3>
+          <table>
+            <thead>
+              <tr><th>タスク</th><th>実装内容</th><th>工数</th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>2.1 Azure SQL接続</strong></td>
+                <td>
+                  • Connection モデル拡張 (type フィールド追加)<br/>
+                  • Azure SQL 接続フォーム追加<br/>
+                  • SQL Server テスト実装 (tedious ライブラリ)<br/>
+                  • テーブルスキーマ自動取得機能
+                </td>
+                <td>4日</td>
+              </tr>
+              <tr>
+                <td><strong>2.2 カスタムコネクタ</strong></td>
+                <td>
+                  • Custom API 接続タブ追加<br/>
+                  • OAuth 2.0 フロー実装<br/>
+                  • カスタムヘッダー設定 UI<br/>
+                  • API エンドポイントテスト
+                </td>
+                <td>5日</td>
+              </tr>
+              <tr>
+                <td><strong>2.3 接続テンプレート</strong></td>
+                <td>
+                  • よく使う接続のテンプレート化<br/>
+                  • テンプレートからのインポート機能<br/>
+                  • 環境変数置換サポート
+                </td>
+                <td>2日</td>
+              </tr>
+            </tbody>
+          </table>
+          <p><strong>合計工数: 11日 | スプリント: 2週間</strong></p>
+        </div>
+
+        <div class="card" style="margin-top: 20px;">
+          <h3>📅 Phase 3: ALM & テレメトリ統合 (優先度: 中)</h3>
+          <table>
+            <thead>
+              <tr><th>タスク</th><th>実装内容</th><th>工数</th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>3.1 環境管理</strong></td>
+                <td>
+                  • 開発/ステージング/本番環境の切り替え<br/>
+                  • pac CLI 統合 (環境一覧取得)<br/>
+                  • 環境ごとの接続設定管理
+                </td>
+                <td>3日</td>
+              </tr>
+              <tr>
+                <td><strong>3.2 テレメトリダッシュボード</strong></td>
+                <td>
+                  • Diagnostics.enableNetworkTrace() 実装<br/>
+                  • API 呼び出し統計の可視化<br/>
+                  • パフォーマンスメトリクス表示<br/>
+                  • 失敗リクエストのアラート
+                </td>
+                <td>4日</td>
+              </tr>
+              <tr>
+                <td><strong>3.3 ロールベースアクセス制御</strong></td>
+                <td>
+                  • Django ユーザー権限と統合<br/>
+                  • 接続編集/削除権限の制限<br/>
+                  • 監査ログの記録
+                </td>
+                <td>3日</td>
+              </tr>
+            </tbody>
+          </table>
+          <p><strong>合計工数: 10日 | スプリント: 2週間</strong></p>
+        </div>
+
+        <div class="card" style="margin-top: 20px; background: #fff7ed; border-left: 4px solid #f97316;">
+          <h3>⚠️ 実装上の注意事項</h3>
+          <ul>
+            <li><strong>セキュリティ</strong>: 接続文字列や認証トークンは LocalStorage に保存しない (環境IDとURLのみ)</li>
+            <li><strong>テスト</strong>: 各Phase終了時に E2E テスト追加 (Playwright)</li>
+            <li><strong>ドキュメント</strong>: 実装完了時に `Guideline/08_POWER_APPS_INTEGRATION.md` を更新</li>
+            <li><strong>互換性</strong>: 既存の dataverseStore を使用しているコードとの後方互換性を維持</li>
+            <li><strong>パフォーマンス</strong>: TanStack Query のキャッシュ戦略を活用し、不要な API 呼び出しを削減</li>
+          </ul>
+        </div>
+      </section>
+
+      <section>
+        <h2>📚 12. 参考リンク</h2>
+        <ul>
+          <li><a href="https://learn.microsoft.com/en-us/power-apps/developer/code-apps/how-to/connect-to-dataverse" target="_blank">How to: Connect your code app to Dataverse</a></li>
+          <li><a href="https://learn.microsoft.com/en-us/power-apps/developer/code-apps/how-to/connect-to-data" target="_blank">How to: Connect your code app to data</a></li>
+          <li><a href="https://learn.microsoft.com/en-us/power-apps/developer/code-apps/how-to/connect-to-azure-sql" target="_blank">How to: Connect your code app to Azure SQL</a></li>
+          <li><a href="https://learn.microsoft.com/en-us/power-apps/developer/code-apps/how-to/alm" target="_blank">How to: ALM for code apps</a></li>
+        </ul>
+      </section>
+    </main>
+  </div>
+</body>
+</html>

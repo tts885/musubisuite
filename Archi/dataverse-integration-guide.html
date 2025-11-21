@@ -1,0 +1,867 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dataverse統合ガイド - Power Apps Code Apps</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 2.5em;
+        }
+        .header p {
+            margin: 10px 0 0 0;
+            opacity: 0.9;
+        }
+        .section {
+            background: white;
+            padding: 30px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .section h2 {
+            color: #667eea;
+            border-bottom: 3px solid #667eea;
+            padding-bottom: 10px;
+            margin-top: 0;
+        }
+        .section h3 {
+            color: #764ba2;
+            margin-top: 25px;
+        }
+        .code-block {
+            background: #282c34;
+            color: #abb2bf;
+            padding: 20px;
+            border-radius: 5px;
+            overflow-x: auto;
+            margin: 15px 0;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 14px;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        .code-block .keyword { color: #c678dd; }
+        .code-block .string { color: #98c379; }
+        .code-block .function { color: #61afef; }
+        .code-block .comment { color: #5c6370; font-style: italic; }
+        .code-block .variable { color: #e06c75; }
+        .info-box {
+            background: #e3f2fd;
+            border-left: 4px solid #2196F3;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 4px;
+        }
+        .warning-box {
+            background: #fff3e0;
+            border-left: 4px solid #ff9800;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 4px;
+        }
+        .success-box {
+            background: #e8f5e9;
+            border-left: 4px solid #4caf50;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 4px;
+        }
+        .step-list {
+            counter-reset: step-counter;
+            list-style: none;
+            padding-left: 0;
+        }
+        .step-list li {
+            counter-increment: step-counter;
+            margin-bottom: 20px;
+            padding-left: 60px;
+            position: relative;
+        }
+        .step-list li::before {
+            content: counter(step-counter);
+            position: absolute;
+            left: 0;
+            top: 0;
+            background: #667eea;
+            color: white;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 1.2em;
+        }
+        .architecture-diagram {
+            background: #f9f9f9;
+            border: 2px solid #667eea;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+            text-align: center;
+        }
+        .flow-item {
+            display: inline-block;
+            background: white;
+            border: 2px solid #764ba2;
+            border-radius: 8px;
+            padding: 15px 25px;
+            margin: 10px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .arrow {
+            display: inline-block;
+            color: #667eea;
+            font-size: 2em;
+            margin: 0 10px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+        }
+        table th {
+            background: #667eea;
+            color: white;
+            padding: 12px;
+            text-align: left;
+        }
+        table td {
+            padding: 12px;
+            border-bottom: 1px solid #ddd;
+        }
+        table tr:hover {
+            background: #f5f5f5;
+        }
+        .tag {
+            display: inline-block;
+            background: #667eea;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 0.85em;
+            margin: 2px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>📚 Dataverse統合ガイド</h1>
+        <p>Power Apps Code Apps環境でのDataverse接続・データ操作の完全ガイド</p>
+        <p style="font-size: 0.9em;">作成日: 2025年11月18日 | バージョン: 1.0</p>
+    </div>
+
+    <!-- 目次 -->
+    <div class="section">
+        <h2>📑 目次</h2>
+        <ul>
+            <li><a href="#overview">1. 概要とアーキテクチャ</a></li>
+            <li><a href="#setup">2. 環境セットアップ</a></li>
+            <li><a href="#connection">3. Dataverse接続方法</a></li>
+            <li><a href="#crud">4. データ操作 (CRUD)</a></li>
+            <li><a href="#advanced">5. 高度な操作</a></li>
+            <li><a href="#troubleshooting">6. トラブルシューティング</a></li>
+            <li><a href="#best-practices">7. ベストプラクティス</a></li>
+        </ul>
+    </div>
+
+    <!-- 1. 概要とアーキテクチャ -->
+    <div class="section" id="overview">
+        <h2>1. 概要とアーキテクチャ</h2>
+        
+        <h3>1.1 システムアーキテクチャ</h3>
+        <div class="architecture-diagram">
+            <div class="flow-item">React Frontend<br/>(TypeScript)</div>
+            <span class="arrow">→</span>
+            <div class="flow-item">Power Apps SDK<br/>(@microsoft/power-apps)</div>
+            <span class="arrow">→</span>
+            <div class="flow-item">Dataverse<br/>(Cloud)</div>
+        </div>
+
+        <div class="info-box">
+            <strong>💡 重要な特徴:</strong>
+            <ul>
+                <li>バックエンド不要 - React から直接 Dataverse に接続</li>
+                <li>PAC CLI による自動コード生成</li>
+                <li>TypeScript 型安全性の完全サポート</li>
+                <li>Power Apps 環境での実行が必須</li>
+            </ul>
+        </div>
+
+        <h3>1.2 技術スタック</h3>
+        <table>
+            <tr>
+                <th>レイヤー</th>
+                <th>技術</th>
+                <th>バージョン</th>
+                <th>役割</th>
+            </tr>
+            <tr>
+                <td>フロントエンド</td>
+                <td>React</td>
+                <td>19.1.1</td>
+                <td>UI フレームワーク</td>
+            </tr>
+            <tr>
+                <td>ビルドツール</td>
+                <td>Vite</td>
+                <td>7.1.7</td>
+                <td>開発サーバー・ビルド</td>
+            </tr>
+            <tr>
+                <td>SDK</td>
+                <td>@microsoft/power-apps</td>
+                <td>0.3.21</td>
+                <td>Dataverse 接続</td>
+            </tr>
+            <tr>
+                <td>CLI</td>
+                <td>PAC CLI</td>
+                <td>1.50+</td>
+                <td>コード生成・デプロイ</td>
+            </tr>
+            <tr>
+                <td>データベース</td>
+                <td>Dataverse</td>
+                <td>Cloud</td>
+                <td>データストレージ</td>
+            </tr>
+        </table>
+
+        <h3>1.3 プロジェクト構造</h3>
+<div class="code-block">musubisuite/
+├── src/
+│   ├── <span class="variable">services</span>/
+│   │   ├── <span class="function">dataverseService.ts</span>       <span class="comment">// 接続管理サービス</span>
+│   │   ├── <span class="function">testMdiProjectList.ts</span>     <span class="comment">// テスト・CRUD操作</span>
+│   │   └── <span class="function">tableCreationService.ts</span>   <span class="comment">// テーブル作成ガイド</span>
+│   ├── <span class="variable">generated</span>/                      <span class="comment">// PAC CLI 自動生成</span>
+│   │   ├── <span class="variable">services</span>/
+│   │   │   └── <span class="function">Mdi_project_listsService.ts</span>
+│   │   └── <span class="variable">models</span>/
+│   │       └── <span class="function">Mdi_project_listsModel.ts</span>
+│   └── <span class="variable">pages</span>/
+│       └── <span class="function">dataverse-settings.tsx</span>     <span class="comment">// 管理UI</span>
+└── <span class="function">power.config.json</span>                  <span class="comment">// Power Apps 設定</span>
+</div>
+    </div>
+
+    <!-- 2. 環境セットアップ -->
+    <div class="section" id="setup">
+        <h2>2. 環境セットアップ</h2>
+
+        <h3>2.1 前提条件</h3>
+        <ul>
+            <li>✅ Power Platform 環境 (開発環境)</li>
+            <li>✅ Dataverse データベース有効化</li>
+            <li>✅ Dataverse への読み取り・書き込み権限</li>
+            <li>✅ PAC CLI インストール</li>
+            <li>✅ Node.js 18+ インストール</li>
+        </ul>
+
+        <h3>2.2 PAC CLI セットアップ</h3>
+        <ol class="step-list">
+            <li>
+                <strong>PAC CLI 認証</strong>
+                <div class="code-block"><span class="comment"># デバイスコード認証でログイン</span>
+pac auth create --deviceCode</div>
+            </li>
+            <li>
+                <strong>環境の選択</strong>
+                <div class="code-block"><span class="comment"># 利用可能な環境を表示</span>
+pac env list
+
+<span class="comment"># 環境を選択</span>
+pac org select --environment <span class="string">"環境ID または 環境名"</span></div>
+            </li>
+            <li>
+                <strong>接続確認</strong>
+                <div class="code-block"><span class="comment"># 現在の接続状態を確認</span>
+pac org who</div>
+            </li>
+        </ol>
+
+        <h3>2.3 プロジェクトセットアップ</h3>
+<div class="code-block"><span class="comment"># 依存関係のインストール</span>
+<span class="keyword">npm</span> install
+
+<span class="comment"># Power Apps SDK が含まれていることを確認</span>
+<span class="keyword">npm</span> list @microsoft/power-apps
+
+<span class="comment"># アプリの起動 (Power Apps 環境で実行)</span>
+<span class="keyword">pac</span> code run
+</div>
+
+        <div class="warning-box">
+            <strong>⚠️ 重要:</strong> Power Apps SDK を使用したアプリは <code>pac code run</code> で起動する必要があります。通常の <code>npm run dev</code> では Dataverse 接続ができません。
+        </div>
+    </div>
+
+    <!-- 3. Dataverse接続方法 -->
+    <div class="section" id="connection">
+        <h2>3. Dataverse 接続方法</h2>
+
+        <h3>3.1 テーブルをデータソースとして追加</h3>
+        <ol class="step-list">
+            <li>
+                <strong>PAC CLI でデータソースを追加</strong>
+                <div class="code-block"><span class="comment"># 既存のテーブルをデータソースとして追加</span>
+pac code add-data-source <span class="keyword">-a</span> dataverse <span class="keyword">-t</span> <span class="string">mdi_project_list</span>
+
+<span class="comment"># 実行結果:</span>
+<span class="comment"># ✅ src/generated/services/Mdi_project_listsService.ts</span>
+<span class="comment"># ✅ src/generated/models/Mdi_project_listsModel.ts</span></div>
+                <div class="info-box">
+                    このコマンドにより、TypeScript の型定義と CRUD メソッドが自動生成されます。
+                </div>
+            </li>
+            <li>
+                <strong>自動生成されるファイル</strong>
+                <ul>
+                    <li><code>Service.ts</code> - CRUD 操作メソッド (create, read, update, delete)</li>
+                    <li><code>Model.ts</code> - TypeScript 型定義、列挙型</li>
+                </ul>
+            </li>
+        </ol>
+
+        <h3>3.2 Power Apps コンテキストの取得</h3>
+<div class="code-block"><span class="keyword">import</span> { <span class="function">getContext</span> } <span class="keyword">from</span> <span class="string">'@microsoft/power-apps/app'</span>;
+
+<span class="comment">/**
+ * Power Apps 環境情報を取得
+ */</span>
+<span class="keyword">export async function</span> <span class="function">getPowerAppsContext</span>() {
+  <span class="keyword">try</span> {
+    <span class="keyword">const</span> <span class="variable">context</span> = <span class="function">getContext</span>();
+    <span class="keyword">return</span> {
+      <span class="variable">success</span>: <span class="keyword">true</span>,
+      <span class="variable">context</span>,
+      <span class="variable">environmentId</span>: <span class="variable">context</span>?.<span class="variable">environment</span>?.<span class="variable">id</span>,
+      <span class="variable">environmentUrl</span>: <span class="variable">context</span>?.<span class="variable">environment</span>?.<span class="variable">url</span>,
+      <span class="variable">organizationName</span>: <span class="variable">context</span>?.<span class="variable">organization</span>?.<span class="variable">friendlyName</span>,
+    };
+  } <span class="keyword">catch</span> (<span class="variable">error</span>) {
+    <span class="keyword">return</span> { <span class="variable">success</span>: <span class="keyword">false</span>, <span class="variable">error</span> };
+  }
+}
+</div>
+
+        <h3>3.3 接続テスト</h3>
+<div class="code-block"><span class="keyword">import</span> { <span class="function">testDataverseConnection</span> } <span class="keyword">from</span> <span class="string">'@/services/dataverseService'</span>;
+
+<span class="comment">// 接続をテスト</span>
+<span class="keyword">const</span> <span class="variable">result</span> = <span class="keyword">await</span> <span class="function">testDataverseConnection</span>({
+  <span class="variable">environmentUrl</span>: <span class="string">'https://org288e66ae.crm.dynamics.com/'</span>,
+  <span class="variable">displayName</span>: <span class="string">'開発環境'</span>
+});
+
+<span class="keyword">if</span> (<span class="variable">result</span>.<span class="variable">success</span>) {
+  <span class="function">console.log</span>(<span class="string">'✅ 接続成功'</span>, <span class="variable">result</span>.<span class="variable">details</span>);
+} <span class="keyword">else</span> {
+  <span class="function">console.error</span>(<span class="string">'❌ 接続失敗'</span>, <span class="variable">result</span>.<span class="variable">message</span>);
+}
+</div>
+    </div>
+
+    <!-- 4. データ操作 (CRUD) -->
+    <div class="section" id="crud">
+        <h2>4. データ操作 (CRUD)</h2>
+
+        <h3>4.1 レコードの作成 (Create)</h3>
+<div class="code-block"><span class="keyword">import</span> { <span class="variable">Mdi_project_listsService</span> } <span class="keyword">from</span> <span class="string">'@/generated/services/Mdi_project_listsService'</span>;
+<span class="keyword">import</span> <span class="keyword">type</span> { <span class="variable">Mdi_project_lists</span> } <span class="keyword">from</span> <span class="string">'@/generated/models/Mdi_project_listsModel'</span>;
+
+<span class="comment">/**
+ * 新しいプロジェクトレコードを作成
+ */</span>
+<span class="keyword">async function</span> <span class="function">createProject</span>() {
+  <span class="keyword">const</span> <span class="variable">newProject</span>: <span class="keyword">Partial</span>&lt;<span class="variable">Mdi_project_lists</span>&gt; = {
+    <span class="variable">mdi_name</span>: <span class="string">'新規プロジェクト'</span>,
+    <span class="variable">mdi_id</span>: <span class="string">'PRJ001'</span>,           <span class="comment">// 最大10文字</span>
+    <span class="variable">mdi_project_description</span>: <span class="string">'プロジェクトの説明'</span>,
+    <span class="variable">mdi_wbscode</span>: <span class="string">'WBS-001'</span>,
+    <span class="variable">mdi_workload_mm</span>: <span class="string">'24'</span>,
+  };
+
+  <span class="keyword">const</span> <span class="variable">result</span> = <span class="keyword">await</span> <span class="variable">Mdi_project_listsService</span>.<span class="function">create</span>(<span class="variable">newProject</span> <span class="keyword">as</span> <span class="variable">Mdi_project_lists</span>);
+  
+  <span class="keyword">if</span> (<span class="variable">result</span>.<span class="variable">data</span>) {
+    <span class="function">console.log</span>(<span class="string">'✅ 作成成功:'</span>, <span class="variable">result</span>.<span class="variable">data</span>.<span class="variable">mdi_project_listid</span>);
+    <span class="keyword">return</span> <span class="variable">result</span>.<span class="variable">data</span>;
+  }
+}
+</div>
+
+        <div class="warning-box">
+            <strong>⚠️ フィールド長制限に注意:</strong>
+            <ul>
+                <li><code>mdi_id</code>: 最大10文字</li>
+                <li>長すぎる値を設定すると <code>StringLengthTooLong</code> エラーが発生</li>
+                <li>Dataverse が自動設定するフィールド (<code>ownerid</code>, <code>createdby</code> など) は送信不要</li>
+            </ul>
+        </div>
+
+        <h3>4.2 レコードの読み取り (Read)</h3>
+
+        <h4>4.2.1 全レコード取得</h4>
+<div class="code-block"><span class="comment">/**
+ * 全レコードを取得
+ */</span>
+<span class="keyword">async function</span> <span class="function">getAllProjects</span>() {
+  <span class="keyword">const</span> <span class="variable">result</span> = <span class="keyword">await</span> <span class="variable">Mdi_project_listsService</span>.<span class="function">getAll</span>({
+    <span class="comment">// 取得するフィールドを指定 (パフォーマンス向上)</span>
+    <span class="variable">select</span>: [
+      <span class="string">'mdi_project_listid'</span>,
+      <span class="string">'mdi_name'</span>,
+      <span class="string">'mdi_id'</span>,
+      <span class="string">'createdon'</span>,
+      <span class="string">'statecode'</span>
+    ],
+    <span class="comment">// 最大取得件数</span>
+    <span class="variable">top</span>: <span class="keyword">100</span>,
+    <span class="comment">// ソート順</span>
+    <span class="variable">orderBy</span>: [<span class="string">'createdon desc'</span>]
+  });
+
+  <span class="keyword">return</span> <span class="variable">result</span>.<span class="variable">data</span> || [];
+}
+</div>
+
+        <h4>4.2.2 単一レコード取得</h4>
+<div class="code-block"><span class="comment">/**
+ * IDで特定のレコードを取得
+ */</span>
+<span class="keyword">async function</span> <span class="function">getProjectById</span>(<span class="variable">projectId</span>: <span class="keyword">string</span>) {
+  <span class="keyword">const</span> <span class="variable">result</span> = <span class="keyword">await</span> <span class="variable">Mdi_project_listsService</span>.<span class="function">get</span>(<span class="variable">projectId</span>);
+  <span class="keyword">return</span> <span class="variable">result</span>.<span class="variable">data</span>;
+}
+</div>
+
+        <h3>4.3 レコードの更新 (Update)</h3>
+<div class="code-block"><span class="comment">/**
+ * 既存のレコードを更新
+ */</span>
+<span class="keyword">async function</span> <span class="function">updateProject</span>(<span class="variable">projectId</span>: <span class="keyword">string</span>) {
+  <span class="keyword">const</span> <span class="variable">updates</span>: <span class="keyword">Partial</span>&lt;<span class="variable">Mdi_project_lists</span>&gt; = {
+    <span class="variable">mdi_project_listid</span>: <span class="variable">projectId</span>,
+    <span class="variable">mdi_name</span>: <span class="string">'更新後のプロジェクト名'</span>,
+    <span class="variable">mdi_workload_mm</span>: <span class="string">'36'</span>,
+  };
+
+  <span class="keyword">const</span> <span class="variable">result</span> = <span class="keyword">await</span> <span class="variable">Mdi_project_listsService</span>.<span class="function">update</span>(<span class="variable">updates</span> <span class="keyword">as</span> <span class="variable">Mdi_project_lists</span>);
+  
+  <span class="keyword">if</span> (<span class="variable">result</span>.<span class="variable">data</span>) {
+    <span class="function">console.log</span>(<span class="string">'✅ 更新成功'</span>);
+    <span class="keyword">return</span> <span class="variable">result</span>.<span class="variable">data</span>;
+  }
+}
+</div>
+
+        <h3>4.4 レコードの削除 (Delete)</h3>
+<div class="code-block"><span class="comment">/**
+ * レコードを削除
+ */</span>
+<span class="keyword">async function</span> <span class="function">deleteProject</span>(<span class="variable">projectId</span>: <span class="keyword">string</span>) {
+  <span class="keyword">const</span> <span class="variable">result</span> = <span class="keyword">await</span> <span class="variable">Mdi_project_listsService</span>.<span class="function">delete</span>(<span class="variable">projectId</span>);
+  
+  <span class="keyword">if</span> (<span class="variable">result</span>.<span class="variable">success</span>) {
+    <span class="function">console.log</span>(<span class="string">'✅ 削除成功'</span>);
+  }
+}
+</div>
+
+        <h3>4.5 実装例: 完全なCRUD操作</h3>
+<div class="code-block"><span class="keyword">import</span> { <span class="variable">Mdi_project_listsService</span> } <span class="keyword">from</span> <span class="string">'@/generated/services/Mdi_project_listsService'</span>;
+
+<span class="keyword">export class</span> <span class="function">ProjectManager</span> {
+  <span class="comment">// 作成</span>
+  <span class="keyword">static async</span> <span class="function">create</span>(<span class="variable">data</span>: <span class="keyword">Partial</span>&lt;<span class="variable">Mdi_project_lists</span>&gt;) {
+    <span class="keyword">try</span> {
+      <span class="keyword">const</span> <span class="variable">result</span> = <span class="keyword">await</span> <span class="variable">Mdi_project_listsService</span>.<span class="function">create</span>(<span class="variable">data</span> <span class="keyword">as</span> <span class="variable">Mdi_project_lists</span>);
+      <span class="keyword">return</span> { <span class="variable">success</span>: <span class="keyword">true</span>, <span class="variable">data</span>: <span class="variable">result</span>.<span class="variable">data</span> };
+    } <span class="keyword">catch</span> (<span class="variable">error</span>) {
+      <span class="keyword">return</span> { <span class="variable">success</span>: <span class="keyword">false</span>, <span class="variable">error</span> };
+    }
+  }
+
+  <span class="comment">// 読み取り</span>
+  <span class="keyword">static async</span> <span class="function">getAll</span>() {
+    <span class="keyword">const</span> <span class="variable">result</span> = <span class="keyword">await</span> <span class="variable">Mdi_project_listsService</span>.<span class="function">getAll</span>({ <span class="variable">top</span>: <span class="keyword">100</span> });
+    <span class="keyword">return</span> <span class="variable">result</span>.<span class="variable">data</span> || [];
+  }
+
+  <span class="comment">// 更新</span>
+  <span class="keyword">static async</span> <span class="function">update</span>(<span class="variable">id</span>: <span class="keyword">string</span>, <span class="variable">data</span>: <span class="keyword">Partial</span>&lt;<span class="variable">Mdi_project_lists</span>&gt;) {
+    <span class="keyword">try</span> {
+      <span class="keyword">const</span> <span class="variable">result</span> = <span class="keyword">await</span> <span class="variable">Mdi_project_listsService</span>.<span class="function">update</span>({
+        <span class="variable">mdi_project_listid</span>: <span class="variable">id</span>,
+        ...<span class="variable">data</span>
+      } <span class="keyword">as</span> <span class="variable">Mdi_project_lists</span>);
+      <span class="keyword">return</span> { <span class="variable">success</span>: <span class="keyword">true</span>, <span class="variable">data</span>: <span class="variable">result</span>.<span class="variable">data</span> };
+    } <span class="keyword">catch</span> (<span class="variable">error</span>) {
+      <span class="keyword">return</span> { <span class="variable">success</span>: <span class="keyword">false</span>, <span class="variable">error</span> };
+    }
+  }
+
+  <span class="comment">// 削除</span>
+  <span class="keyword">static async</span> <span class="function">delete</span>(<span class="variable">id</span>: <span class="keyword">string</span>) {
+    <span class="keyword">try</span> {
+      <span class="keyword">await</span> <span class="variable">Mdi_project_listsService</span>.<span class="function">delete</span>(<span class="variable">id</span>);
+      <span class="keyword">return</span> { <span class="variable">success</span>: <span class="keyword">true</span> };
+    } <span class="keyword">catch</span> (<span class="variable">error</span>) {
+      <span class="keyword">return</span> { <span class="variable">success</span>: <span class="keyword">false</span>, <span class="variable">error</span> };
+    }
+  }
+}
+</div>
+    </div>
+
+    <!-- 5. 高度な操作 -->
+    <div class="section" id="advanced">
+        <h2>5. 高度な操作</h2>
+
+        <h3>5.1 フィルタリング</h3>
+<div class="code-block"><span class="comment">// アクティブなプロジェクトのみ取得</span>
+<span class="keyword">const</span> <span class="variable">result</span> = <span class="keyword">await</span> <span class="variable">Mdi_project_listsService</span>.<span class="function">getAll</span>({
+  <span class="variable">filter</span>: <span class="string">'statecode eq 0'</span>,  <span class="comment">// Active のみ</span>
+  <span class="variable">select</span>: [<span class="string">'mdi_name'</span>, <span class="string">'mdi_id'</span>],
+  <span class="variable">orderBy</span>: [<span class="string">'createdon desc'</span>]
+});
+
+<span class="comment">// 複数条件でフィルタリング</span>
+<span class="keyword">const</span> <span class="variable">filteredResult</span> = <span class="keyword">await</span> <span class="variable">Mdi_project_listsService</span>.<span class="function">getAll</span>({
+  <span class="variable">filter</span>: <span class="string">'statecode eq 0 and mdi_workload_mm gt 12'</span>,
+  <span class="variable">top</span>: <span class="keyword">50</span>
+});
+</div>
+
+        <h3>5.2 ページネーション</h3>
+<div class="code-block"><span class="comment">/**
+ * ページネーション付きデータ取得
+ */</span>
+<span class="keyword">async function</span> <span class="function">getPaginatedProjects</span>(<span class="variable">page</span>: <span class="keyword">number</span>, <span class="variable">pageSize</span>: <span class="keyword">number</span>) {
+  <span class="keyword">const</span> <span class="variable">skip</span> = (<span class="variable">page</span> - <span class="keyword">1</span>) * <span class="variable">pageSize</span>;
+  
+  <span class="keyword">const</span> <span class="variable">result</span> = <span class="keyword">await</span> <span class="variable">Mdi_project_listsService</span>.<span class="function">getAll</span>({
+    <span class="variable">top</span>: <span class="variable">pageSize</span>,
+    <span class="variable">skip</span>: <span class="variable">skip</span>,
+    <span class="variable">orderBy</span>: [<span class="string">'createdon desc'</span>]
+  });
+
+  <span class="keyword">return</span> {
+    <span class="variable">data</span>: <span class="variable">result</span>.<span class="variable">data</span> || [],
+    <span class="variable">page</span>,
+    <span class="variable">pageSize</span>,
+    <span class="variable">hasMore</span>: <span class="variable">result</span>.<span class="variable">data</span>?.<span class="variable">length</span> === <span class="variable">pageSize</span>
+  };
+}
+
+<span class="comment">// 使用例</span>
+<span class="keyword">const</span> <span class="variable">page1</span> = <span class="keyword">await</span> <span class="function">getPaginatedProjects</span>(<span class="keyword">1</span>, <span class="keyword">20</span>);
+<span class="keyword">const</span> <span class="variable">page2</span> = <span class="keyword">await</span> <span class="function">getPaginatedProjects</span>(<span class="keyword">2</span>, <span class="keyword">20</span>);
+</div>
+
+        <h3>5.3 バッチ操作</h3>
+<div class="code-block"><span class="comment">/**
+ * 複数レコードを一括作成
+ */</span>
+<span class="keyword">async function</span> <span class="function">batchCreateProjects</span>(<span class="variable">projects</span>: <span class="keyword">Partial</span>&lt;<span class="variable">Mdi_project_lists</span>&gt;[]) {
+  <span class="keyword">const</span> <span class="variable">results</span> = [];
+  
+  <span class="keyword">for</span> (<span class="keyword">const</span> <span class="variable">project</span> <span class="keyword">of</span> <span class="variable">projects</span>) {
+    <span class="keyword">try</span> {
+      <span class="keyword">const</span> <span class="variable">result</span> = <span class="keyword">await</span> <span class="variable">Mdi_project_listsService</span>.<span class="function">create</span>(<span class="variable">project</span> <span class="keyword">as</span> <span class="variable">Mdi_project_lists</span>);
+      <span class="variable">results</span>.<span class="function">push</span>({ <span class="variable">success</span>: <span class="keyword">true</span>, <span class="variable">data</span>: <span class="variable">result</span>.<span class="variable">data</span> });
+    } <span class="keyword">catch</span> (<span class="variable">error</span>) {
+      <span class="variable">results</span>.<span class="function">push</span>({ <span class="variable">success</span>: <span class="keyword">false</span>, <span class="variable">error</span> });
+    }
+  }
+  
+  <span class="keyword">return</span> <span class="variable">results</span>;
+}
+</div>
+
+        <h3>5.4 エラーハンドリング</h3>
+<div class="code-block"><span class="comment">/**
+ * 包括的なエラーハンドリング
+ */</span>
+<span class="keyword">async function</span> <span class="function">safeCreateProject</span>(<span class="variable">data</span>: <span class="keyword">Partial</span>&lt;<span class="variable">Mdi_project_lists</span>&gt;) {
+  <span class="keyword">try</span> {
+    <span class="keyword">const</span> <span class="variable">result</span> = <span class="keyword">await</span> <span class="variable">Mdi_project_listsService</span>.<span class="function">create</span>(<span class="variable">data</span> <span class="keyword">as</span> <span class="variable">Mdi_project_lists</span>);
+    <span class="keyword">return</span> { <span class="variable">success</span>: <span class="keyword">true</span>, <span class="variable">data</span>: <span class="variable">result</span>.<span class="variable">data</span> };
+    
+  } <span class="keyword">catch</span> (<span class="variable">error</span>: <span class="keyword">any</span>) {
+    <span class="comment">// エラー種類の判定</span>
+    <span class="keyword">if</span> (<span class="variable">error</span>.<span class="variable">response</span>?.<span class="variable">status</span> === <span class="keyword">400</span>) {
+      <span class="keyword">const</span> <span class="variable">errorData</span> = <span class="variable">JSON</span>.<span class="function">parse</span>(<span class="variable">error</span>.<span class="variable">response</span>.<span class="variable">data</span>.<span class="variable">error</span>.<span class="variable">message</span>);
+      
+      <span class="keyword">if</span> (<span class="variable">errorData</span>.<span class="variable">error</span>.<span class="variable">code</span> === <span class="string">'0x80044331'</span>) {
+        <span class="keyword">return</span> {
+          <span class="variable">success</span>: <span class="keyword">false</span>,
+          <span class="variable">error</span>: <span class="string">'StringLengthTooLong'</span>,
+          <span class="variable">message</span>: <span class="string">'フィールド長が制限を超えています'</span>
+        };
+      }
+    }
+    
+    <span class="keyword">return</span> {
+      <span class="variable">success</span>: <span class="keyword">false</span>,
+      <span class="variable">error</span>: <span class="string">'Unknown'</span>,
+      <span class="variable">message</span>: <span class="variable">error</span>.<span class="variable">message</span> || <span class="string">'不明なエラー'</span>
+    };
+  }
+}
+</div>
+    </div>
+
+    <!-- 6. トラブルシューティング -->
+    <div class="section" id="troubleshooting">
+        <h2>6. トラブルシューティング</h2>
+
+        <h3>6.1 よくあるエラーと対処法</h3>
+        
+        <table>
+            <tr>
+                <th>エラー</th>
+                <th>原因</th>
+                <th>対処法</th>
+            </tr>
+            <tr>
+                <td><code>Context is not available</code></td>
+                <td>Power Apps環境で実行されていない</td>
+                <td><code>pac code run</code> でアプリを起動</td>
+            </tr>
+            <tr>
+                <td><code>StringLengthTooLong</code></td>
+                <td>フィールド長制限超過</td>
+                <td>入力値を短くする (例: mdi_id は10文字まで)</td>
+            </tr>
+            <tr>
+                <td><code>401 Unauthorized</code></td>
+                <td>認証エラー</td>
+                <td><code>pac auth create</code> で再認証</td>
+            </tr>
+            <tr>
+                <td><code>403 Forbidden</code></td>
+                <td>権限不足</td>
+                <td>Dataverseテーブルへの権限を確認</td>
+            </tr>
+            <tr>
+                <td><code>result.data is undefined</code></td>
+                <td>レスポンス構造の問題</td>
+                <td><code>result</code> 自体をチェック</td>
+            </tr>
+        </table>
+
+        <h3>6.2 デバッグ方法</h3>
+
+        <h4>詳細ログ出力</h4>
+<div class="code-block"><span class="comment">// デバッグ用の詳細ログ</span>
+<span class="keyword">async function</span> <span class="function">debugCreate</span>(<span class="variable">data</span>: <span class="keyword">any</span>) {
+  <span class="function">console.log</span>(<span class="string">'📤 送信データ:'</span>, <span class="variable">JSON</span>.<span class="function">stringify</span>(<span class="variable">data</span>, <span class="keyword">null</span>, <span class="keyword">2</span>));
+  
+  <span class="keyword">try</span> {
+    <span class="keyword">const</span> <span class="variable">result</span> = <span class="keyword">await</span> <span class="variable">Mdi_project_listsService</span>.<span class="function">create</span>(<span class="variable">data</span>);
+    <span class="function">console.log</span>(<span class="string">'📥 レスポンス:'</span>, <span class="variable">JSON</span>.<span class="function">stringify</span>(<span class="variable">result</span>, <span class="keyword">null</span>, <span class="keyword">2</span>));
+    <span class="keyword">return</span> <span class="variable">result</span>;
+  } <span class="keyword">catch</span> (<span class="variable">error</span>: <span class="keyword">any</span>) {
+    <span class="function">console.error</span>(<span class="string">'❌ エラー詳細:'</span>);
+    <span class="function">console.error</span>(<span class="string">'  ステータス:'</span>, <span class="variable">error</span>.<span class="variable">response</span>?.<span class="variable">status</span>);
+    <span class="function">console.error</span>(<span class="string">'  メッセージ:'</span>, <span class="variable">error</span>.<span class="variable">message</span>);
+    <span class="function">console.error</span>(<span class="string">'  データ:'</span>, <span class="variable">error</span>.<span class="variable">response</span>?.<span class="variable">data</span>);
+    <span class="keyword">throw</span> <span class="variable">error</span>;
+  }
+}
+</div>
+
+        <h4>接続テスト</h4>
+<div class="code-block"><span class="comment">// Power Apps 接続状態の確認</span>
+<span class="keyword">import</span> { <span class="function">getPowerAppsContext</span> } <span class="keyword">from</span> <span class="string">'@/services/dataverseService'</span>;
+
+<span class="keyword">const</span> <span class="variable">context</span> = <span class="keyword">await</span> <span class="function">getPowerAppsContext</span>();
+<span class="function">console.log</span>(<span class="string">'🔌 接続状態:'</span>, <span class="variable">context</span>);
+</div>
+
+        <h3>6.3 チェックリスト</h3>
+        <div class="info-box">
+            <strong>✅ トラブルシューティング チェックリスト</strong>
+            <ol>
+                <li>□ <code>pac code run</code> でアプリを起動しているか?</li>
+                <li>□ PAC CLI で環境に接続済みか? (<code>pac org who</code>)</li>
+                <li>□ テーブルがデータソースとして追加済みか?</li>
+                <li>□ 必須フィールドがすべて設定されているか?</li>
+                <li>□ フィールド長制限を守っているか?</li>
+                <li>□ Dataverse テーブルへの権限があるか?</li>
+                <li>□ ブラウザの開発者ツールでエラーを確認したか?</li>
+            </ol>
+        </div>
+    </div>
+
+    <!-- 7. ベストプラクティス -->
+    <div class="section" id="best-practices">
+        <h2>7. ベストプラクティス</h2>
+
+        <h3>7.1 コーディング規約</h3>
+
+        <div class="success-box">
+            <strong>✅ 推奨事項</strong>
+            <ul>
+                <li>TypeScript の型定義を活用 (<code>Partial&lt;T&gt;</code>, <code>Required&lt;T&gt;</code>)</li>
+                <li>エラーハンドリングは必ず実装</li>
+                <li><code>select</code> オプションで必要なフィールドのみ取得</li>
+                <li>ページネーションで大量データを効率的に処理</li>
+                <li>サービス層を分離してロジックを整理</li>
+            </ul>
+        </div>
+
+        <h3>7.2 パフォーマンス最適化</h3>
+
+        <h4>必要なフィールドのみ取得</h4>
+<div class="code-block"><span class="comment">// ❌ Bad: すべてのフィールドを取得</span>
+<span class="keyword">const</span> <span class="variable">result</span> = <span class="keyword">await</span> <span class="variable">Mdi_project_listsService</span>.<span class="function">getAll</span>();
+
+<span class="comment">// ✅ Good: 必要なフィールドのみ指定</span>
+<span class="keyword">const</span> <span class="variable">result</span> = <span class="keyword">await</span> <span class="variable">Mdi_project_listsService</span>.<span class="function">getAll</span>({
+  <span class="variable">select</span>: [<span class="string">'mdi_project_listid'</span>, <span class="string">'mdi_name'</span>],
+  <span class="variable">top</span>: <span class="keyword">50</span>
+});
+</div>
+
+        <h4>キャッシュ戦略</h4>
+<div class="code-block"><span class="comment">/**
+ * React Query によるキャッシュ
+ */</span>
+<span class="keyword">import</span> { <span class="function">useQuery</span> } <span class="keyword">from</span> <span class="string">'@tanstack/react-query'</span>;
+
+<span class="keyword">export function</span> <span class="function">useProjects</span>() {
+  <span class="keyword">return</span> <span class="function">useQuery</span>({
+    <span class="variable">queryKey</span>: [<span class="string">'projects'</span>],
+    <span class="variable">queryFn</span>: <span class="keyword">async</span> () => {
+      <span class="keyword">const</span> <span class="variable">result</span> = <span class="keyword">await</span> <span class="variable">Mdi_project_listsService</span>.<span class="function">getAll</span>();
+      <span class="keyword">return</span> <span class="variable">result</span>.<span class="variable">data</span> || [];
+    },
+    <span class="variable">staleTime</span>: <span class="keyword">5</span> * <span class="keyword">60</span> * <span class="keyword">1000</span>, <span class="comment">// 5分間キャッシュ</span>
+  });
+}
+</div>
+
+        <h3>7.3 セキュリティ</h3>
+
+        <div class="warning-box">
+            <strong>⚠️ セキュリティ注意事項</strong>
+            <ul>
+                <li>機密情報をフロントエンドに保存しない</li>
+                <li>ユーザー入力値は必ずバリデーション</li>
+                <li>Dataverse のセキュリティロールで権限を適切に設定</li>
+                <li>SQL インジェクション対策 (フィルタ文字列のエスケープ)</li>
+            </ul>
+        </div>
+
+        <h3>7.4 テストコード例</h3>
+<div class="code-block"><span class="comment">/**
+ * Vitest によるテスト例
+ */</span>
+<span class="keyword">import</span> { <span class="function">describe</span>, <span class="function">it</span>, <span class="function">expect</span> } <span class="keyword">from</span> <span class="string">'vitest'</span>;
+<span class="keyword">import</span> { <span class="variable">ProjectManager</span> } <span class="keyword">from</span> <span class="string">'./ProjectManager'</span>;
+
+<span class="function">describe</span>(<span class="string">'ProjectManager'</span>, () => {
+  <span class="function">it</span>(<span class="string">'should create project'</span>, <span class="keyword">async</span> () => {
+    <span class="keyword">const</span> <span class="variable">result</span> = <span class="keyword">await</span> <span class="variable">ProjectManager</span>.<span class="function">create</span>({
+      <span class="variable">mdi_name</span>: <span class="string">'Test Project'</span>,
+      <span class="variable">mdi_id</span>: <span class="string">'TEST001'</span>
+    });
+
+    <span class="function">expect</span>(<span class="variable">result</span>.<span class="variable">success</span>).<span class="function">toBe</span>(<span class="keyword">true</span>);
+    <span class="function">expect</span>(<span class="variable">result</span>.<span class="variable">data</span>?.<span class="variable">mdi_name</span>).<span class="function">toBe</span>(<span class="string">'Test Project'</span>);
+  });
+
+  <span class="function">it</span>(<span class="string">'should handle validation error'</span>, <span class="keyword">async</span> () => {
+    <span class="keyword">const</span> <span class="variable">result</span> = <span class="keyword">await</span> <span class="variable">ProjectManager</span>.<span class="function">create</span>({
+      <span class="variable">mdi_name</span>: <span class="string">'Test'</span>,
+      <span class="variable">mdi_id</span>: <span class="string">'VERY-LONG-ID-THAT-EXCEEDS-LIMIT'</span>
+    });
+
+    <span class="function">expect</span>(<span class="variable">result</span>.<span class="variable">success</span>).<span class="function">toBe</span>(<span class="keyword">false</span>);
+    <span class="function">expect</span>(<span class="variable">result</span>.<span class="variable">error</span>).<span class="function">toBe</span>(<span class="string">'StringLengthTooLong'</span>);
+  });
+});
+</div>
+
+        <h3>7.5 プロジェクト構成のベストプラクティス</h3>
+<div class="code-block">src/
+├── <span class="variable">services</span>/
+│   ├── <span class="function">dataverse/</span>              <span class="comment">// Dataverse 関連サービスをまとめる</span>
+│   │   ├── <span class="function">connection.ts</span>       <span class="comment">// 接続管理</span>
+│   │   ├── <span class="function">projects.ts</span>         <span class="comment">// プロジェクト操作</span>
+│   │   └── <span class="function">common.ts</span>           <span class="comment">// 共通ユーティリティ</span>
+│   └── <span class="function">api/</span>
+├── <span class="variable">hooks</span>/
+│   └── <span class="function">useDataverse.ts</span>       <span class="comment">// カスタムフック</span>
+├── <span class="variable">types</span>/
+│   └── <span class="function">dataverse.ts</span>          <span class="comment">// 型定義</span>
+└── <span class="variable">generated</span>/                  <span class="comment">// PAC CLI 生成 (編集不可)</span>
+</div>
+    </div>
+
+    <!-- フッター -->
+    <div class="section" style="text-align: center; padding: 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+        <h3 style="margin: 0;">🎉 Dataverse統合を活用して素晴らしいアプリを構築しましょう!</h3>
+        <p style="margin: 10px 0 0 0; opacity: 0.9;">Power Apps Code Apps × Dataverse</p>
+        <p style="margin: 5px 0 0 0; font-size: 0.9em;">
+            <span class="tag">React</span>
+            <span class="tag">TypeScript</span>
+            <span class="tag">Dataverse</span>
+            <span class="tag">Power Platform</span>
+        </p>
+    </div>
+
+    <script>
+        // スムーススクロール
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            });
+        });
+
+        // コードブロックのコピー機能
+        document.querySelectorAll('.code-block').forEach(block => {
+            const button = document.createElement('button');
+            button.textContent = '📋 Copy';
+            button.style.cssText = 'position: absolute; top: 10px; right: 10px; background: #667eea; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 12px;';
+            block.style.position = 'relative';
+            block.appendChild(button);
+
+            button.addEventListener('click', () => {
+                const code = block.innerText.replace('📋 Copy', '').trim();
+                navigator.clipboard.writeText(code).then(() => {
+                    button.textContent = '✅ Copied!';
+                    setTimeout(() => button.textContent = '📋 Copy', 2000);
+                });
+            });
+        });
+    </script>
+</body>
+</html>

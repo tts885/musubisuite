@@ -1,0 +1,829 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ログアーキテクチャ設計 - MusubiSuite</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.8;
+            color: #333;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 60px 40px;
+            text-align: center;
+        }
+
+        header h1 {
+            font-size: 3em;
+            margin-bottom: 20px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        header p {
+            font-size: 1.3em;
+            opacity: 0.95;
+        }
+
+        .content {
+            padding: 60px 40px;
+        }
+
+        h2 {
+            color: #667eea;
+            font-size: 2.2em;
+            margin: 50px 0 30px 0;
+            padding-bottom: 15px;
+            border-bottom: 4px solid #667eea;
+        }
+
+        h3 {
+            color: #764ba2;
+            font-size: 1.8em;
+            margin: 35px 0 20px 0;
+        }
+
+        h4 {
+            color: #555;
+            font-size: 1.4em;
+            margin: 25px 0 15px 0;
+        }
+
+        p {
+            margin-bottom: 20px;
+            font-size: 1.1em;
+        }
+
+        .highlight-box {
+            background: linear-gradient(135deg, #667eea15 0%, #764ba215 100%);
+            border-left: 5px solid #667eea;
+            padding: 25px;
+            margin: 30px 0;
+            border-radius: 8px;
+        }
+
+        .warning-box {
+            background: #fff3cd;
+            border-left: 5px solid #ffc107;
+            padding: 25px;
+            margin: 30px 0;
+            border-radius: 8px;
+        }
+
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 25px;
+            margin: 30px 0;
+        }
+
+        .feature-card {
+            background: #f8f9fa;
+            padding: 25px;
+            border-radius: 12px;
+            border: 2px solid #e9ecef;
+            transition: all 0.3s;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.2);
+            border-color: #667eea;
+        }
+
+        .feature-card h4 {
+            color: #667eea;
+            margin-top: 0;
+        }
+
+        .code-block {
+            background: #2d2d2d;
+            color: #f8f8f2;
+            padding: 25px;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin: 25px 0;
+            font-family: 'Courier New', monospace;
+            font-size: 0.95em;
+            line-height: 1.6;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        .code-block .comment {
+            color: #75715e;
+        }
+
+        .code-block .keyword {
+            color: #66d9ef;
+        }
+
+        .code-block .string {
+            color: #e6db74;
+        }
+
+        .code-block .function {
+            color: #a6e22e;
+        }
+
+        .comparison-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 30px 0;
+            box-shadow: 0 2px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .comparison-table th {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 18px;
+            text-align: left;
+            font-size: 1.1em;
+        }
+
+        .comparison-table td {
+            padding: 18px;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .comparison-table tr:nth-child(even) {
+            background-color: #f8f9fa;
+        }
+
+        .comparison-table tr:hover {
+            background-color: #e7f1ff;
+        }
+
+        .good {
+            color: #28a745;
+            font-weight: bold;
+        }
+
+        .bad {
+            color: #dc3545;
+            font-weight: bold;
+        }
+
+        ul, ol {
+            margin: 20px 0 20px 40px;
+        }
+
+        li {
+            margin-bottom: 12px;
+            font-size: 1.05em;
+        }
+
+        .architecture-diagram {
+            background: #f8f9fa;
+            padding: 30px;
+            border-radius: 12px;
+            margin: 30px 0;
+            text-align: center;
+            border: 2px solid #e9ecef;
+        }
+
+        .layer {
+            background: white;
+            padding: 20px;
+            margin: 15px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .arrow {
+            font-size: 2em;
+            color: #667eea;
+            margin: 10px 0;
+        }
+
+        footer {
+            background: #2d3748;
+            color: white;
+            text-align: center;
+            padding: 30px;
+            font-size: 0.95em;
+        }
+
+        .log-level-badge {
+            display: inline-block;
+            padding: 5px 12px;
+            border-radius: 15px;
+            font-size: 0.9em;
+            font-weight: bold;
+            margin-right: 10px;
+        }
+
+        .badge-debug {
+            background: #6c757d;
+            color: white;
+        }
+
+        .badge-info {
+            background: #17a2b8;
+            color: white;
+        }
+
+        .badge-warn {
+            background: #ffc107;
+            color: #333;
+        }
+
+        .badge-error {
+            background: #dc3545;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🚀 ログアーキテクチャ設計</h1>
+            <p>本番環境対応の堅牢なログシステム - MusubiSuite</p>
+        </header>
+
+        <div class="content">
+            <!-- 概要 -->
+            <section>
+                <h2>📋 概要</h2>
+                <p>
+                    MusubiSuiteでは、開発環境と本番環境で適切に動作する堅牢なログシステムを実装しています。
+                    従来のconsole.logを直接使用する方法から、環境に応じて自動的に動作を変更する統一されたロガーサービスに移行しました。
+                </p>
+
+                <div class="highlight-box">
+                    <h4>🎯 設計目標</h4>
+                    <ul>
+                        <li><strong>環境対応:</strong> 開発環境では詳細ログ、本番環境では警告とエラーのみ</li>
+                        <li><strong>構造化:</strong> タイムスタンプ、コンテキスト、データを含む構造化ログ</li>
+                        <li><strong>型安全:</strong> TypeScriptの型チェックを活用</li>
+                        <li><strong>パフォーマンス:</strong> ログバッファリングとパフォーマンス計測</li>
+                        <li><strong>拡張性:</strong> リモートログ送信やカスタムハンドラーに対応</li>
+                    </ul>
+                </div>
+            </section>
+
+            <!-- 問題点 -->
+            <section>
+                <h2>⚠️ 従来の問題点</h2>
+                
+                <div class="warning-box">
+                    <h4>console.logの直接使用による問題</h4>
+                    <ul>
+                        <li><strong>本番環境での情報漏洩:</strong> 機密情報がブラウザコンソールに出力される可能性</li>
+                        <li><strong>パフォーマンス低下:</strong> 大量のログ出力がアプリケーション速度に影響</li>
+                        <li><strong>環境制御不可:</strong> 環境ごとにログレベルを変更できない</li>
+                        <li><strong>ログの統一性欠如:</strong> フォーマットがバラバラで検索・分析が困難</li>
+                        <li><strong>追跡困難:</strong> どのコンテキストで発生したログか不明</li>
+                    </ul>
+                </div>
+
+                <h3>❌ 問題のあるコード例</h3>
+                <div class="code-block">
+<span class="comment">// 環境に関係なく常に出力される</span>
+<span class="keyword">console</span>.<span class="function">log</span>(<span class="string">'Creating record:'</span>, record);
+
+<span class="comment">// 機密情報が含まれる可能性</span>
+<span class="keyword">console</span>.<span class="function">log</span>(<span class="string">'User data:'</span>, userData);
+
+<span class="comment">// エラー情報が不十分</span>
+<span class="keyword">console</span>.<span class="function">error</span>(<span class="string">'Error occurred'</span>);
+
+<span class="comment">// コンテキスト不明</span>
+<span class="keyword">console</span>.<span class="function">log</span>(<span class="string">'Success!'</span>);
+                </div>
+            </section>
+
+            <!-- アーキテクチャ -->
+            <section>
+                <h2>🏗️ ログアーキテクチャ</h2>
+
+                <div class="architecture-diagram">
+                    <div class="layer">
+                        <h4>📱 アプリケーション層</h4>
+                        <p>Pages, Components, Services, Hooks</p>
+                    </div>
+                    <div class="arrow">⬇️</div>
+                    <div class="layer" style="background: linear-gradient(135deg, #667eea15 0%, #764ba215 100%);">
+                        <h4>🔧 Logger Service (統一ログAPI)</h4>
+                        <p>logger.info(), logger.error(), logger.crud(), etc.</p>
+                    </div>
+                    <div class="arrow">⬇️</div>
+                    <div class="layer">
+                        <h4>📊 ログ処理層</h4>
+                        <p>フィルタリング、フォーマット、バッファリング</p>
+                    </div>
+                    <div class="arrow">⬇️</div>
+                    <div class="layer">
+                        <h4>💾 出力先</h4>
+                        <p>Console / Remote Logging Service / Storage</p>
+                    </div>
+                </div>
+
+                <h3>📦 ファイル構成</h3>
+                <div class="code-block">
+src/services/
+├── <span class="string">loggerService.ts</span>          <span class="comment"># メインロガーサービス (500行以上)</span>
+├── <span class="string">dataverseCrudService.ts</span>   <span class="comment"># logger使用 (全メソッド対応)</span>
+└── <span class="string">testMdiProjectList.ts</span>     <span class="comment"># logger使用 (テスト関数)</span>
+                </div>
+            </section>
+
+            <!-- ログレベル -->
+            <section>
+                <h2>📊 ログレベル</h2>
+
+                <div class="feature-grid">
+                    <div class="feature-card">
+                        <h4><span class="log-level-badge badge-debug">DEBUG</span></h4>
+                        <p><strong>用途:</strong> 詳細なデバッグ情報</p>
+                        <p><strong>環境:</strong> 開発環境のみ</p>
+                        <p><strong>例:</strong> 変数の値、関数の呼び出し順序</p>
+                    </div>
+
+                    <div class="feature-card">
+                        <h4><span class="log-level-badge badge-info">INFO</span></h4>
+                        <p><strong>用途:</strong> 一般的な情報メッセージ</p>
+                        <p><strong>環境:</strong> 開発環境のみ</p>
+                        <p><strong>例:</strong> 処理の開始・完了、ステータス変更</p>
+                    </div>
+
+                    <div class="feature-card">
+                        <h4><span class="log-level-badge badge-warn">WARN</span></h4>
+                        <p><strong>用途:</strong> 警告メッセージ</p>
+                        <p><strong>環境:</strong> 全環境</p>
+                        <p><strong>例:</strong> 非推奨機能の使用、予期しないデータ</p>
+                    </div>
+
+                    <div class="feature-card">
+                        <h4><span class="log-level-badge badge-error">ERROR</span></h4>
+                        <p><strong>用途:</strong> エラーメッセージ</p>
+                        <p><strong>環境:</strong> 全環境</p>
+                        <p><strong>例:</strong> 例外、API失敗、データ不整合</p>
+                    </div>
+                </div>
+
+                <h3>🌍 環境別設定</h3>
+                <table class="comparison-table">
+                    <thead>
+                        <tr>
+                            <th>環境</th>
+                            <th>DEBUG</th>
+                            <th>INFO</th>
+                            <th>WARN</th>
+                            <th>ERROR</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>開発 (Development)</strong></td>
+                            <td class="good">✅ 表示</td>
+                            <td class="good">✅ 表示</td>
+                            <td class="good">✅ 表示</td>
+                            <td class="good">✅ 表示</td>
+                        </tr>
+                        <tr>
+                            <td><strong>本番 (Production)</strong></td>
+                            <td class="bad">❌ 非表示</td>
+                            <td class="bad">❌ 非表示</td>
+                            <td class="good">✅ 表示</td>
+                            <td class="good">✅ 表示</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </section>
+
+            <!-- 使用方法 -->
+            <section>
+                <h2>💻 使用方法</h2>
+
+                <h3>1️⃣ 基本的なログ出力</h3>
+                <div class="code-block">
+<span class="keyword">import</span> { logger } <span class="keyword">from</span> <span class="string">'@/services/loggerService'</span>;
+
+<span class="comment">// デバッグログ (開発環境のみ)</span>
+logger.<span class="function">debug</span>(<span class="string">'Variable value'</span>, { value: myVar });
+
+<span class="comment">// 情報ログ (開発環境のみ)</span>
+logger.<span class="function">info</span>(<span class="string">'Process started'</span>, { userId: <span class="string">'123'</span> });
+
+<span class="comment">// 警告ログ (全環境)</span>
+logger.<span class="function">warn</span>(<span class="string">'Deprecated feature used'</span>, { feature: <span class="string">'oldApi'</span> });
+
+<span class="comment">// エラーログ (全環境)</span>
+logger.<span class="function">error</span>(<span class="string">'Failed to save'</span>, <span class="keyword">new</span> <span class="function">Error</span>(<span class="string">'Network error'</span>));
+                </div>
+
+                <h3>2️⃣ コンテキスト付きログ</h3>
+                <div class="code-block">
+<span class="comment">// 第3引数でコンテキストを指定</span>
+logger.<span class="function">info</span>(<span class="string">'User logged in'</span>, { userId: <span class="string">'123'</span> }, <span class="string">'AUTH'</span>);
+logger.<span class="function">error</span>(<span class="string">'Database error'</span>, error, <span class="string">'DB'</span>);
+logger.<span class="function">debug</span>(<span class="string">'API response'</span>, response, <span class="string">'API'</span>);
+
+<span class="comment">// 出力例: 💡 14:30:15 [AUTH] User logged in</span>
+                </div>
+
+                <h3>3️⃣ 特殊なログメソッド</h3>
+                <div class="code-block">
+<span class="comment">// CRUD操作ログ</span>
+logger.<span class="function">crud</span>(<span class="string">'CREATE'</span>, <span class="string">'mdi_project_lists'</span>, { name: <span class="string">'Project A'</span> });
+logger.<span class="function">crud</span>(<span class="string">'UPDATE'</span>, <span class="string">'clients'</span>, { id: <span class="string">'123'</span> });
+
+<span class="comment">// API呼び出しログ</span>
+logger.<span class="function">api</span>(<span class="string">'GET'</span>, <span class="string">'/api/users'</span>, <span class="number">200</span>, <span class="number">145</span>);
+
+<span class="comment">// ユーザーアクションログ</span>
+logger.<span class="function">user</span>(<span class="string">'Button clicked'</span>, { button: <span class="string">'save'</span> });
+
+<span class="comment">// ナビゲーションログ</span>
+logger.<span class="function">navigation</span>(<span class="string">'/home'</span>, <span class="string">'/projects'</span>);
+                </div>
+
+                <h3>4️⃣ パフォーマンス計測</h3>
+                <div class="code-block">
+<span class="comment">// 計測開始</span>
+logger.<span class="function">startTimer</span>(<span class="string">'data-fetch'</span>);
+
+<span class="comment">// 処理実行</span>
+<span class="keyword">await</span> <span class="function">fetchData</span>();
+
+<span class="comment">// 計測終了 (自動でログ出力)</span>
+logger.<span class="function">endTimer</span>(<span class="string">'data-fetch'</span>);
+<span class="comment">// 出力: ⏱️ data-fetch: 145ms</span>
+
+<span class="comment">// 非同期関数の計測</span>
+<span class="keyword">const</span> { result, duration } = <span class="keyword">await</span> logger.<span class="function">measure</span>(
+  <span class="string">'complex-operation'</span>,
+  <span class="keyword">async</span> () => {
+    <span class="keyword">return await</span> <span class="function">doSomething</span>();
+  }
+);
+                </div>
+
+                <h3>5️⃣ グループ化されたログ</h3>
+                <div class="code-block">
+<span class="comment">// 開発環境: 展開表示、本番環境: 折りたたみ表示</span>
+logger.<span class="function">grouped</span>(<span class="string">'User Registration Process'</span>, () => {
+  logger.<span class="function">info</span>(<span class="string">'Validating input'</span>);
+  logger.<span class="function">info</span>(<span class="string">'Creating user'</span>);
+  logger.<span class="function">info</span>(<span class="string">'Sending email'</span>);
+});
+                </div>
+            </section>
+
+            <!-- 実装例 -->
+            <section>
+                <h2>🔨 実装例</h2>
+
+                <h3>DataverseCrudService での使用例</h3>
+                <div class="code-block">
+<span class="keyword">import</span> { logger } <span class="keyword">from</span> <span class="string">'./loggerService'</span>;
+
+<span class="keyword">export class</span> <span class="function">DataverseCrudService</span> {
+  <span class="keyword">static async</span> <span class="function">create</span>&lt;T&gt;(
+    tableName: <span class="keyword">string</span>,
+    record: Partial&lt;T&gt;
+  ): Promise&lt;CrudResult&lt;T&gt;&gt; {
+    <span class="keyword">try</span> {
+      <span class="comment">// CRUD操作ログ (開発環境のみ)</span>
+      logger.<span class="function">crud</span>(<span class="string">'CREATE'</span>, tableName, record);
+      
+      <span class="keyword">const</span> client = <span class="function">getClient</span>();
+      <span class="keyword">const</span> result = <span class="keyword">await</span> client.<span class="function">create</span>(tableName, record);
+      
+      <span class="comment">// 成功ログ (開発環境のみ)</span>
+      logger.<span class="function">info</span>(<span class="string">'Successfully created record'</span>, result, <span class="string">'CRUD'</span>);
+      
+      <span class="keyword">return</span> { success: <span class="keyword">true</span>, data: result };
+    } <span class="keyword">catch</span> (error) {
+      <span class="comment">// エラーログ (全環境で出力)</span>
+      logger.<span class="function">error</span>(<span class="string">`Failed to create in ${tableName}`</span>, error, <span class="string">'CRUD'</span>);
+      
+      <span class="keyword">return</span> { success: <span class="keyword">false</span>, error };
+    }
+  }
+}
+                </div>
+
+                <h3>React Component での使用例</h3>
+                <div class="code-block">
+<span class="keyword">import</span> { logger } <span class="keyword">from</span> <span class="string">'@/services/loggerService'</span>;
+
+<span class="keyword">function</span> <span class="function">ProjectForm</span>() {
+  <span class="keyword">const</span> <span class="function">handleSubmit</span> = <span class="keyword">async</span> (data) => {
+    <span class="comment">// ユーザーアクションログ</span>
+    logger.<span class="function">user</span>(<span class="string">'Form submitted'</span>, { form: <span class="string">'project'</span> });
+    
+    <span class="keyword">try</span> {
+      <span class="comment">// パフォーマンス計測開始</span>
+      logger.<span class="function">startTimer</span>(<span class="string">'project-creation'</span>);
+      
+      <span class="keyword">const</span> result = <span class="keyword">await</span> <span class="function">createProject</span>(data);
+      
+      <span class="comment">// 計測終了</span>
+      logger.<span class="function">endTimer</span>(<span class="string">'project-creation'</span>);
+      
+      logger.<span class="function">info</span>(<span class="string">'Project created'</span>, { id: result.id });
+    } <span class="keyword">catch</span> (error) {
+      logger.<span class="function">error</span>(<span class="string">'Failed to create project'</span>, error);
+    }
+  };
+  
+  <span class="keyword">return</span> <span class="comment">/* JSX */</span>;
+}
+                </div>
+            </section>
+
+            <!-- 高度な機能 -->
+            <section>
+                <h2>⚙️ 高度な機能</h2>
+
+                <h3>1️⃣ ログ設定のカスタマイズ</h3>
+                <div class="code-block">
+<span class="keyword">import</span> { logger, LogLevel } <span class="keyword">from</span> <span class="string">'@/services/loggerService'</span>;
+
+<span class="comment">// ログレベルをカスタマイズ</span>
+logger.<span class="function">configure</span>({
+  minLevel: LogLevel.WARN,        <span class="comment">// 警告以上のみ出力</span>
+  enableConsole: <span class="keyword">true</span>,            <span class="comment">// コンソール出力有効</span>
+  enableRemote: <span class="keyword">true</span>,             <span class="comment">// リモートログ送信有効</span>
+  remoteEndpoint: <span class="string">'https://logs.example.com/api'</span>,
+  maxStoredLogs: <span class="number">1000</span>              <span class="comment">// バッファサイズ</span>
+});
+                </div>
+
+                <h3>2️⃣ ログの取得と分析</h3>
+                <div class="code-block">
+<span class="comment">// 全ログを取得</span>
+<span class="keyword">const</span> allLogs = logger.<span class="function">getLogs</span>();
+
+<span class="comment">// エラーログのみ取得</span>
+<span class="keyword">const</span> errorLogs = logger.<span class="function">getLogs</span>(LogLevel.ERROR);
+
+<span class="comment">// 特定コンテキストのログ取得</span>
+<span class="keyword">const</span> crudLogs = logger.<span class="function">getLogsByContext</span>(<span class="string">'CRUD'</span>);
+
+<span class="comment">// ログ統計を取得</span>
+<span class="keyword">const</span> stats = logger.<span class="function">getStats</span>();
+<span class="comment">// { total: 150, debug: 50, info: 80, warn: 15, error: 5 }</span>
+
+<span class="comment">// ログをJSONエクスポート</span>
+<span class="keyword">const</span> jsonLogs = logger.<span class="function">exportLogs</span>();
+                </div>
+
+                <h3>3️⃣ リモートログ送信</h3>
+                <div class="code-block">
+<span class="comment">// リモートログサービスを有効化</span>
+logger.<span class="function">configure</span>({
+  enableRemote: <span class="keyword">true</span>,
+  remoteEndpoint: <span class="string">'https://logs.example.com/api/logs'</span>
+});
+
+<span class="comment">// ログは自動的にリモートサービスに送信される</span>
+logger.<span class="function">error</span>(<span class="string">'Critical error'</span>, error);
+<span class="comment">// → POSTリクエストがremoteEndpointに送信される</span>
+                </div>
+
+                <h3>4️⃣ 開発環境でのデバッグ</h3>
+                <div class="code-block">
+<span class="comment">// 開発環境では window.__logger にロガーがアタッチされる</span>
+<span class="comment">// ブラウザコンソールで直接操作可能</span>
+
+<span class="comment">// コンソールで実行:</span>
+window.__logger.<span class="function">getStats</span>()
+window.__logger.<span class="function">getLogs</span>(LogLevel.ERROR)
+window.__logger.<span class="function">clearLogs</span>()
+                </div>
+            </section>
+
+            <!-- Before/After比較 -->
+            <section>
+                <h2>📊 Before / After 比較</h2>
+
+                <table class="comparison-table">
+                    <thead>
+                        <tr>
+                            <th>項目</th>
+                            <th>Before (console.log)</th>
+                            <th>After (logger)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>環境対応</strong></td>
+                            <td class="bad">❌ 全環境で同じ出力</td>
+                            <td class="good">✅ 環境別に自動切替</td>
+                        </tr>
+                        <tr>
+                            <td><strong>本番安全性</strong></td>
+                            <td class="bad">❌ 機密情報が漏洩リスク</td>
+                            <td class="good">✅ 本番では警告・エラーのみ</td>
+                        </tr>
+                        <tr>
+                            <td><strong>ログ管理</strong></td>
+                            <td class="bad">❌ 管理不可</td>
+                            <td class="good">✅ バッファリング・エクスポート可能</td>
+                        </tr>
+                        <tr>
+                            <td><strong>パフォーマンス</strong></td>
+                            <td class="bad">❌ 常に出力でオーバーヘッド</td>
+                            <td class="good">✅ 本番では最小限のログのみ</td>
+                        </tr>
+                        <tr>
+                            <td><strong>構造化</strong></td>
+                            <td class="bad">❌ フォーマット不統一</td>
+                            <td class="good">✅ タイムスタンプ・コンテキスト付き</td>
+                        </tr>
+                        <tr>
+                            <td><strong>リモートログ</strong></td>
+                            <td class="bad">❌ 不可能</td>
+                            <td class="good">✅ API経由で送信可能</td>
+                        </tr>
+                        <tr>
+                            <td><strong>型安全性</strong></td>
+                            <td class="bad">❌ なし</td>
+                            <td class="good">✅ TypeScriptで型チェック</td>
+                        </tr>
+                        <tr>
+                            <td><strong>特殊ログ</strong></td>
+                            <td class="bad">❌ 自分で実装が必要</td>
+                            <td class="good">✅ CRUD/API/User/Nav専用メソッド</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h3>コード比較</h3>
+                
+                <h4>❌ Before (console.log使用)</h4>
+                <div class="code-block">
+<span class="keyword">async function</span> <span class="function">createProject</span>(data) {
+  console.<span class="function">log</span>(<span class="string">'Creating project:'</span>, data);  <span class="comment">// 本番でも出力</span>
+  
+  <span class="keyword">try</span> {
+    <span class="keyword">const</span> result = <span class="keyword">await</span> api.<span class="function">create</span>(data);
+    console.<span class="function">log</span>(<span class="string">'Success!'</span>);  <span class="comment">// コンテキスト不明</span>
+    <span class="keyword">return</span> result;
+  } <span class="keyword">catch</span> (error) {
+    console.<span class="function">error</span>(<span class="string">'Error'</span>);  <span class="comment">// 詳細情報不足</span>
+    <span class="keyword">throw</span> error;
+  }
+}
+                </div>
+
+                <h4>✅ After (logger使用)</h4>
+                <div class="code-block">
+<span class="keyword">async function</span> <span class="function">createProject</span>(data) {
+  logger.<span class="function">crud</span>(<span class="string">'CREATE'</span>, <span class="string">'projects'</span>, data);  <span class="comment">// 開発のみ出力</span>
+  
+  <span class="keyword">try</span> {
+    logger.<span class="function">startTimer</span>(<span class="string">'create-project'</span>);  <span class="comment">// パフォーマンス計測</span>
+    
+    <span class="keyword">const</span> result = <span class="keyword">await</span> api.<span class="function">create</span>(data);
+    
+    logger.<span class="function">endTimer</span>(<span class="string">'create-project'</span>);
+    logger.<span class="function">info</span>(<span class="string">'Successfully created'</span>, result, <span class="string">'PROJECT'</span>);
+    
+    <span class="keyword">return</span> result;
+  } <span class="keyword">catch</span> (error) {
+    logger.<span class="function">error</span>(<span class="string">'Failed to create project'</span>, error, <span class="string">'PROJECT'</span>);  <span class="comment">// 全環境出力</span>
+    <span class="keyword">throw</span> error;
+  }
+}
+                </div>
+            </section>
+
+            <!-- ベストプラクティス -->
+            <section>
+                <h2>✅ ベストプラクティス</h2>
+
+                <div class="feature-grid">
+                    <div class="feature-card">
+                        <h4>1. 適切なログレベルを使用</h4>
+                        <ul>
+                            <li>DEBUG: 開発中のデバッグ情報</li>
+                            <li>INFO: 通常の処理フロー</li>
+                            <li>WARN: 問題の可能性がある状況</li>
+                            <li>ERROR: エラーや例外</li>
+                        </ul>
+                    </div>
+
+                    <div class="feature-card">
+                        <h4>2. コンテキストを明示</h4>
+                        <ul>
+                            <li>第3引数でコンテキスト指定</li>
+                            <li>CRUD/API/AUTH等の一貫した命名</li>
+                            <li>検索・フィルタリングが容易に</li>
+                        </ul>
+                    </div>
+
+                    <div class="feature-card">
+                        <h4>3. 構造化データを活用</h4>
+                        <ul>
+                            <li>文字列結合ではなくオブジェクト渡し</li>
+                            <li>重要な情報を明示的に記録</li>
+                            <li>JSON形式でエクスポート可能</li>
+                        </ul>
+                    </div>
+
+                    <div class="feature-card">
+                        <h4>4. 機密情報を除外</h4>
+                        <ul>
+                            <li>パスワード、トークンは記録しない</li>
+                            <li>個人情報は最小限に</li>
+                            <li>必要に応じてマスキング処理</li>
+                        </ul>
+                    </div>
+
+                    <div class="feature-card">
+                        <h4>5. パフォーマンス計測</h4>
+                        <ul>
+                            <li>重要な処理は計測する</li>
+                            <li>startTimer/endTimerを活用</li>
+                            <li>measure()で非同期処理計測</li>
+                        </ul>
+                    </div>
+
+                    <div class="feature-card">
+                        <h4>6. グループ化を活用</h4>
+                        <ul>
+                            <li>関連するログをグループ化</li>
+                            <li>grouped()で自動折りたたみ</li>
+                            <li>可読性向上</li>
+                        </ul>
+                    </div>
+                </div>
+            </section>
+
+            <!-- まとめ -->
+            <section>
+                <h2>🎯 まとめ</h2>
+
+                <div class="highlight-box">
+                    <h3>実装完了項目</h3>
+                    <ul>
+                        <li>✅ <strong>Logger Service作成:</strong> 500行以上の堅牢なログサービス実装</li>
+                        <li>✅ <strong>環境対応:</strong> 開発・本番で自動切替</li>
+                        <li>✅ <strong>DataverseCrudService移行:</strong> 全メソッドでlogger使用</li>
+                        <li>✅ <strong>testMdiProjectList移行:</strong> テスト関数でlogger使用</li>
+                        <li>✅ <strong>特殊ログメソッド:</strong> crud(), api(), user(), navigation()実装</li>
+                        <li>✅ <strong>パフォーマンス計測:</strong> startTimer/endTimer/measure実装</li>
+                        <li>✅ <strong>ログ管理:</strong> バッファリング、エクスポート、統計機能</li>
+                        <li>✅ <strong>リモートログ:</strong> API経由でログ送信機能</li>
+                    </ul>
+                </div>
+
+                <div class="warning-box">
+                    <h3>今後の拡張ポイント</h3>
+                    <ul>
+                        <li>🔄 リモートログサービスのエンドポイント設定</li>
+                        <li>🔄 ログローテーション機能</li>
+                        <li>🔄 ログ検索・フィルタリングUI</li>
+                        <li>🔄 Azure Application Insights統合</li>
+                        <li>🔄 カスタムログハンドラー追加</li>
+                        <li>🔄 ログレベル動的変更機能</li>
+                    </ul>
+                </div>
+
+                <h3>使用開始方法</h3>
+                <div class="code-block">
+<span class="comment">// 1. loggerをインポート</span>
+<span class="keyword">import</span> { logger } <span class="keyword">from</span> <span class="string">'@/services/loggerService'</span>;
+
+<span class="comment">// 2. console.logの代わりにloggerを使用</span>
+logger.<span class="function">info</span>(<span class="string">'メッセージ'</span>, データ, <span class="string">'コンテキスト'</span>);
+
+<span class="comment">// 3. 自動的に環境に応じて動作が変わる!</span>
+<span class="comment">//    - 開発: すべてのログが出力される</span>
+<span class="comment">//    - 本番: WARN/ERRORのみ出力される</span>
+                </div>
+            </section>
+        </div>
+
+        <footer>
+            <p>© 2025 MusubiSuite - Production-Ready Logging Architecture</p>
+            <p>Last Updated: 2025年11月18日</p>
+        </footer>
+    </div>
+</body>
+</html>

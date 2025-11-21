@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MusubiSuite システム構成図</title>
+    <title>MusubiSuite システムアーキテクチャ設計書 - 最新版</title>
     <style>
         * {
             margin: 0;
@@ -441,13 +441,123 @@
             color: #198754;
             font-weight: bold;
         }
+
+        /* 依存関係図スタイル */
+        .dependency-diagram {
+            background: white;
+            border-radius: 15px;
+            padding: 40px;
+            margin: 30px 0;
+            border: 2px solid #e9ecef;
+        }
+
+        .dependency-layer {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 30px;
+            margin: 40px 0;
+            position: relative;
+        }
+
+        .dependency-node {
+            background: white;
+            border: 3px solid;
+            border-radius: 15px;
+            padding: 20px;
+            min-width: 250px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+        }
+
+        .dependency-node:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.2);
+        }
+
+        .dependency-node h4 {
+            margin-bottom: 10px;
+            font-size: 1.2em;
+        }
+
+        .dependency-list {
+            margin-top: 15px;
+            font-size: 0.9em;
+            line-height: 1.8;
+        }
+
+        .dependency-list li {
+            list-style: none;
+            padding-left: 20px;
+            position: relative;
+        }
+
+        .dependency-list li:before {
+            content: "→";
+            position: absolute;
+            left: 0;
+            color: #1e3c72;
+        }
+
+        .arrow-down {
+            text-align: center;
+            font-size: 3em;
+            color: #1e3c72;
+            margin: 20px 0;
+        }
+
+        .arrow-right {
+            font-size: 2em;
+            color: #1e3c72;
+        }
+
+        /* モジュール詳細カード */
+        .module-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 25px;
+            margin: 30px 0;
+        }
+
+        .module-card {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            border-left: 5px solid;
+        }
+
+        .module-card h4 {
+            margin-bottom: 15px;
+            font-size: 1.3em;
+        }
+
+        .dependency-badge {
+            display: inline-block;
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            padding: 4px 12px;
+            border-radius: 12px;
+            margin: 3px;
+            font-size: 0.85em;
+        }
+
+        .version-badge {
+            background: #198754;
+            color: white;
+            padding: 3px 10px;
+            border-radius: 10px;
+            font-size: 0.8em;
+            margin-left: 10px;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <header>
-            <h1>🏗️ MusubiSuite システム構成図</h1>
-            <p>完全なシステムアーキテクチャとインフラストラクチャ</p>
+            <h1>🏗️ MusubiSuite システムアーキテクチャ設計書</h1>
+            <p>最新アーキテクチャと依存関係の完全可視化 - Version 2.1.0</p>
+            <p style="margin-top: 10px; font-size: 0.9em;">Last Updated: 2025年11月18日</p>
         </header>
 
         <div class="content">
@@ -558,15 +668,15 @@
                                 <div class="component-details">
                                     <div class="detail-item">
                                         <span class="detail-label">バージョン:</span>
-                                        <span class="detail-value">React 19</span>
+                                        <span class="detail-value">React 19.1.1</span>
                                     </div>
                                     <div class="detail-item">
                                         <span class="detail-label">言語:</span>
-                                        <span class="detail-value">TypeScript 5</span>
+                                        <span class="detail-value">TypeScript 5.9.3</span>
                                     </div>
                                     <div class="detail-item">
                                         <span class="detail-label">ビルド:</span>
-                                        <span class="detail-value">Vite 6</span>
+                                        <span class="detail-value">Vite 7.1.7</span>
                                     </div>
                                     <div class="detail-item">
                                         <span class="detail-label">ポート:</span>
@@ -574,9 +684,9 @@
                                     </div>
                                 </div>
                                 <div style="margin-top: 15px;">
-                                    <span class="tech-badge">React</span>
+                                    <span class="tech-badge">React 19</span>
                                     <span class="tech-badge">TypeScript</span>
-                                    <span class="tech-badge">Vite</span>
+                                    <span class="tech-badge">Vite 7</span>
                                     <span class="tech-badge">HMR</span>
                                 </div>
                             </div>
@@ -592,21 +702,21 @@
                                 <div class="component-details">
                                     <div class="detail-item">
                                         <span class="detail-label">CSS:</span>
-                                        <span class="detail-value">Tailwind CSS</span>
+                                        <span class="detail-value">Tailwind CSS 4.1.16</span>
                                     </div>
                                     <div class="detail-item">
                                         <span class="detail-label">UI:</span>
-                                        <span class="detail-value">shadcn/ui</span>
+                                        <span class="detail-value">shadcn/ui (Radix UI)</span>
                                     </div>
                                     <div class="detail-item">
                                         <span class="detail-label">アイコン:</span>
-                                        <span class="detail-value">Lucide React</span>
+                                        <span class="detail-value">Lucide React 0.546</span>
                                     </div>
                                 </div>
                                 <div style="margin-top: 15px;">
-                                    <span class="tech-badge">Tailwind</span>
-                                    <span class="tech-badge">shadcn/ui</span>
+                                    <span class="tech-badge">Tailwind v4</span>
                                     <span class="tech-badge">Radix UI</span>
+                                    <span class="tech-badge">Lucide</span>
                                 </div>
                             </div>
 
@@ -621,21 +731,25 @@
                                 <div class="component-details">
                                     <div class="detail-item">
                                         <span class="detail-label">ルーター:</span>
-                                        <span class="detail-value">TanStack Router</span>
+                                        <span class="detail-value">React Router 7.9.4</span>
                                     </div>
                                     <div class="detail-item">
-                                        <span class="detail-label">状態:</span>
-                                        <span class="detail-value">React Hooks</span>
+                                        <span class="detail-label">データ取得:</span>
+                                        <span class="detail-value">TanStack Query 5.90.5</span>
+                                    </div>
+                                    <div class="detail-item">
+                                        <span class="detail-label">フォーム:</span>
+                                        <span class="detail-value">React Hook Form 7.66.1</span>
                                     </div>
                                     <div class="detail-item">
                                         <span class="detail-label">通知:</span>
-                                        <span class="detail-value">Sonner</span>
+                                        <span class="detail-value">Sonner 2.0.7</span>
                                     </div>
                                 </div>
                                 <div style="margin-top: 15px;">
-                                    <span class="tech-badge">Router</span>
-                                    <span class="tech-badge">useState</span>
-                                    <span class="tech-badge">useEffect</span>
+                                    <span class="tech-badge">React Router v7</span>
+                                    <span class="tech-badge">TanStack Query</span>
+                                    <span class="tech-badge">Zod 4.1.12</span>
                                 </div>
                             </div>
 
@@ -650,7 +764,7 @@
                                 <div class="component-details">
                                     <div class="detail-item">
                                         <span class="detail-label">ライブラリ:</span>
-                                        <span class="detail-value">Axios</span>
+                                        <span class="detail-value">Axios 1.13.2</span>
                                     </div>
                                     <div class="detail-item">
                                         <span class="detail-label">ベースURL:</span>
@@ -658,13 +772,18 @@
                                     </div>
                                     <div class="detail-item">
                                         <span class="detail-label">タイムアウト:</span>
-                                        <span class="detail-value">10秒</span>
+                                        <span class="detail-value">10秒 (AI: 60秒)</span>
+                                    </div>
+                                    <div class="detail-item">
+                                        <span class="detail-label">認証:</span>
+                                        <span class="detail-value">JWT Bearer Token</span>
                                     </div>
                                 </div>
                                 <div style="margin-top: 15px;">
                                     <span class="tech-badge">Axios</span>
                                     <span class="tech-badge">Interceptors</span>
                                     <span class="tech-badge">JWT</span>
+                                    <span class="tech-badge">Auto Refresh</span>
                                 </div>
                             </div>
                         </div>
@@ -776,18 +895,23 @@
                                 </div>
                                 <div class="component-details">
                                     <div class="detail-item">
-                                        <span class="detail-label">Apps:</span>
-                                        <span class="detail-value">Projects, Clients, Members, Tasks</span>
+                                        <span class="detail-label">Django Apps:</span>
+                                        <span class="detail-value">8個のアプリケーション</span>
+                                    </div>
+                                    <div class="detail-item">
+                                        <span class="detail-label">主要Apps:</span>
+                                        <span class="detail-value">projects, clients, members, tasks, activities, contracts, masters, ai_settings</span>
                                     </div>
                                     <div class="detail-item">
                                         <span class="detail-label">機能:</span>
-                                        <span class="detail-value">CRUD, Filter, Search, Pagination</span>
+                                        <span class="detail-value">CRUD, Filter, Search, Pagination, AI統合</span>
                                     </div>
                                 </div>
                                 <div style="margin-top: 15px;">
                                     <span class="tech-badge">ViewSets</span>
                                     <span class="tech-badge">Models</span>
                                     <span class="tech-badge">Serializers</span>
+                                    <span class="tech-badge">AI Services</span>
                                 </div>
                             </div>
                         </div>
@@ -968,6 +1092,327 @@
                             </div>
                         </div>
                     </div>
+                </div>
+            </div>
+
+            <!-- フロントエンド依存関係 -->
+            <div class="section">
+                <h2>📦 フロントエンド依存関係とモジュール構成</h2>
+                
+                <div class="dependency-diagram">
+                    <h3 style="color: #1e3c72; margin-bottom: 30px;">React Application 依存関係図</h3>
+                    
+                    <div class="dependency-layer">
+                        <div class="dependency-node" style="border-color: #61dafb;">
+                            <h4>🎯 Core Framework</h4>
+                            <ul class="dependency-list">
+                                <li>React 19.1.1</li>
+                                <li>React DOM 19.1.1</li>
+                                <li>TypeScript 5.9.3</li>
+                            </ul>
+                        </div>
+                        <span class="arrow-right">→</span>
+                        <div class="dependency-node" style="border-color: #646cff;">
+                            <h4>⚡ Build Tools</h4>
+                            <ul class="dependency-list">
+                                <li>Vite 7.1.7</li>
+                                <li>@vitejs/plugin-react</li>
+                                <li>@tailwindcss/vite</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="arrow-down">⬇️</div>
+
+                    <div class="dependency-layer">
+                        <div class="dependency-node" style="border-color: #38bdf8;">
+                            <h4>🎨 UI Components</h4>
+                            <ul class="dependency-list">
+                                <li>Tailwind CSS 4.1.16</li>
+                                <li>Radix UI (12個)</li>
+                                <li>Lucide React 0.546</li>
+                                <li>class-variance-authority</li>
+                                <li>tailwind-merge</li>
+                            </ul>
+                        </div>
+                        <span class="arrow-right">→</span>
+                        <div class="dependency-node" style="border-color: #ff6b6b;">
+                            <h4>🔄 State & Routing</h4>
+                            <ul class="dependency-list">
+                                <li>React Router 7.9.4</li>
+                                <li>TanStack Query 5.90.5</li>
+                                <li>TanStack Table 8.21.3</li>
+                                <li>React Hook Form 7.66.1</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="arrow-down">⬇️</div>
+
+                    <div class="dependency-layer">
+                        <div class="dependency-node" style="border-color: #5f9ea0;">
+                            <h4>📡 API & Data</h4>
+                            <ul class="dependency-list">
+                                <li>Axios 1.13.2</li>
+                                <li>Zod 4.1.12</li>
+                                <li>@hookform/resolvers</li>
+                            </ul>
+                        </div>
+                        <span class="arrow-right">→</span>
+                        <div class="dependency-node" style="border-color: #742774;">
+                            <h4>⚡ Power Apps</h4>
+                            <ul class="dependency-list">
+                                <li>@microsoft/power-apps 0.3.21</li>
+                                <li>Custom Plugin</li>
+                            </ul>
+                        </div>
+                        <span class="arrow-right">→</span>
+                        <div class="dependency-node" style="border-color: #f59e0b;">
+                            <h4>📊 Charts & Utils</h4>
+                            <ul class="dependency-list">
+                                <li>Recharts 2.15.4</li>
+                                <li>date-fns 4.1.0</li>
+                                <li>Sonner 2.0.7</li>
+                                <li>cmdk 1.1.1</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="module-grid">
+                    <div class="module-card" style="border-color: #61dafb;">
+                        <h4>📁 src/pages/ <span class="version-badge">12 pages</span></h4>
+                        <p style="margin-bottom: 10px;">ルートレベルのページコンポーネント</p>
+                        <div class="dependency-badge">landing</div>
+                        <div class="dependency-badge">dashboard</div>
+                        <div class="dependency-badge">projects</div>
+                        <div class="dependency-badge">project-detail</div>
+                        <div class="dependency-badge">settings</div>
+                        <div class="dependency-badge">ocr-*</div>
+                        <div class="dependency-badge">tool-portal</div>
+                        <div class="dependency-badge">project-management</div>
+                    </div>
+
+                    <div class="module-card" style="border-color: #38bdf8;">
+                        <h4>🧩 src/components/ <span class="version-badge">45+ components</span></h4>
+                        <p style="margin-bottom: 10px;">再利用可能なUIコンポーネント</p>
+                        <div class="dependency-badge">ui/</div>
+                        <div class="dependency-badge">layout/</div>
+                        <div class="dependency-badge">features/</div>
+                    </div>
+
+                    <div class="module-card" style="border-color: #ff6b6b;">
+                        <h4>🎣 src/hooks/ <span class="version-badge">Custom Hooks</span></h4>
+                        <p style="margin-bottom: 10px;">ロジックの再利用とカスタムフック</p>
+                        <div class="dependency-badge">useProjects</div>
+                        <div class="dependency-badge">useClients</div>
+                        <div class="dependency-badge">useTasks</div>
+                    </div>
+
+                    <div class="module-card" style="border-color: #5f9ea0;">
+                        <h4>⚙️ src/services/ <span class="version-badge">API Layer</span></h4>
+                        <p style="margin-bottom: 10px;">バックエンドAPI通信</p>
+                        <div class="dependency-badge">djangoAPI.ts</div>
+                        <div class="dependency-badge">Singleton Pattern</div>
+                    </div>
+
+                    <div class="module-card" style="border-color: #742774;">
+                        <h4>🔌 plugins/ <span class="version-badge">Vite Plugins</span></h4>
+                        <p style="margin-bottom: 10px;">カスタムビルドプラグイン</p>
+                        <div class="dependency-badge">plugin-power-apps.ts</div>
+                        <div class="dependency-badge">CORS対応</div>
+                    </div>
+
+                    <div class="module-card" style="border-color: #8b5cf6;">
+                        <h4>📐 src/types/ <span class="version-badge">TypeScript</span></h4>
+                        <p style="margin-bottom: 10px;">型定義とインターフェース</p>
+                        <div class="dependency-badge">Project</div>
+                        <div class="dependency-badge">Client</div>
+                        <div class="dependency-badge">Task</div>
+                        <div class="dependency-badge">Member</div>
+                    </div>
+                </div>
+
+                <div class="info-box">
+                    <h3>📊 フロントエンド統計</h3>
+                    <ul style="margin-left: 20px; margin-top: 10px;">
+                        <li><strong>総依存パッケージ:</strong> 47個 (dependencies) + 10個 (devDependencies)</li>
+                        <li><strong>Radix UIコンポーネント:</strong> 12種類 (dialog, dropdown-menu, select, tabs, など)</li>
+                        <li><strong>ページ数:</strong> 12+ ページ</li>
+                        <li><strong>レイアウト:</strong> 5種類 (home, dashboard, project-management, tool-portal, ocr)</li>
+                        <li><strong>ルート定義:</strong> 30+ ルート (React Router)</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- バックエンド依存関係 -->
+            <div class="section">
+                <h2>🐍 バックエンド依存関係とモジュール構成</h2>
+                
+                <div class="dependency-diagram">
+                    <h3 style="color: #1e3c72; margin-bottom: 30px;">Django Application 依存関係図</h3>
+                    
+                    <div class="dependency-layer">
+                        <div class="dependency-node" style="border-color: #092e20;">
+                            <h4>🎯 Core Framework</h4>
+                            <ul class="dependency-list">
+                                <li>Django 5.0.0</li>
+                                <li>djangorestframework 3.14.0</li>
+                                <li>Python 3.11+</li>
+                            </ul>
+                        </div>
+                        <span class="arrow-right">→</span>
+                        <div class="dependency-node" style="border-color: #008080;">
+                            <h4>🔒 Security & Auth</h4>
+                            <ul class="dependency-list">
+                                <li>djangorestframework-simplejwt 5.3.1</li>
+                                <li>django-cors-headers 4.3.1</li>
+                                <li>cryptography 41.0.7</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="arrow-down">⬇️</div>
+
+                    <div class="dependency-layer">
+                        <div class="dependency-node" style="border-color: #336791;">
+                            <h4>💾 Database</h4>
+                            <ul class="dependency-list">
+                                <li>SQLite (開発)</li>
+                                <li>psycopg2-binary 2.9.9</li>
+                                <li>PostgreSQL (本番推奨)</li>
+                            </ul>
+                        </div>
+                        <span class="arrow-right">→</span>
+                        <div class="dependency-node" style="border-color: #4a90e2;">
+                            <h4>🔍 Filtering & Search</h4>
+                            <ul class="dependency-list">
+                                <li>django-filter 23.5</li>
+                                <li>drf-spectacular 0.27.0</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="arrow-down">⬇️</div>
+
+                    <div class="dependency-layer">
+                        <div class="dependency-node" style="border-color: #10b981;">
+                            <h4>🤖 AI Integration</h4>
+                            <ul class="dependency-list">
+                                <li>openai 1.54.0</li>
+                                <li>anthropic 0.39.0</li>
+                                <li>google-genai 1.50.1</li>
+                                <li>requests 2.31.0</li>
+                            </ul>
+                        </div>
+                        <span class="arrow-right">→</span>
+                        <div class="dependency-node" style="border-color: #f59e0b;">
+                            <h4>🚀 Production</h4>
+                            <ul class="dependency-list">
+                                <li>gunicorn 21.2.0</li>
+                                <li>whitenoise 6.6.0</li>
+                                <li>Pillow 10.1.0</li>
+                            </ul>
+                        </div>
+                        <span class="arrow-right">→</span>
+                        <div class="dependency-node" style="border-color: #8b5cf6;">
+                            <h4>🛠️ Utils</h4>
+                            <ul class="dependency-list">
+                                <li>python-decouple 3.8</li>
+                                <li>python-dateutil 2.8.2</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="module-grid">
+                    <div class="module-card" style="border-color: #092e20;">
+                        <h4>📦 projects/ <span class="version-badge">Core App</span></h4>
+                        <p style="margin-bottom: 10px;">プロジェクト管理の中核</p>
+                        <div class="dependency-badge">models.py</div>
+                        <div class="dependency-badge">views.py</div>
+                        <div class="dependency-badge">serializers.py</div>
+                        <div class="dependency-badge">urls.py</div>
+                    </div>
+
+                    <div class="module-card" style="border-color: #0ea5e9;">
+                        <h4>👥 clients/ <span class="version-badge">Core App</span></h4>
+                        <p style="margin-bottom: 10px;">クライアント管理</p>
+                        <div class="dependency-badge">CRUD API</div>
+                        <div class="dependency-badge">Filter & Search</div>
+                    </div>
+
+                    <div class="module-card" style="border-color: #f59e0b;">
+                        <h4>✅ tasks/ <span class="version-badge">Core App</span></h4>
+                        <p style="margin-bottom: 10px;">タスク管理</p>
+                        <div class="dependency-badge">Project関連</div>
+                        <div class="dependency-badge">Assignee管理</div>
+                    </div>
+
+                    <div class="module-card" style="border-color: #8b5cf6;">
+                        <h4>👤 members/ <span class="version-badge">Core App</span></h4>
+                        <p style="margin-bottom: 10px;">メンバー管理</p>
+                        <div class="dependency-badge">Role管理</div>
+                        <div class="dependency-badge">Department</div>
+                    </div>
+
+                    <div class="module-card" style="border-color: #10b981;">
+                        <h4>📝 activities/ <span class="version-badge">Logging</span></h4>
+                        <p style="margin-bottom: 10px;">アクティビティログ</p>
+                        <div class="dependency-badge">履歴追跡</div>
+                        <div class="dependency-badge">監査ログ</div>
+                    </div>
+
+                    <div class="module-card" style="border-color: #ef4444;">
+                        <h4>📄 contracts/ <span class="version-badge">Business</span></h4>
+                        <p style="margin-bottom: 10px;">契約管理</p>
+                        <div class="dependency-badge">Contract CRUD</div>
+                    </div>
+
+                    <div class="module-card" style="border-color: #06b6d4;">
+                        <h4>🗂️ masters/ <span class="version-badge">Master Data</span></h4>
+                        <p style="margin-bottom: 10px;">マスターデータ管理</p>
+                        <div class="dependency-badge">Code Master</div>
+                        <div class="dependency-badge">AI生成</div>
+                    </div>
+
+                    <div class="module-card" style="border-color: #f97316;">
+                        <h4>🤖 ai_services/ <span class="version-badge">AI Integration</span></h4>
+                        <p style="margin-bottom: 10px;">AI機能モジュール</p>
+                        <div class="dependency-badge">llm_client.py</div>
+                        <div class="dependency-badge">code_master_generator.py</div>
+                        <div class="dependency-badge">client_enrichment.py</div>
+                        <div class="dependency-badge">search_client.py</div>
+                        <div class="dependency-badge">prompts.py</div>
+                    </div>
+
+                    <div class="module-card" style="border-color: #a855f7;">
+                        <h4>⚙️ ai_settings/ <span class="version-badge">Configuration</span></h4>
+                        <p style="margin-bottom: 10px;">AI設定管理</p>
+                        <div class="dependency-badge">AI Provider CRUD</div>
+                        <div class="dependency-badge">Search Engine</div>
+                        <div class="dependency-badge">接続テスト</div>
+                    </div>
+
+                    <div class="module-card" style="border-color: #14b8a6;">
+                        <h4>🔧 config/ <span class="version-badge">Settings</span></h4>
+                        <p style="margin-bottom: 10px;">Django設定</p>
+                        <div class="dependency-badge">settings.py</div>
+                        <div class="dependency-badge">urls.py</div>
+                        <div class="dependency-badge">wsgi.py</div>
+                    </div>
+                </div>
+
+                <div class="info-box">
+                    <h3>📊 バックエンド統計</h3>
+                    <ul style="margin-left: 20px; margin-top: 10px;">
+                        <li><strong>総依存パッケージ:</strong> 18個 (requirements.txt)</li>
+                        <li><strong>Django Apps:</strong> 8個 (clients, members, projects, tasks, activities, contracts, masters, ai_settings)</li>
+                        <li><strong>AI Provider対応:</strong> 3種類 (OpenAI, Anthropic, Google Gemini)</li>
+                        <li><strong>REST API エンドポイント:</strong> 50+ エンドポイント</li>
+                        <li><strong>認証方式:</strong> JWT (SimpleJWT)</li>
+                        <li><strong>データベース:</strong> SQLite (開発) / PostgreSQL (本番推奨)</li>
+                    </ul>
                 </div>
             </div>
 
@@ -1247,34 +1692,54 @@
                         </thead>
                         <tbody>
                             <tr>
-                                <td><strong>React + TypeScript</strong></td>
-                                <td>型安全性と開発効率</td>
-                                <td>バグの早期発見、IDE支援、保守性向上</td>
+                                <td><strong>React 19 + TypeScript 5</strong></td>
+                                <td>最新のReact機能と型安全性</td>
+                                <td>自動最適化、型チェック、IDE支援、保守性向上</td>
                             </tr>
                             <tr>
-                                <td><strong>Django REST Framework</strong></td>
+                                <td><strong>Django 5.0 + DRF 3.14</strong></td>
                                 <td>Pythonエコシステム、豊富な機能</td>
-                                <td>迅速な開発、認証・認可の標準実装</td>
+                                <td>迅速な開発、認証・認可の標準実装、AI統合が容易</td>
                             </tr>
                             <tr>
-                                <td><strong>Vite</strong></td>
-                                <td>超高速ビルド、HMR</td>
-                                <td>開発体験の向上、ビルド時間の短縮</td>
+                                <td><strong>Vite 7</strong></td>
+                                <td>超高速ビルド、HMR、ESM対応</td>
+                                <td>開発体験の向上、ビルド時間の短縮、モジュール最適化</td>
                             </tr>
                             <tr>
-                                <td><strong>JWT認証</strong></td>
+                                <td><strong>React Router 7</strong></td>
+                                <td>最新のルーティング機能</td>
+                                <td>型安全なルーティング、データローディング最適化</td>
+                            </tr>
+                            <tr>
+                                <td><strong>TanStack Query 5</strong></td>
+                                <td>サーバー状態管理の標準</td>
+                                <td>自動キャッシング、再取得、楽観的更新</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Tailwind CSS 4</strong></td>
+                                <td>ユーティリティファースト + Vite統合</td>
+                                <td>高速な開発、一貫性のあるデザイン、軽量バンドル</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Radix UI</strong></td>
+                                <td>アクセシビリティ重視のプリミティブ</td>
+                                <td>WAI-ARIA準拠、キーボードナビゲーション、高品質UI</td>
+                            </tr>
+                            <tr>
+                                <td><strong>JWT認証 (SimpleJWT)</strong></td>
                                 <td>ステートレス、スケーラブル</td>
-                                <td>水平スケーリング対応、マイクロサービス化可能</td>
+                                <td>水平スケーリング対応、トークンリフレッシュ機構</td>
                             </tr>
                             <tr>
-                                <td><strong>PostgreSQL</strong></td>
-                                <td>本番環境での信頼性</td>
-                                <td>ACID準拠、高性能、豊富な機能</td>
+                                <td><strong>PostgreSQL (本番)</strong></td>
+                                <td>エンタープライズグレードDB</td>
+                                <td>ACID準拠、高性能、豊富な機能、スケーラビリティ</td>
                             </tr>
                             <tr>
-                                <td><strong>Tailwind CSS</strong></td>
-                                <td>ユーティリティファースト</td>
-                                <td>高速な開発、一貫性のあるデザイン</td>
+                                <td><strong>AI統合 (3 Providers)</strong></td>
+                                <td>マルチAI対応アーキテクチャ</td>
+                                <td>OpenAI/Anthropic/Gemini対応、柔軟な切り替え</td>
                             </tr>
                         </tbody>
                     </table>
@@ -1344,19 +1809,127 @@
                 </div>
             </div>
 
+            <!-- アーキテクチャ概要図 -->
+            <div class="section">
+                <h2>🗺️ 全体アーキテクチャマップ</h2>
+                
+                <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 40px; border-radius: 15px; margin: 30px 0;">
+                    <h3 style="color: white; font-size: 1.8em; margin-bottom: 20px; text-align: center;">依存関係フロー</h3>
+                    <div style="background: rgba(255,255,255,0.1); padding: 30px; border-radius: 10px; font-family: monospace; line-height: 2;">
+                        <pre style="color: white; margin: 0; text-align: center; font-size: 0.9em;">
+┌─────────────────────────────────────────────────────────────────┐
+│  Browser / Power Apps Client                                    │
+└────────────────────────┬────────────────────────────────────────┘
+                         │ HTTP/HTTPS
+                         ▼
+┌─────────────────────────────────────────────────────────────────┐
+│  Frontend: React 19.1.1 + TypeScript 5.9.3                      │
+│  ├─ Vite 7.1.7 (Build Tool)                                     │
+│  ├─ React Router 7.9.4 (Routing)                                │
+│  ├─ TanStack Query 5.90.5 (Data Fetching)                       │
+│  ├─ Tailwind CSS 4.1.16 (Styling)                               │
+│  ├─ Radix UI (Components)                                       │
+│  ├─ Axios 1.13.2 (HTTP Client)                                  │
+│  └─ @microsoft/power-apps 0.3.21 (Power Apps Integration)       │
+└────────────────────────┬────────────────────────────────────────┘
+                         │ REST API (JSON)
+                         ▼
+┌─────────────────────────────────────────────────────────────────┐
+│  Backend: Django 5.0.0 + DRF 3.14.0                             │
+│  ├─ djangorestframework-simplejwt 5.3.1 (JWT Auth)              │
+│  ├─ django-cors-headers 4.3.1 (CORS)                            │
+│  ├─ django-filter 23.5 (Filtering)                              │
+│  ├─ drf-spectacular 0.27.0 (API Docs)                           │
+│  └─ AI Services Module                                          │
+│     ├─ openai 1.54.0                                            │
+│     ├─ anthropic 0.39.0                                         │
+│     └─ google-genai 1.50.1                                      │
+└────────────────────────┬────────────────────────────────────────┘
+                         │ ORM
+                         ▼
+┌─────────────────────────────────────────────────────────────────┐
+│  Database                                                        │
+│  ├─ SQLite 3 (Development)                                      │
+│  └─ PostgreSQL + psycopg2-binary 2.9.9 (Production)             │
+└─────────────────────────────────────────────────────────────────┘
+                        </pre>
+                    </div>
+                </div>
+
+                <div class="highlight-box">
+                    <h3>🔑 主要な依存関係</h3>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin-top: 20px;">
+                        <div>
+                            <h4 style="color: #61dafb; margin-bottom: 10px;">⚛️ Frontend Core</h4>
+                            <ul style="list-style: none; padding: 0;">
+                                <li>✓ React 19.1.1</li>
+                                <li>✓ TypeScript 5.9.3</li>
+                                <li>✓ Vite 7.1.7</li>
+                                <li>✓ React Router 7.9.4</li>
+                            </ul>
+                        </div>
+                        <div>
+                            <h4 style="color: #38bdf8; margin-bottom: 10px;">🎨 UI Libraries</h4>
+                            <ul style="list-style: none; padding: 0;">
+                                <li>✓ Tailwind CSS 4.1.16</li>
+                                <li>✓ Radix UI (12種類)</li>
+                                <li>✓ Lucide React 0.546</li>
+                                <li>✓ Recharts 2.15.4</li>
+                            </ul>
+                        </div>
+                        <div>
+                            <h4 style="color: #ff6b6b; margin-bottom: 10px;">🔄 State Management</h4>
+                            <ul style="list-style: none; padding: 0;">
+                                <li>✓ TanStack Query 5.90.5</li>
+                                <li>✓ TanStack Table 8.21.3</li>
+                                <li>✓ React Hook Form 7.66.1</li>
+                                <li>✓ Zod 4.1.12</li>
+                            </ul>
+                        </div>
+                        <div>
+                            <h4 style="color: #092e20; margin-bottom: 10px;">🐍 Backend Core</h4>
+                            <ul style="list-style: none; padding: 0;">
+                                <li>✓ Django 5.0.0</li>
+                                <li>✓ DRF 3.14.0</li>
+                                <li>✓ SimpleJWT 5.3.1</li>
+                                <li>✓ CORS Headers 4.3.1</li>
+                            </ul>
+                        </div>
+                        <div>
+                            <h4 style="color: #10b981; margin-bottom: 10px;">🤖 AI Integration</h4>
+                            <ul style="list-style: none; padding: 0;">
+                                <li>✓ OpenAI 1.54.0</li>
+                                <li>✓ Anthropic 0.39.0</li>
+                                <li>✓ Google Gemini 1.50.1</li>
+                                <li>✓ Cryptography 41.0.7</li>
+                            </ul>
+                        </div>
+                        <div>
+                            <h4 style="color: #f59e0b; margin-bottom: 10px;">🚀 Production</h4>
+                            <ul style="list-style: none; padding: 0;">
+                                <li>✓ Gunicorn 21.2.0</li>
+                                <li>✓ Whitenoise 6.6.0</li>
+                                <li>✓ PostgreSQL</li>
+                                <li>✓ psycopg2-binary 2.9.9</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <!-- まとめ -->
             <div class="section">
                 <div style="background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%); color: white; padding: 40px; border-radius: 15px; text-align: center;">
-                    <h2 style="color: white; font-size: 2.2em; margin-bottom: 20px;">🎉 堅牢なシステムアーキテクチャ</h2>
+                    <h2 style="color: white; font-size: 2.2em; margin-bottom: 20px;">🎉 最新技術スタックによる堅牢なシステムアーキテクチャ</h2>
                     <p style="font-size: 1.3em; line-height: 1.8;">
-                        モダンな技術スタックと明確な階層構造により、<br>
-                        開発環境から本番環境まで、スムーズに移行できる<br>
-                        スケーラブルなシステムが完成しました。
+                        React 19 / Django 5.0 をコアとした最先端の技術スタックと<br>
+                        明確な階層構造により、開発環境から本番環境まで<br>
+                        スムーズに移行できるスケーラブルなシステムが完成しました。
                     </p>
                     <div style="margin-top: 30px; display: flex; justify-content: center; gap: 30px; flex-wrap: wrap;">
                         <div style="text-align: center;">
                             <div style="font-size: 3em;">⚛️</div>
-                            <div style="margin-top: 10px;">React 19</div>
+                            <div style="margin-top: 10px;">React 19.1.1</div>
                         </div>
                         <div style="text-align: center;">
                             <div style="font-size: 3em;">🐍</div>
@@ -1367,6 +1940,10 @@
                             <div style="margin-top: 10px;">PostgreSQL</div>
                         </div>
                         <div style="text-align: center;">
+                            <div style="font-size: 3em;">🤖</div>
+                            <div style="margin-top: 10px;">AI統合</div>
+                        </div>
+                        <div style="text-align: center;">
                             <div style="font-size: 3em;">🔒</div>
                             <div style="margin-top: 10px;">JWT認証</div>
                         </div>
@@ -1374,6 +1951,14 @@
                             <div style="font-size: 3em;">🚀</div>
                             <div style="margin-top: 10px;">スケーラブル</div>
                         </div>
+                    </div>
+                    <div style="margin-top: 40px; padding-top: 30px; border-top: 1px solid rgba(255,255,255,0.3);">
+                        <p style="font-size: 0.9em; opacity: 0.9;">
+                            <strong>総依存パッケージ:</strong> Frontend 57個 + Backend 18個 = 75個<br>
+                            <strong>Django Apps:</strong> 8個 (clients, projects, tasks, members, activities, contracts, masters, ai_settings)<br>
+                            <strong>ページ数:</strong> 12+ ページ + 5種類のレイアウト<br>
+                            <strong>REST API:</strong> 50+ エンドポイント
+                        </p>
                     </div>
                 </div>
             </div>

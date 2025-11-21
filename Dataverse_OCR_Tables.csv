@@ -1,0 +1,190 @@
+# OCR管理システム - Dataverseテーブル設計
+# このファイルはDataverseにインポート可能な形式で作成されています
+
+# ============================================
+# 1. OCRメニューセクションテーブル (cr_ocrmenusections)
+# ============================================
+
+Table,cr_ocrmenusections
+DisplayName,OCRメニューセクション
+PluralName,OCRメニューセクション
+Description,OCR管理のメニューセクション(すべてのドキュメント等)
+PrimaryNameAttribute,cr_name
+OwnershipType,UserOwned
+
+# カラム定義
+ColumnLogicalName,ColumnDisplayName,ColumnType,Required,MaxLength,Description
+cr_ocrmenusectionid,OCRメニューセクションID,uniqueidentifier,TRUE,,主キー
+cr_name,名前,string,TRUE,100,メニューセクション名
+cr_description,説明,string,FALSE,500,メニューセクションの説明
+cr_displayorder,表示順序,integer,TRUE,,メニューの表示順序
+cr_isdefault,デフォルトメニュー,boolean,TRUE,,デフォルトメニューかどうか(すべてのドキュメント)
+cr_color,カラー,string,FALSE,20,メニューのカラーコード
+cr_createdby,作成者,lookup,TRUE,,作成者(Userテーブル参照)
+createdon,作成日時,datetime,TRUE,,作成日時
+modifiedon,更新日時,TRUE,TRUE,,最終更新日時
+
+# ============================================
+# 2. OCRフォルダテーブル (cr_ocrfolders)
+# ============================================
+
+Table,cr_ocrfolders
+DisplayName,OCRフォルダ
+PluralName,OCRフォルダ
+Description,OCRドキュメントを管理する階層構造のフォルダ
+PrimaryNameAttribute,cr_name
+OwnershipType,UserOwned
+
+# カラム定義
+ColumnLogicalName,ColumnDisplayName,ColumnType,Required,MaxLength,Description
+cr_ocrfolderid,OCRフォルダID,uniqueidentifier,TRUE,,主キー
+cr_name,フォルダ名,string,TRUE,200,フォルダ名
+cr_description,説明,string,FALSE,1000,フォルダの説明
+cr_color,カラー,string,FALSE,20,フォルダのカラーコード(#3b82f6形式)
+cr_parentfolderid,親フォルダID,lookup,FALSE,,親フォルダ(cr_ocrfoldersテーブル参照)
+cr_menusectionid,メニューセクションID,lookup,TRUE,,所属するメニューセクション(cr_ocrmenusectionsテーブル参照)
+cr_path,パス,string,TRUE,500,フォルダパス(/請求書/2024年度)
+cr_documentcount,ドキュメント数,integer,TRUE,,フォルダ内のドキュメント数
+cr_foldercount,子フォルダ数,integer,TRUE,,子フォルダの数
+cr_createdby,作成者,lookup,TRUE,,作成者(Userテーブル参照)
+createdon,作成日時,datetime,TRUE,,作成日時
+modifiedon,更新日時,datetime,TRUE,,最終更新日時
+
+# ============================================
+# 3. OCRドキュメントテーブル (cr_ocrdocuments)
+# ============================================
+
+Table,cr_ocrdocuments
+DisplayName,OCRドキュメント
+PluralName,OCRドキュメント
+Description,OCR処理対象のドキュメント(請求書、見積書等)
+PrimaryNameAttribute,cr_filename
+OwnershipType,UserOwned
+
+# カラム定義
+ColumnLogicalName,ColumnDisplayName,ColumnType,Required,MaxLength,Description
+cr_ocrdocumentid,OCRドキュメントID,uniqueidentifier,TRUE,,主キー
+cr_filename,ファイル名,string,TRUE,255,ドキュメントのファイル名
+cr_filetype,ファイルタイプ,string,TRUE,100,MIMEタイプ(image/png, application/pdf等)
+cr_filesize,ファイルサイズ,integer,TRUE,,ファイルサイズ(バイト単位)
+cr_fileurl,ファイルURL,string,TRUE,2000,ファイルの保存場所URL
+cr_thumbnailurl,サムネイルURL,string,FALSE,2000,サムネイル画像URL
+cr_folderid,フォルダID,lookup,FALSE,,所属フォルダ(cr_ocrfoldersテーブル参照)
+cr_projectid,プロジェクトID,lookup,FALSE,,関連プロジェクト(任意)
+cr_tags,タグ,string,FALSE,500,タグ(カンマ区切り)
+cr_uploadedby,アップロード者,lookup,TRUE,,アップロード者(Userテーブル参照)
+cr_uploadeddate,アップロード日時,datetime,TRUE,,アップロード日時
+createdon,作成日時,datetime,TRUE,,作成日時
+modifiedon,更新日時,datetime,TRUE,,最終更新日時
+
+# ============================================
+# 4. OCR処理結果テーブル (cr_ocrresults)
+# ============================================
+
+Table,cr_ocrresults
+DisplayName,OCR処理結果
+PluralName,OCR処理結果
+Description,OCR処理の結果情報
+PrimaryNameAttribute,cr_name
+OwnershipType,UserOwned
+
+# カラム定義
+ColumnLogicalName,ColumnDisplayName,ColumnType,Required,MaxLength,Description
+cr_ocrresultid,OCR処理結果ID,uniqueidentifier,TRUE,,主キー
+cr_name,結果名,string,TRUE,100,処理結果名(ドキュメント名ベース)
+cr_documentid,ドキュメントID,lookup,TRUE,,関連ドキュメント(cr_ocrdocumentsテーブル参照)
+cr_status,処理ステータス,picklist,TRUE,,ステータス(pending/processing/completed/failed)
+cr_rawtext,全文テキスト,memo,FALSE,,OCRで抽出された全文テキスト
+cr_overallconfidence,全体信頼度,decimal,TRUE,,全体の信頼度スコア(0.0-1.0)
+cr_processeddate,処理完了日時,datetime,FALSE,,OCR処理完了日時
+cr_errormessage,エラーメッセージ,string,FALSE,1000,エラー発生時のメッセージ
+createdon,作成日時,datetime,TRUE,,作成日時
+modifiedon,更新日時,datetime,TRUE,,最終更新日時
+
+# ステータス選択肢(Picklist)
+PicklistLogicalName,Value,Label
+cr_status,1,pending
+cr_status,2,processing
+cr_status,3,completed
+cr_status,4,failed
+
+# ============================================
+# 5. OCRフィールドテーブル (cr_ocrfields)
+# ============================================
+
+Table,cr_ocrfields
+DisplayName,OCRフィールド
+PluralName,OCRフィールド
+Description,OCRで検出された個別フィールド(氏名、住所、金額等)
+PrimaryNameAttribute,cr_label
+OwnershipType,UserOwned
+
+# カラム定義
+ColumnLogicalName,ColumnDisplayName,ColumnType,Required,MaxLength,Description
+cr_ocrfieldid,OCRフィールドID,uniqueidentifier,TRUE,,主キー
+cr_ocrresultid,OCR処理結果ID,lookup,TRUE,,関連OCR処理結果(cr_ocrresultsテーブル参照)
+cr_label,フィールド名,string,TRUE,100,フィールドのラベル(請求書番号、金額等)
+cr_value,値,string,TRUE,2000,検出されたテキスト値
+cr_confidence,信頼度,decimal,TRUE,,フィールドの信頼度スコア(0.0-1.0)
+cr_fieldtype,フィールドタイプ,picklist,TRUE,,フィールドの種類(text/number/date/email等)
+cr_boundingbox_x,X座標,integer,TRUE,,画像上のX座標
+cr_boundingbox_y,Y座標,integer,TRUE,,画像上のY座標
+cr_boundingbox_width,幅,integer,TRUE,,バウンディングボックスの幅
+cr_boundingbox_height,高さ,integer,TRUE,,バウンディングボックスの高さ
+cr_isedited,編集済み,boolean,TRUE,,ユーザーによって編集されたか
+createdon,作成日時,datetime,TRUE,,作成日時
+modifiedon,更新日時,datetime,TRUE,,最終更新日時
+
+# フィールドタイプ選択肢(Picklist)
+PicklistLogicalName,Value,Label
+cr_fieldtype,1,text
+cr_fieldtype,2,number
+cr_fieldtype,3,date
+cr_fieldtype,4,datetime
+cr_fieldtype,5,email
+cr_fieldtype,6,phone
+cr_fieldtype,7,address
+
+# ============================================
+# リレーションシップ
+# ============================================
+
+# 1. cr_ocrmenusections (1) -> cr_ocrfolders (N)
+Relationship,cr_ocrmenusection_ocrfolders
+FromTable,cr_ocrmenusections
+ToTable,cr_ocrfolders
+FromColumn,cr_ocrmenusectionid
+ToColumn,cr_menusectionid
+Type,OneToMany
+
+# 2. cr_ocrfolders (1) -> cr_ocrfolders (N) - 親子関係
+Relationship,cr_ocrfolder_parentfolder
+FromTable,cr_ocrfolders
+ToTable,cr_ocrfolders
+FromColumn,cr_ocrfolderid
+ToColumn,cr_parentfolderid
+Type,OneToMany
+
+# 3. cr_ocrfolders (1) -> cr_ocrdocuments (N)
+Relationship,cr_ocrfolder_ocrdocuments
+FromTable,cr_ocrfolders
+ToTable,cr_ocrdocuments
+FromColumn,cr_ocrfolderid
+ToColumn,cr_folderid
+Type,OneToMany
+
+# 4. cr_ocrdocuments (1) -> cr_ocrresults (1)
+Relationship,cr_ocrdocument_ocrresult
+FromTable,cr_ocrdocuments
+ToTable,cr_ocrresults
+FromColumn,cr_ocrdocumentid
+ToColumn,cr_documentid
+Type,OneToOne
+
+# 5. cr_ocrresults (1) -> cr_ocrfields (N)
+Relationship,cr_ocrresult_ocrfields
+FromTable,cr_ocrresults
+ToTable,cr_ocrfields
+FromColumn,cr_ocrresultid
+ToColumn,cr_ocrresultid
+Type,OneToMany
