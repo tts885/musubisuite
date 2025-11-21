@@ -1,7 +1,7 @@
 /**
  * 案件管理システムの型定義
  * 
- * CoreXで使用される全てのTypeScript型定義を提供します。
+ * corexverseで使用される全てのTypeScript型定義を提供します。
  * フロントエンドとバックエンドのデータモデルの橋渡しを行います。
  * 
  * @module types

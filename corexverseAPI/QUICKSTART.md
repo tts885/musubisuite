@@ -1,4 +1,4 @@
-# CoreXAPI - Quick Start Guide
+# corexverseAPI - Quick Start Guide
 
 ## セットアップ手順
 
@@ -46,7 +46,7 @@ python manage.py runserver
 
 ## フロントエンドとの連携
 
-フロントエンド(CoreX)のAPIベースURLを以下に設定:
+フロントエンド(corexverse)のAPIベースURLを以下に設定:
 ```
 http://127.0.0.1:8000/api/
 ```

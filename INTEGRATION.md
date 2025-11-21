@@ -2,14 +2,14 @@
 
 ## 概要
 
-CoreXフロントエンドとCoreXAPIバックエンドが連携して動作するように設定されました。
+corexverseフロントエンドとcorexverseAPIバックエンドが連携して動作するように設定されました。
 
 ## セットアップ
 
 ### 1. バックエンド (Django)
 
 ```powershell
-cd CoreXAPI
+cd corexverseAPI
 # 仮想環境がまだ有効でない場合
 ..\.venv\Scripts\Activate.ps1
 # サーバーを起動
@@ -21,7 +21,7 @@ python manage.py runserver
 ### 2. フロントエンド (Vite + React)
 
 ```powershell
-cd CoreX
+cd corexverse
 npm run dev
 ```
 

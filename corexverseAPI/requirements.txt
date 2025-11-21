@@ -1,4 +1,4 @@
-# Django Backend Requirements for CoreXAPI
+# Django Backend Requirements for corexverseAPI
 
 # Core Framework
 Django==5.0.0

@@ -1,10 +1,8 @@
 #!/usr/bin/env python3
 """
 プロジェクト名一括置換スクリプト
-MusubiSuite -> CoreX
-MusubiSuite-back -> CoreXAPI
-musubisuite -> CoreX
-musubisuite_back -> CoreXAPI
+CoreX -> corexverse
+CoreXAPI -> corexverseAPI
 """
 
 import os
@@ -13,11 +11,8 @@ from pathlib import Path
 
 # 置換マッピング (順番が重要: 長い文字列から先に置換)
 REPLACEMENTS = [
-    ('MusubiSuite-back', 'CoreXAPI'),
-    ('MusubiSuite Back', 'CoreXAPI'),
-    ('musubisuite_back', 'CoreXAPI'),
-    ('MusubiSuite', 'CoreX'),
-    (r'\bmusubisuite\b', 'CoreX'),  # 単語境界を使用
+    ('CoreXAPI', 'corexverseAPI'),
+    (r'\bCoreX\b', 'corexverse'),  # 単語境界を使用
 ]
 
 # 対象ディレクトリ

@@ -1,4 +1,4 @@
-# CoreX - 案件管理システム
+# corexverse - 案件管理システム
 
 Modern project management system built with React, TypeScript, and Tailwind CSS for Power Apps.
 
@@ -6,7 +6,7 @@ Modern project management system built with React, TypeScript, and Tailwind CSS 
 
 ## 概要
 
-CoreXは、案件管理を効率化するためのWebアプリケーションです。FluentSampleの設計パターンを参考に、Shadcn/uiコンポーネントライブラリを使用して構築されています。
+corexverseは、案件管理を効率化するためのWebアプリケーションです。FluentSampleの設計パターンを参考に、Shadcn/uiコンポーネントライブラリを使用して構築されています。
 
 ## 主な機能
 
@@ -79,7 +79,7 @@ npm run build
 ## プロジェクト構造
 
 ```
-CoreX/
+corexverse/
 ├── src/
 │   ├── components/ui/       # Shadcn/ui コンポーネント
 │   ├── data/mockData.ts     # モックデータ

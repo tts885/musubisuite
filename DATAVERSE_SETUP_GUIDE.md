@@ -45,7 +45,7 @@ pac auth create --environment <your-environment-url>
 テーブルをデータソースとして追加すると、サービスとモデルが自動生成されます。
 
 ```powershell
-cd CoreX
+cd corexverse
 
 # 標準テーブル(account)を追加
 pac code add-data-source -a dataverse -t account
@@ -57,7 +57,7 @@ pac code add-data-source -a dataverse -t cr123_project
 #### 生成されるファイル
 
 ```
-CoreX/src/
+corexverse/src/
 └── generated/
     ├── services/
     │   └── AccountsService.ts    # CRUD操作用サービス
@@ -210,7 +210,7 @@ async function deleteAccount(accountId: string) {
 Power Apps Code Appsとして実行する必要があります:
 
 ```powershell
-cd CoreX
+cd corexverse
 
 # Power Apps環境で起動
 pac code run
@@ -273,7 +273,7 @@ Power Apps環境外で実行されている場合:
 
 **解決方法**:
 ```powershell
-cd CoreX
+cd corexverse
 pac code run
 ```
 
@@ -310,7 +310,7 @@ pac auth select --index 1
 
 **解決方法**:
 ```powershell
-cd CoreX
+cd corexverse
 pac code add-data-source -a dataverse -t account
 ```
 

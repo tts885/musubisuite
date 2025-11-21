@@ -847,7 +847,7 @@ export function ProjectCard({ projectId }: { projectId: string }) {
 
 ```powershell
 # 新しいソリューションを作成
-pac solution init --publisher-name "YourPublisher" --publisher-prefix "musubi"
+pac solution init --publisher-name "YourPublisher" --publisher-prefix "corex"
 
 # Code Appをソリューションに追加
 pac solution add-reference --path ./

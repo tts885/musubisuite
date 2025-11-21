@@ -19,7 +19,7 @@ import { getLastVisitedPath, isExplicitHomeNavigation } from "@/hooks/use-route-
 /**
  * ランディングページコンポーネント
  * 
- * CoreXのホーム画面で、3つのメインツールを紹介します。
+ * corexverseのホーム画面で、３つのメインツールを紹介します。
  * 以下の要素を含みます:
  * - ヒーローセクション
  * - ツールカード(3つのアプリ)
@@ -153,7 +153,7 @@ export default function LandingPage() {
             {/* バッジ */}
             <div className="inline-flex items-center gap-2 px-4 py-2 bg-primary/10 text-primary rounded-full border border-primary/20">
               <Sparkles className="w-4 h-4" />
-              <span className="text-sm font-medium">CoreX へようこそ</span>
+              <span className="text-sm font-medium">corexverse へようこそ</span>
             </div>
 
             {/* メインタイトル */}
@@ -278,7 +278,7 @@ export default function LandingPage() {
           {/* セクションヘッダー */}
           <div className="text-center space-y-4 mb-16">
             <h2 className="text-4xl font-bold text-foreground">
-              なぜ CoreX なのか
+              なぜ corexverse なのか
             </h2>
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
               現代的なチームに必要な全ての機能を提供
@@ -318,7 +318,7 @@ export default function LandingPage() {
               今すぐ始めましょう
             </h2>
             <p className="text-lg text-muted-foreground text-center max-w-2xl mx-auto">
-              アカウント作成は不要。すぐにCoreXのすべての機能をお試しいただけます。
+              アカウント作成は不要。すぐにCoreXverseのすべての機能をお試しいただけます。
             </p>
             <div className="flex items-center justify-center gap-4 pt-4">
               <Button asChild size="lg" className="gap-2 shadow-lg">
@@ -336,7 +336,7 @@ export default function LandingPage() {
       <footer className="border-t border-border py-8">
         <div className="max-w-7xl mx-auto px-8">
           <div className="text-center text-sm text-muted-foreground">
-            <p>© 2025 CoreX. All rights reserved.</p>
+            <p>© 2025 CoreXverse. All rights reserved.</p>
             <p className="mt-2">Powered by React + TypeScript + Vite</p>
           </div>
         </div>

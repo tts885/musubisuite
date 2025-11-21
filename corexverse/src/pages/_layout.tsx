@@ -153,7 +153,7 @@ export default function Layout({ showHeader = true }: LayoutProps) {
           <div className="p-4 border-t border-sidebar-border">
             {!sidebarCollapsed && (
               <div className="text-xs text-sidebar-foreground/50 space-y-1">
-                <p className="font-medium">CoreX v1.0</p>
+                <p className="font-medium">CoreXverse v1.0</p>
                 <p>© 2025 All rights reserved</p>
               </div>
             )}

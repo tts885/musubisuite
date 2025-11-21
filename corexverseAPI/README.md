@@ -1,10 +1,10 @@
-# CoreXAPI
+# corexverseAPI
 
-CoreX案件管理システムのDjango REST Frameworkバックエンド
+corexverse案件管理システムのDjango REST Frameworkバックエンド
 
 ## 概要
 
-このプロジェクトは、React + TypeScriptで構築されたフロントエンド（CoreX）のバックエンドAPIを提供します。
+このプロジェクトは、React + TypeScriptで構築されたフロントエンド（corexverse）のバックエンドAPIを提供します。
 
 ### 主な機能
 
@@ -30,7 +30,7 @@ CoreX案件管理システムのDjango REST Frameworkバックエンド
 ## プロジェクト構造
 
 ```
-CoreXAPI/
+corexverseAPI/
 ├── config/                 # プロジェクト設定
 │   ├── settings.py        # Django設定
 │   ├── urls.py           # URLルーティング
@@ -150,7 +150,7 @@ python manage.py runserver
 
 ### CORS設定
 
-フロントエンド（CoreX）のURLは`settings.py`の`CORS_ALLOWED_ORIGINS`に設定されています:
+フロントエンド（corexverse）のURLは`settings.py`の`CORS_ALLOWED_ORIGINS`に設定されています:
 
 ```python
 CORS_ALLOWED_ORIGINS = [
@@ -227,7 +227,7 @@ gunicorn config.wsgi:application --bind 0.0.0.0:8000
 
 ## ライセンス
 
-Proprietary - CoreX Project
+Proprietary - corexverse Project
 
 ## サポート
 

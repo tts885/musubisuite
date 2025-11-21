@@ -20,7 +20,7 @@ export const mockApplications: Application[] = [
   {
     id: 'app-home',
     name: 'ホーム',
-    description: 'CoreXのホーム画面',
+    description: 'corexverseのホーム画面',
     icon: 'Home',
     path: '/',
     color: 'hsl(var(--chart-4))',
