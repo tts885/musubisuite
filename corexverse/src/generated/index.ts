@@ -5,7 +5,13 @@
 
 // Models
 export * as CommonModels from './models/CommonModels';
+export * as Cx_ocrdocumentsesModel from './models/Cx_ocrdocumentsesModel';
+export * as Cx_ocrfoldersModel from './models/Cx_ocrfoldersModel';
+export * as Cx_ocrmenusectionsesModel from './models/Cx_ocrmenusectionsesModel';
 export * as Mdi_project_listsModel from './models/Mdi_project_listsModel';
 
 // Services
+export * from './services/Cx_ocrdocumentsesService';
+export * from './services/Cx_ocrfoldersService';
+export * from './services/Cx_ocrmenusectionsesService';
 export * from './services/Mdi_project_listsService';

@@ -8,8 +8,7 @@ import { Input } from '@/components/ui/input'
 import { Separator } from '@/components/ui/separator'
 import OcrDocumentPreview from '@/components/ocr/OcrDocumentPreview'
 import OcrResultEditor from '@/components/ocr/OcrResultEditor'
-
-import { getDocumentById } from '@/data/mockOcrData'
+import ocrDataverseService from '@/services/ocrDataverseService'
 import type { OcrDocument } from '@/types'
 
 /**
@@ -25,47 +24,42 @@ export default function OcrDocumentDetailPage() {
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
   const [fileName, setFileName] = useState('')
   const [isEditingFileName, setIsEditingFileName] = useState(false)
+  const [loading, setLoading] = useState(false)
 
   // ドキュメントデータの読み込み
   useEffect(() => {
-    if (documentId) {
-      const doc = getDocumentById(documentId)
-      if (doc) {
-        setDocument(doc)
-        setFileName(doc.fileName)
-      } else {
-        toast.error('ドキュメントが見つかりません')
-        navigate('/ocr')
+    const fetchDocument = async () => {
+      if (documentId) {
+        setLoading(true)
+        try {
+          const docs = await ocrDataverseService.getDocuments(documentId)
+          if (docs.length > 0) {
+            setDocument(docs[0])
+            setFileName(docs[0].fileName)
+          } else {
+            toast.error('ドキュメントが見つかりません')
+            navigate('/ocr')
+          }
+        } catch (error) {
+          console.error('ドキュメント取得エラー:', error)
+          toast.error('ドキュメントの読み込みに失敗しました')
+        } finally {
+          setLoading(false)
+        }
       }
     }
+    fetchDocument()
   }, [documentId, navigate])
 
-  // ファイル名変更
+  // ファイル名変更（今後実装予定）
   const handleFileNameChange = (newFileName: string) => {
     setFileName(newFileName)
     setHasUnsavedChanges(true)
   }
   
-  // フィールド更新
+  // フィールド更新（今後実装予定 - OCR処理後）
   const handleFieldUpdate = (fieldId: string, newValue: string) => {
-    if (!document?.ocrResult) return
-
-    setDocument(prev => {
-      if (!prev?.ocrResult) return prev
-
-      return {
-        ...prev,
-        ocrResult: {
-          ...prev.ocrResult,
-          fields: prev.ocrResult.fields.map(field =>
-            field.id === fieldId
-              ? { ...field, value: newValue, isEdited: true }
-              : field
-          ),
-        },
-      }
-    })
-    
+    // TODO: OCR結果が実装されたら対応
     setHasUnsavedChanges(true)
   }
 

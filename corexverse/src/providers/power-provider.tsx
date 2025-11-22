@@ -58,7 +58,6 @@ export function PowerProvider({ children }: PowerProviderProps) {
     const initApp = async () => {
       try {
         await initialize();
-        console.log('Power Apps SDK initialized successfully');
       } catch (error) {
         console.error('Power Apps SDK initialize failed: ', error);
       }

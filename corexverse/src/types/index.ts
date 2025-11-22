@@ -661,18 +661,49 @@ export interface OcrResult {
  */
 export interface OcrDocument {
   id: string;
+  name: string; // ドキュメント名（表示用）
   fileName: string;
   fileType: string;
   fileSize: number;
   fileUrl: string;
   thumbnailUrl?: string;
-  ocrResult: OcrResult | null;
+  folderId: string; // フォルダID（必須）
+  status: 'uploaded' | 'pending' | 'processing' | 'completed' | 'error'; // 処理ステータス
+  tags?: string[];
+  description?: string;
+  ocrResult?: OcrResult | null;
   uploadedBy: string;
-  uploadedAt: Date;
+  uploadedDate: Date;
+  createdAt: Date;
   updatedAt: Date;
-  projectId?: string;
-  tags: string[];
-  folderId?: string; // フォルダID
+}
+
+/**
+ * OCRメニューセクション
+ * 
+ * OCR管理画面の左サイドバーメニュー項目
+ * 各セクションは複数のフォルダを含む
+ * 
+ * @interface MenuSection
+ * 
+ * @property {string} id - セクションID
+ * @property {string} name - セクション名
+ * @property {string} [description] - セクション説明
+ * @property {number} displayOrder - 表示順序
+ * @property {boolean} isDefault - デフォルトセクションか
+ * @property {string} [color] - セクションカラー(UI表示用)
+ * @property {Date} createdAt - 作成日時
+ * @property {Date} updatedAt - 更新日時
+ */
+export interface MenuSection {
+  id: string;
+  name: string;
+  description?: string;
+  displayOrder: number;
+  isDefault: boolean;
+  color?: string;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 /**
@@ -695,6 +726,7 @@ export interface OcrDocument {
  * @property {number} documentCount - フォルダ内のドキュメント数
  * @property {number} folderCount - 子フォルダ数
  * @property {boolean} [isExpanded] - UI用: 展開状態
+ * @property {string} [menuSection] - メニューセクションID(どのメニュー配下か)
  */
 export interface OcrFolder {
   id: string;
@@ -709,7 +741,7 @@ export interface OcrFolder {
   documentCount: number;
   folderCount: number;
   isExpanded?: boolean;
-  menuSection?: string; // メニューセクションID(どのメニュー配下か)
+  menuSection?: string;
 }
 
 /**

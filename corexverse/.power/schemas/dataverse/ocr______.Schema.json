@@ -1,0 +1,433 @@
+{
+  "name": "cx_ocrdocuments",
+  "title": "OCRドキュメント",
+  "schema": {
+    "type": "array",
+    "items": {
+      "type": "object",
+      "x-ms-dataverse-entity": true,
+      "x-ms-dataverse-entityset": "cx_ocrdocumentses",
+      "x-ms-dataverse-primary-id": "cx_ocrdocumentsid",
+      "x-ms-dataverse-primary-name": "cx_name",
+      "properties": {
+        "createdby": {
+          "type": "string",
+          "title": "Created By",
+          "x-ms-dataverse-attribute": "createdby",
+          "x-ms-dataverse-type": "LookupType"
+        },
+        "createdbyname": {
+          "type": "string",
+          "title": "createdbyname",
+          "x-ms-dataverse-attribute": "createdbyname",
+          "x-ms-dataverse-type": "StringType",
+          "maxLength": 100
+        },
+        "createdbyyominame": {
+          "type": "string",
+          "title": "createdbyyominame",
+          "x-ms-dataverse-attribute": "createdbyyominame",
+          "x-ms-dataverse-type": "StringType",
+          "required": true,
+          "maxLength": 100
+        },
+        "createdon": {
+          "type": "string",
+          "title": "Created On",
+          "x-ms-dataverse-attribute": "createdon",
+          "x-ms-dataverse-type": "DateTimeType"
+        },
+        "createdonbehalfby": {
+          "type": "string",
+          "title": "Created By (Delegate)",
+          "x-ms-dataverse-attribute": "createdonbehalfby",
+          "x-ms-dataverse-type": "LookupType"
+        },
+        "createdonbehalfbyname": {
+          "type": "string",
+          "title": "createdonbehalfbyname",
+          "x-ms-dataverse-attribute": "createdonbehalfbyname",
+          "x-ms-dataverse-type": "StringType",
+          "maxLength": 100
+        },
+        "createdonbehalfbyyominame": {
+          "type": "string",
+          "title": "createdonbehalfbyyominame",
+          "x-ms-dataverse-attribute": "createdonbehalfbyyominame",
+          "x-ms-dataverse-type": "StringType",
+          "required": true,
+          "maxLength": 100
+        },
+        "cx_description": {
+          "type": "string",
+          "title": "説明・メモ",
+          "x-ms-dataverse-attribute": "cx_description",
+          "x-ms-dataverse-type": "MemoType",
+          "maxLength": 2000
+        },
+        "cx_filedata": {
+          "type": "string",
+          "title": "アップロードファイル",
+          "x-ms-dataverse-attribute": "cx_filedata",
+          "x-ms-dataverse-type": "FileType"
+        },
+        "cx_filedata_name": {
+          "type": "string",
+          "title": "cx_filedata_name",
+          "x-ms-dataverse-attribute": "cx_filedata_name",
+          "x-ms-dataverse-type": "StringType",
+          "maxLength": 200
+        },
+        "cx_filename": {
+          "type": "string",
+          "title": "元のファイル名",
+          "x-ms-dataverse-attribute": "cx_filename",
+          "x-ms-dataverse-type": "StringType",
+          "required": true,
+          "maxLength": 100
+        },
+        "cx_filesize": {
+          "type": "string",
+          "title": "ファイルサイズ",
+          "x-ms-dataverse-attribute": "cx_filesize",
+          "x-ms-dataverse-type": "StringType",
+          "required": true,
+          "maxLength": 100
+        },
+        "cx_filetype": {
+          "type": "string",
+          "title": "MIMEタイプ",
+          "x-ms-dataverse-attribute": "cx_filetype",
+          "x-ms-dataverse-type": "StringType",
+          "required": true,
+          "maxLength": 100
+        },
+        "cx_fileurl": {
+          "type": "string",
+          "title": "ファイル保存先URL",
+          "x-ms-dataverse-attribute": "cx_fileurl",
+          "x-ms-dataverse-type": "StringType",
+          "required": true,
+          "maxLength": 100
+        },
+        "cx_folderid": {
+          "type": "string",
+          "title": "フォルダID",
+          "x-ms-dataverse-attribute": "cx_folderid",
+          "x-ms-dataverse-type": "LookupType"
+        },
+        "cx_folderidname": {
+          "type": "string",
+          "title": "cx_folderidname",
+          "x-ms-dataverse-attribute": "cx_folderidname",
+          "x-ms-dataverse-type": "StringType",
+          "maxLength": 850
+        },
+        "cx_name": {
+          "type": "string",
+          "title": "ドキュメント名（表示用）",
+          "x-ms-dataverse-attribute": "cx_name",
+          "x-ms-dataverse-type": "StringType",
+          "x-ms-dataverse-primary-name": true,
+          "required": true,
+          "maxLength": 850
+        },
+        "cx_ocrdocumentsid": {
+          "type": "string",
+          "title": "OCRドキュメント",
+          "x-ms-dataverse-attribute": "cx_ocrdocumentsid",
+          "x-ms-dataverse-type": "UniqueidentifierType",
+          "x-ms-dataverse-primary-id": true,
+          "required": true,
+          "x-ms-keyType": "primary"
+        },
+        "cx_status": {
+          "type": "string",
+          "title": "処理ステータス",
+          "x-ms-dataverse-attribute": "cx_status",
+          "x-ms-dataverse-type": "PicklistType",
+          "enum": [
+            "アップロード済み",
+            "処理待ち",
+            "処理中",
+            "完了",
+            "エラー"
+          ],
+          "x-ms-enum-values": [
+            0,
+            1,
+            2,
+            3,
+            4
+          ],
+          "Color": [
+            null,
+            null,
+            null,
+            null,
+            null
+          ],
+          "x-ms-optionsetmetadataid": "c5a4949e-edc6-f011-bbd3-6045bda9954c",
+          "x-ms-isGlobal": false,
+          "x-ms-optionsetdisplayname": "処理ステータス",
+          "x-ms-optionSetType": "Picklist"
+        },
+        "cx_statusname": {
+          "type": "string",
+          "title": "cx_statusname",
+          "x-ms-dataverse-attribute": "cx_statusname",
+          "x-ms-dataverse-type": "VirtualType"
+        },
+        "cx_tags": {
+          "type": "string",
+          "title": "タグ",
+          "x-ms-dataverse-attribute": "cx_tags",
+          "x-ms-dataverse-type": "StringType",
+          "maxLength": 100
+        },
+        "cx_thumbnailurl": {
+          "type": "string",
+          "title": "サムネイルURL",
+          "x-ms-dataverse-attribute": "cx_thumbnailurl",
+          "x-ms-dataverse-type": "StringType",
+          "maxLength": 100
+        },
+        "cx_uploadedby": {
+          "type": "string",
+          "title": "アップロード者",
+          "x-ms-dataverse-attribute": "cx_uploadedby",
+          "x-ms-dataverse-type": "LookupType"
+        },
+        "cx_uploadedbyname": {
+          "type": "string",
+          "title": "cx_uploadedbyname",
+          "x-ms-dataverse-attribute": "cx_uploadedbyname",
+          "x-ms-dataverse-type": "StringType",
+          "maxLength": 200
+        },
+        "cx_uploadedbyyominame": {
+          "type": "string",
+          "title": "cx_uploadedbyyominame",
+          "x-ms-dataverse-attribute": "cx_uploadedbyyominame",
+          "x-ms-dataverse-type": "StringType",
+          "maxLength": 200
+        },
+        "cx_uploadeddate": {
+          "type": "string",
+          "title": "アップロード日時",
+          "x-ms-dataverse-attribute": "cx_uploadeddate",
+          "x-ms-dataverse-type": "DateTimeType"
+        },
+        "importsequencenumber": {
+          "type": "string",
+          "title": "Import Sequence Number",
+          "x-ms-dataverse-attribute": "importsequencenumber",
+          "x-ms-dataverse-type": "IntegerType"
+        },
+        "modifiedby": {
+          "type": "string",
+          "title": "Modified By",
+          "x-ms-dataverse-attribute": "modifiedby",
+          "x-ms-dataverse-type": "LookupType"
+        },
+        "modifiedbyname": {
+          "type": "string",
+          "title": "modifiedbyname",
+          "x-ms-dataverse-attribute": "modifiedbyname",
+          "x-ms-dataverse-type": "StringType",
+          "maxLength": 100
+        },
+        "modifiedbyyominame": {
+          "type": "string",
+          "title": "modifiedbyyominame",
+          "x-ms-dataverse-attribute": "modifiedbyyominame",
+          "x-ms-dataverse-type": "StringType",
+          "required": true,
+          "maxLength": 100
+        },
+        "modifiedon": {
+          "type": "string",
+          "title": "Modified On",
+          "x-ms-dataverse-attribute": "modifiedon",
+          "x-ms-dataverse-type": "DateTimeType"
+        },
+        "modifiedonbehalfby": {
+          "type": "string",
+          "title": "Modified By (Delegate)",
+          "x-ms-dataverse-attribute": "modifiedonbehalfby",
+          "x-ms-dataverse-type": "LookupType"
+        },
+        "modifiedonbehalfbyname": {
+          "type": "string",
+          "title": "modifiedonbehalfbyname",
+          "x-ms-dataverse-attribute": "modifiedonbehalfbyname",
+          "x-ms-dataverse-type": "StringType",
+          "maxLength": 100
+        },
+        "modifiedonbehalfbyyominame": {
+          "type": "string",
+          "title": "modifiedonbehalfbyyominame",
+          "x-ms-dataverse-attribute": "modifiedonbehalfbyyominame",
+          "x-ms-dataverse-type": "StringType",
+          "required": true,
+          "maxLength": 100
+        },
+        "overriddencreatedon": {
+          "type": "string",
+          "title": "Record Created On",
+          "x-ms-dataverse-attribute": "overriddencreatedon",
+          "x-ms-dataverse-type": "DateTimeType"
+        },
+        "ownerid": {
+          "type": "string",
+          "title": "Owner",
+          "x-ms-dataverse-attribute": "ownerid",
+          "x-ms-dataverse-type": "OwnerType",
+          "required": true
+        },
+        "owneridname": {
+          "type": "string",
+          "title": "owneridname",
+          "x-ms-dataverse-attribute": "owneridname",
+          "x-ms-dataverse-type": "StringType",
+          "required": true,
+          "maxLength": 100
+        },
+        "owneridtype": {
+          "type": "string",
+          "title": "owneridtype",
+          "x-ms-dataverse-attribute": "owneridtype",
+          "x-ms-dataverse-type": "EntityNameType",
+          "required": true
+        },
+        "owneridyominame": {
+          "type": "string",
+          "title": "owneridyominame",
+          "x-ms-dataverse-attribute": "owneridyominame",
+          "x-ms-dataverse-type": "StringType",
+          "required": true,
+          "maxLength": 100
+        },
+        "owningbusinessunit": {
+          "type": "string",
+          "title": "Owning Business Unit",
+          "x-ms-dataverse-attribute": "owningbusinessunit",
+          "x-ms-dataverse-type": "LookupType"
+        },
+        "owningbusinessunitname": {
+          "type": "string",
+          "title": "owningbusinessunitname",
+          "x-ms-dataverse-attribute": "owningbusinessunitname",
+          "x-ms-dataverse-type": "StringType",
+          "required": true,
+          "maxLength": 100
+        },
+        "owningteam": {
+          "type": "string",
+          "title": "Owning Team",
+          "x-ms-dataverse-attribute": "owningteam",
+          "x-ms-dataverse-type": "LookupType"
+        },
+        "owninguser": {
+          "type": "string",
+          "title": "Owning User",
+          "x-ms-dataverse-attribute": "owninguser",
+          "x-ms-dataverse-type": "LookupType"
+        },
+        "statecode": {
+          "type": "string",
+          "title": "Status",
+          "x-ms-dataverse-attribute": "statecode",
+          "x-ms-dataverse-type": "StateType",
+          "required": true,
+          "enum": [
+            "Active",
+            "Inactive"
+          ],
+          "x-ms-enum-values": [
+            0,
+            1
+          ],
+          "Color": [
+            null,
+            null
+          ],
+          "x-ms-optionsetmetadataid": "78f4a07d-5f85-f011-b4cc-000d3a1b7464",
+          "x-ms-isGlobal": false,
+          "x-ms-optionsetdisplayname": "Status",
+          "x-ms-optionSetType": "State"
+        },
+        "statecodename": {
+          "type": "string",
+          "title": "statecodename",
+          "x-ms-dataverse-attribute": "statecodename",
+          "x-ms-dataverse-type": "VirtualType"
+        },
+        "statuscode": {
+          "type": "string",
+          "title": "Status Reason",
+          "x-ms-dataverse-attribute": "statuscode",
+          "x-ms-dataverse-type": "StatusType",
+          "enum": [
+            "Active",
+            "Inactive"
+          ],
+          "x-ms-enum-values": [
+            1,
+            2
+          ],
+          "Color": [
+            null,
+            null
+          ],
+          "x-ms-optionsetmetadataid": "82f4a07d-5f85-f011-b4cc-000d3a1b7464",
+          "x-ms-isGlobal": false,
+          "x-ms-optionsetdisplayname": "Status Reason",
+          "x-ms-optionSetType": "Status"
+        },
+        "statuscodename": {
+          "type": "string",
+          "title": "statuscodename",
+          "x-ms-dataverse-attribute": "statuscodename",
+          "x-ms-dataverse-type": "VirtualType"
+        },
+        "timezoneruleversionnumber": {
+          "type": "string",
+          "title": "Time Zone Rule Version Number",
+          "x-ms-dataverse-attribute": "timezoneruleversionnumber",
+          "x-ms-dataverse-type": "IntegerType"
+        },
+        "utcconversiontimezonecode": {
+          "type": "string",
+          "title": "UTC Conversion Time Zone Code",
+          "x-ms-dataverse-attribute": "utcconversiontimezonecode",
+          "x-ms-dataverse-type": "IntegerType"
+        },
+        "versionnumber": {
+          "type": "string",
+          "title": "Version Number",
+          "x-ms-dataverse-attribute": "versionnumber",
+          "x-ms-dataverse-type": "BigIntType"
+        }
+      },
+      "required": [
+        "createdbyyominame",
+        "createdonbehalfbyyominame",
+        "cx_filename",
+        "cx_filesize",
+        "cx_filetype",
+        "cx_fileurl",
+        "cx_name",
+        "cx_ocrdocumentsid",
+        "modifiedbyyominame",
+        "modifiedonbehalfbyyominame",
+        "ownerid",
+        "owneridname",
+        "owneridtype",
+        "owneridyominame",
+        "owningbusinessunitname",
+        "statecode"
+      ]
+    }
+  }
+}

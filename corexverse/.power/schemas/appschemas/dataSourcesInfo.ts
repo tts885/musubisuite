@@ -5,6 +5,27 @@
  */
 
 export const dataSourcesInfo = {
+  "cx_ocrfolders": {
+    "tableId": "",
+    "version": "",
+    "primaryKey": "cx_ocrfolderid",
+    "dataSourceType": "Dataverse",
+    "apis": {}
+  },
+  "cx_ocrdocumentses": {
+    "tableId": "",
+    "version": "",
+    "primaryKey": "cx_ocrdocumentsid",
+    "dataSourceType": "Dataverse",
+    "apis": {}
+  },
+  "cx_ocrmenusectionses": {
+    "tableId": "",
+    "version": "",
+    "primaryKey": "cx_ocrmenusectionsid",
+    "dataSourceType": "Dataverse",
+    "apis": {}
+  },
   "mdi_project_lists": {
     "tableId": "",
     "version": "",

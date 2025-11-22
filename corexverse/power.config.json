@@ -18,6 +18,21 @@
           "entitySetName": "mdi_project_lists",
           "logicalName": "mdi_project_list",
           "isHidden": false
+        },
+        "ocr_________": {
+          "entitySetName": "cx_ocrmenusectionses",
+          "logicalName": "cx_ocrmenusections",
+          "isHidden": false
+        },
+        "ocr____": {
+          "entitySetName": "cx_ocrfolders",
+          "logicalName": "cx_ocrfolder",
+          "isHidden": false
+        },
+        "ocr______": {
+          "entitySetName": "cx_ocrdocumentses",
+          "logicalName": "cx_ocrdocuments",
+          "isHidden": false
         }
       },
       "version": "v9.0",

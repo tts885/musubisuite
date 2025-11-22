@@ -23,9 +23,9 @@
  * ```
  */
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { useNavigate, useSearchParams } from "react-router-dom"
-import { ArrowLeft, Upload, CheckCircle, Folder } from "lucide-react"
+import { ArrowLeft, Upload, CheckCircle, Folder, ChevronRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -41,12 +41,23 @@ import {
 import OcrFileUpload from "@/components/ocr/OcrFileUpload"
 import { toast } from "sonner"
 import { formatBytes } from "@/lib/utils"
-import { getFolderById, buildFolderTree, type FolderTreeNode } from "@/data/mockOcrData"
+import { useMenuSections, useOcrFolders } from "@/hooks/useOcrDataverse"
+import ocrDataverseService from "@/services/ocrDataverseService"
+import type { OcrFolder, OcrDocument } from "@/types"
 
 /**
  * アップロード状態
  */
 type UploadState = 'idle' | 'uploading' | 'processing' | 'completed' | 'error'
+
+/**
+ * フォルダ階層表示用の型
+ */
+interface FlatFolder {
+  folder: OcrFolder
+  depth: number
+  path: string
+}
 
 /**
  * OCRアップロードページ
@@ -60,8 +71,25 @@ export default function OcrUploadPage() {
   const [uploadProgress, setUploadProgress] = useState(0)
   const [selectedFolderId, setSelectedFolderId] = useState<string>('')
   
-  const folderTree = buildFolderTree()
-  const selectedFolder = selectedFolderId ? getFolderById(selectedFolderId) : null
+  // Dataverseからメニューセクションとフォルダを取得
+  const { sections: menuSections, loading: menuLoading } = useMenuSections()
+  const { folders, loading: foldersLoading } = useOcrFolders()
+  
+  // 選択されたフォルダを取得
+  const selectedFolder = useMemo(() => 
+    folders.find(f => f.id === selectedFolderId),
+    [folders, selectedFolderId]
+  )
+  
+  // 選択されたフォルダの完全なパス（メニュー名を含む）
+  const selectedFolderFullPath = useMemo(() => {
+    if (!selectedFolder) return ''
+    
+    const menu = menuSections.find(m => m.id === selectedFolder.menuSection)
+    const menuName = menu?.name || 'メニュー'
+    
+    return `${menuName} > ${selectedFolder.path}`
+  }, [selectedFolder, menuSections])
   
   // URLパラメータからフォルダIDを取得
   useEffect(() => {
@@ -71,19 +99,58 @@ export default function OcrUploadPage() {
     }
   }, [searchParams])
   
-  // フォルダツリーを平坦化して選択肢を生成
-  const flattenFolderTree = (nodes: FolderTreeNode[], depth: number = 0): Array<{node: FolderTreeNode, depth: number}> => {
-    const result: Array<{node: FolderTreeNode, depth: number}> = []
-    nodes.forEach(node => {
-      result.push({ node, depth })
-      if (node.children && node.children.length > 0) {
-        result.push(...flattenFolderTree(node.children, depth + 1))
+  // メニューセクションごとにフォルダをグループ化して表示用データを構築
+  const foldersByMenu = useMemo(() => {
+    const result: Array<{ type: 'menu', menuId: string, menuName: string } | { type: 'folder', data: FlatFolder }> = []
+    
+    // フォルダの階層構造を構築する関数
+    const buildHierarchy = (parentId: string | null, menuSectionId: string, depth: number = 0): FlatFolder[] => {
+      const hierarchyResult: FlatFolder[] = []
+      const children = folders.filter(f => 
+        f.parentId === parentId && 
+        f.menuSection === menuSectionId
+      )
+      
+      children.forEach(folder => {
+        const path = folder.path || `/${folder.name}`
+        
+        hierarchyResult.push({
+          folder,
+          depth,
+          path
+        })
+        
+        // 子フォルダを再帰的に追加
+        hierarchyResult.push(...buildHierarchy(folder.id, menuSectionId, depth + 1))
+      })
+      
+      return hierarchyResult
+    }
+    
+    // 各メニューセクションごとにフォルダをグループ化
+    menuSections.forEach(menu => {
+      const menuFolders = buildHierarchy(null, menu.id, 0)
+      
+      if (menuFolders.length > 0) {
+        // メニューヘッダーを追加
+        result.push({
+          type: 'menu',
+          menuId: menu.id,
+          menuName: menu.name
+        })
+        
+        // そのメニュー配下のフォルダを追加
+        menuFolders.forEach(flatFolder => {
+          result.push({
+            type: 'folder',
+            data: flatFolder
+          })
+        })
       }
     })
+    
     return result
-  }
-  
-  const flatFolders = flattenFolderTree(folderTree)
+  }, [folders, menuSections])
 
   /**
    * ファイル選択処理
@@ -121,37 +188,40 @@ export default function OcrUploadPage() {
       setUploadState('uploading')
       setUploadProgress(0)
 
-      // TODO: Backend実装後は実際のAPIを呼び出す
-      // const formData = new FormData()
-      // formData.append('folderId', selectedFolderId)
-      // selectedFiles.forEach((file, index) => {
-      //   formData.append(`files[${index}]`, file)
-      // })
-      // const response = await ocrService.uploadDocuments(formData)
+      const totalFiles = selectedFiles.length
+      let uploadedCount = 0
       
-      console.log('アップロード情報:', {
-        folderId: selectedFolderId,
-        folderPath: selectedFolder?.path,
-        fileCount: selectedFiles.length,
-      })
-
-      // シミュレーション: アップロード進捗
-      for (let i = 0; i <= 100; i += 10) {
-        await new Promise(resolve => setTimeout(resolve, 100))
-        setUploadProgress(i)
+      // 各ファイルを順次アップロード
+      for (const file of selectedFiles) {
+        try {
+          const document: Partial<OcrDocument> = {
+            name: file.name,
+            folderId: selectedFolderId,
+            status: 'uploaded',
+          }
+          
+          await ocrDataverseService.createDocument(document, file)
+          
+          uploadedCount++
+          const progress = Math.round((uploadedCount / totalFiles) * 100)
+          setUploadProgress(progress)
+          
+          toast.success(`${file.name} をアップロードしました`)
+        } catch (error) {
+          console.error(`ファイルアップロードエラー: ${file.name}`, error)
+          toast.error(`${file.name} のアップロードに失敗しました`)
+        }
       }
 
-      setUploadState('processing')
-      
-      // シミュレーション: OCR処理開始
-      await new Promise(resolve => setTimeout(resolve, 500))
-
       setUploadState('completed')
-      toast.success('タスクを作成しました')
+      toast.success(`${uploadedCount}件のファイルをアップロードしました`)
 
-      // タスク一覧へ遷移
+      // カスタムイベントを発火してドキュメント数を更新
+      window.dispatchEvent(new CustomEvent('documentsUpdated'))
+
+      // ドキュメント一覧へ遷移
       setTimeout(() => {
-        navigate('/ocr')
+        navigate(`/ocr?folder=${selectedFolderId}`)
       }, 1000)
     } catch (error) {
       console.error('Upload error:', error)
@@ -208,31 +278,51 @@ export default function OcrUploadPage() {
                 <Select 
                   value={selectedFolderId} 
                   onValueChange={setSelectedFolderId}
-                  disabled={uploadState !== 'idle'}
+                  disabled={uploadState !== 'idle' || foldersLoading}
                 >
-                  <SelectTrigger id="folder">
-                    <SelectValue placeholder="フォルダを選択してください" />
+                  <SelectTrigger id="folder" className="h-12 text-base w-full">
+                    <SelectValue placeholder={
+                      foldersLoading 
+                        ? "読み込み中..." 
+                        : foldersByMenu.filter(item => item.type === 'folder').length === 0
+                          ? "フォルダがありません"
+                          : "フォルダを選択してください"
+                    } />
                   </SelectTrigger>
-                  <SelectContent>
-                    {flatFolders.map(({ node, depth }) => (
-                      <SelectItem key={node.id} value={node.id}>
-                        <div className="flex items-center gap-2">
-                          <span style={{ marginLeft: `${depth * 16}px` }}>
-                            {depth > 0 && '└ '}
-                          </span>
-                          <Folder 
-                            className="w-4 h-4" 
-                            style={{ color: node.color }}
-                          />
-                          <span>{node.name}</span>
-                        </div>
-                      </SelectItem>
-                    ))}
+                  <SelectContent className="max-h-[500px] w-full min-w-[400px]">
+                    {foldersByMenu.map((item, index) => {
+                      if (item.type === 'menu') {
+                        return (
+                          <div
+                            key={`menu-${item.menuId}`}
+                            className="px-3 py-2 text-sm font-semibold text-muted-foreground bg-muted/50 sticky top-0"
+                          >
+                            {item.menuName}
+                          </div>
+                        )
+                      } else {
+                        const { folder, depth } = item.data
+                        return (
+                          <SelectItem key={folder.id} value={folder.id} className="py-3">
+                            <div className="flex items-center gap-2">
+                              <span style={{ marginLeft: `${depth * 16}px` }}>
+                                {depth > 0 && <ChevronRight className="w-4 h-4 inline" />}
+                              </span>
+                              <Folder 
+                                className="w-5 h-5" 
+                                style={{ color: folder.color }}
+                              />
+                              <span className="text-base">{folder.name}</span>
+                            </div>
+                          </SelectItem>
+                        )
+                      }
+                    })}
                   </SelectContent>
                 </Select>
                 {selectedFolder && (
                   <p className="text-xs text-muted-foreground">
-                    選択中: {selectedFolder.path}
+                    選択中: {selectedFolderFullPath}
                   </p>
                 )}
               </div>

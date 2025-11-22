@@ -31,9 +31,15 @@ import {
   TableRow,
 } from '@/components/ui/table'
 
-import { mockOcrDocuments, getDocumentsByFolder, getFolderById, buildFolderTree, type FolderTreeNode } from '@/data/mockOcrData'
 import { formatBytes } from '@/lib/utils'
-import type { OcrDocument } from '@/types'
+import type { OcrDocument, OcrFolder } from '@/types'
+import { useOcrFolders, useMenuSections } from '@/hooks/useOcrDataverse'
+import ocrDataverseService from '@/services/ocrDataverseService'
+
+interface FolderTreeNode {
+  folder: OcrFolder
+  children: FolderTreeNode[]
+}
 
 /**
  * OCRドキュメント一覧ページ
@@ -47,9 +53,71 @@ export default function OcrDocumentListPage() {
   const [folderFilter, setFolderFilter] = useState<string>('all')
   const [currentPage, setCurrentPage] = useState(1)
   const itemsPerPage = 20
+  
+  // Dataverseからデータ取得
+  const { folders } = useOcrFolders()
+  const { sections: menuSections } = useMenuSections()
+  const [documents, setDocuments] = useState<OcrDocument[]>([])
+  const [loading, setLoading] = useState(false)
+
+  // ドキュメント取得
+  useEffect(() => {
+    const fetchDocuments = async () => {
+      setLoading(true)
+      try {
+        const docs = await ocrDataverseService.getDocuments()
+        setDocuments(docs)
+      } catch (error) {
+        console.error('ドキュメント取得エラー:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchDocuments()
+  }, [])
+  
+  // フォルダツリーを構築
+  const buildFolderTree = (parentId: string | null = null): FolderTreeNode[] => {
+    return folders
+      .filter(folder => folder.parentId === parentId)
+      .map(folder => ({
+        folder,
+        children: buildFolderTree(folder.id)
+      }))
+  }
 
   const folderTree = buildFolderTree()
-  const currentFolder = folderFilter !== 'all' ? getFolderById(folderFilter) : null
+  const currentFolder = folderFilter !== 'all' ? folders.find(f => f.id === folderFilter) : null
+  
+  // パンくずリストを生成（M001>F003/F003形式）
+  const getBreadcrumbPath = () => {
+    if (!currentFolder) return null
+    
+    // メニューセクション名を取得
+    const menuSection = menuSections.find(m => m.id === currentFolder.menuSection)
+    const menuName = menuSection ? menuSection.name : 'すべてのドキュメント'
+    
+    // フォルダの階層パスを構築
+    const buildFolderPath = (folderId: string): string[] => {
+      const folder = folders.find(f => f.id === folderId)
+      if (!folder) return []
+      
+      const path: string[] = [folder.name]
+      if (folder.parentId) {
+        path.unshift(...buildFolderPath(folder.parentId))
+      }
+      return path
+    }
+    
+    const folderPath = buildFolderPath(currentFolder.id)
+    
+    return {
+      menuName,
+      folderPath
+    }
+  }
+  
+  const breadcrumb = getBreadcrumbPath()
   
   // フォルダツリーを平坦化して選択肖を生成
   const flattenFolderTree = (nodes: FolderTreeNode[], depth: number = 0): Array<{node: FolderTreeNode, depth: number}> => {
@@ -77,22 +145,16 @@ export default function OcrDocumentListPage() {
 
   // フィルタリング
   const getFilteredDocuments = (): OcrDocument[] => {
-    let filtered = mockOcrDocuments
+    let filtered = documents
 
     // フォルダフィルター
     if (folderFilter !== 'all') {
-      filtered = getDocumentsByFolder(folderFilter)
+      filtered = filtered.filter(doc => doc.folderId === folderFilter)
     }
 
     // ステータスフィルター
-    if (statusFilter === 'completed') {
-      filtered = filtered.filter(doc => doc.ocrResult?.status === 'completed')
-    } else if (statusFilter === 'pending') {
-      filtered = filtered.filter(doc => doc.ocrResult === null)
-    } else if (statusFilter === 'processing') {
-      filtered = filtered.filter(doc => doc.ocrResult?.status === 'processing')
-    } else if (statusFilter === 'failed') {
-      filtered = filtered.filter(doc => doc.ocrResult?.status === 'failed')
+    if (statusFilter !== 'all') {
+      filtered = filtered.filter(doc => doc.status === statusFilter)
     }
 
     // 検索フィルター
@@ -100,7 +162,7 @@ export default function OcrDocumentListPage() {
       const lowerKeyword = searchKeyword.toLowerCase()
       filtered = filtered.filter(doc => 
         doc.fileName.toLowerCase().includes(lowerKeyword) ||
-        doc.tags.some(tag => tag.toLowerCase().includes(lowerKeyword))
+        (doc.tags && doc.tags.some(tag => tag.toLowerCase().includes(lowerKeyword)))
       )
     }
 
@@ -117,23 +179,22 @@ export default function OcrDocumentListPage() {
 
   // ステータスバッジ
   const getStatusBadge = (doc: OcrDocument) => {
-    if (!doc.ocrResult) {
-      return <Badge variant="secondary"><Clock className="w-3 h-3 mr-1" />処理待ち</Badge>
-    }
-    
-    switch (doc.ocrResult.status) {
+    switch (doc.status) {
       case 'completed':
         return <Badge variant="default" className="bg-green-600 dark:bg-green-700"><CheckCircle className="w-3 h-3 mr-1" />完了</Badge>
       case 'processing':
         return <Badge variant="secondary"><Clock className="w-3 h-3 mr-1" />処理中</Badge>
-      case 'failed':
+      case 'error':
         return <Badge variant="destructive">失敗</Badge>
+      case 'pending':
+        return <Badge variant="secondary"><Clock className="w-3 h-3 mr-1" />処理待ち</Badge>
+      case 'uploaded':
       default:
-        return <Badge variant="secondary">不明</Badge>
+        return <Badge variant="secondary">アップロード済み</Badge>
     }
   }
 
-  // 信頼度バッジ
+  // 信頼度バッジ（現在は使用しない）
   const getConfidenceBadge = (confidence: number) => {
     if (confidence >= 0.95) {
       return <Badge variant="default" className="bg-green-600 dark:bg-green-700">{(confidence * 100).toFixed(0)}%</Badge>
@@ -165,10 +226,19 @@ export default function OcrDocumentListPage() {
         <div className="flex items-center justify-between mb-4">
           <div>
             <h1 className="text-2xl font-bold text-foreground">
-              {currentFolder ? (
+              {breadcrumb ? (
                 <>
-                  <span className="text-muted-foreground text-base">{currentFolder.path}/</span>
-                  {currentFolder.name}
+                  <span className="text-muted-foreground text-base">{breadcrumb.menuName} &gt; </span>
+                  {breadcrumb.folderPath.map((name, index) => (
+                    <span key={index}>
+                      {index > 0 && <span className="text-muted-foreground text-base">/</span>}
+                      {index === breadcrumb.folderPath.length - 1 ? (
+                        <span>{name}</span>
+                      ) : (
+                        <span className="text-muted-foreground text-base">{name}</span>
+                      )}
+                    </span>
+                  ))}
                 </>
               ) : (
                 'OCRドキュメント一覧'
@@ -219,19 +289,16 @@ export default function OcrDocumentListPage() {
             <SelectContent>
               <SelectItem value="all">すべてのフォルダ</SelectItem>
               {flatFolders.map(({ node, depth }) => (
-                <SelectItem key={node.id} value={node.id}>
+                <SelectItem key={node.folder.id} value={node.folder.id}>
                   <div className="flex items-center gap-2">
                     <span style={{ marginLeft: `${depth * 16}px` }}>
                       {depth > 0 && '└ '}
                     </span>
                     <div 
                       className="w-3 h-3 rounded-sm" 
-                      style={{ backgroundColor: node.color }}
+                      style={{ backgroundColor: node.folder.color }}
                     />
-                    <span>{node.name}</span>
-                    <span className="text-xs text-muted-foreground">
-                      ({node.documentCount})
-                    </span>
+                    <span>{node.folder.name}</span>
                   </div>
                 </SelectItem>
               ))}
@@ -303,16 +370,16 @@ export default function OcrDocumentListPage() {
                       {formatBytes(doc.fileSize)}
                     </TableCell>
                     <TableCell className="text-sm text-muted-foreground">
-                      {format(doc.uploadedAt, 'yyyy/MM/dd HH:mm', { locale: ja })}
+                      {doc.uploadedDate ? format(new Date(doc.uploadedDate), 'yyyy/MM/dd HH:mm', { locale: ja }) : '-'}
                     </TableCell>
                     <TableCell>
                       <div className="flex gap-1 flex-wrap">
-                        {doc.tags.slice(0, 2).map((tag, idx) => (
+                        {doc.tags && doc.tags.slice(0, 2).map((tag, idx) => (
                           <Badge key={idx} variant="outline" className="text-xs">
                             {tag}
                           </Badge>
                         ))}
-                        {doc.tags.length > 2 && (
+                        {doc.tags && doc.tags.length > 2 && (
                           <Badge variant="outline" className="text-xs">
                             +{doc.tags.length - 2}
                           </Badge>

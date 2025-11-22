@@ -499,5 +499,4 @@ export const logger = new Logger();
  */
 if (import.meta.env.MODE === 'development') {
   (window as any).__logger = logger;
-  console.info('💡 Logger attached to window.__logger for debugging');
 }

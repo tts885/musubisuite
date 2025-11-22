@@ -1,6 +1,6 @@
 import { ListChecks, Upload, ChevronDown, ChevronRight, Menu, FileText, Folder, FolderOpen, Plus, Edit2, Trash2, MoreVertical } from 'lucide-react'
 import { useNavigate, useLocation, useSearchParams } from 'react-router-dom'
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo, useEffect, useCallback } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -19,9 +19,14 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { buildFolderTree, type FolderTreeNode, getFolderStats } from '@/data/mockOcrData'
 import { useMenuSections, useOcrFolders } from '@/hooks/useOcrDataverse'
+import ocrDataverseService from '@/services/ocrDataverseService'
 import type { OcrFolder } from '@/types'
+
+interface FolderTreeNode {
+  folder: OcrFolder
+  children: FolderTreeNode[]
+}
 
 interface OcrSidebarProps {
   sidebarCollapsed: boolean
@@ -48,7 +53,7 @@ export default function OcrSidebar({ sidebarCollapsed, setSidebarCollapsed, side
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set(['all-docs']))
   
   // Dataverseからメニューセクションとフォルダを取得
-  const { sections: menuSectionsData, loading: menuLoading, createSection, refresh: refreshMenu } = useMenuSections()
+  const { sections: menuSectionsData, loading: menuLoading, createSection, updateSection, deleteSection, refresh: refreshMenu } = useMenuSections()
   const { folders: foldersData, loading: foldersLoading, createFolder, updateFolder, deleteFolder, refresh: refreshFolders } = useOcrFolders()
   
   // メニューセクション管理
@@ -57,14 +62,8 @@ export default function OcrSidebar({ sidebarCollapsed, setSidebarCollapsed, side
   const [editingMenuId, setEditingMenuId] = useState<string | null>(null)
   const [menuName, setMenuName] = useState('')
   
-  // Dataverseレコードをメニューセクション型に変換
-  const menuSections = useMemo(() => {
-    return menuSectionsData.map(section => ({
-      id: section.cr_ocrmenusectionid,
-      name: section.cr_name,
-      createdAt: section.createdon,
-    }))
-  }, [menuSectionsData])
+  // メニューセクションは既にMenuSection型なのでそのまま使用
+  const menuSections = menuSectionsData
   
   // フォルダリスト
   const folders = foldersData
@@ -88,6 +87,70 @@ export default function OcrSidebar({ sidebarCollapsed, setSidebarCollapsed, side
 
   const isActive = (path: string) => location.pathname === path
 
+  // フォルダツリーを構築
+  const buildFolderTree = (parentId: string | null, foldersList: OcrFolder[]): FolderTreeNode[] => {
+    return foldersList
+      .filter(folder => folder.parentId === parentId)
+      .map(folder => ({
+        folder,
+        children: buildFolderTree(folder.id, foldersList)
+      }))
+  }
+
+  // ドキュメント数を取得
+  const [documentCounts, setDocumentCounts] = useState<Record<string, number>>({})
+
+  // ドキュメント数を取得する関数
+  const fetchDocumentCounts = useCallback(async () => {
+    try {
+      const docs = await ocrDataverseService.getDocuments()
+      const counts: Record<string, number> = {}
+      
+      docs.forEach(doc => {
+        if (doc.folderId) {
+          counts[doc.folderId] = (counts[doc.folderId] || 0) + 1
+        }
+      })
+      
+      setDocumentCounts(counts)
+    } catch (error) {
+      console.error('ドキュメント数取得エラー:', error)
+    }
+  }, [])
+
+  // 初回読み込み時にドキュメント数を取得
+  useEffect(() => {
+    fetchDocumentCounts()
+  }, [fetchDocumentCounts])
+
+  // 定期的にドキュメント数を更新（30秒ごと）
+  useEffect(() => {
+    const interval = setInterval(() => {
+      fetchDocumentCounts()
+    }, 30000)
+    
+    return () => clearInterval(interval)
+  }, [fetchDocumentCounts])
+
+  // カスタムイベントをリッスンしてドキュメント数を即座に更新
+  useEffect(() => {
+    const handleDocumentsUpdated = () => {
+      fetchDocumentCounts()
+    }
+    
+    window.addEventListener('documentsUpdated', handleDocumentsUpdated)
+    
+    return () => {
+      window.removeEventListener('documentsUpdated', handleDocumentsUpdated)
+    }
+  }, [fetchDocumentCounts])
+
+  // フォルダ統計を取得
+  const getFolderStats = (folderId: string) => {
+    const total = documentCounts[folderId] || 0
+    return { total, processing: 0, completed: 0 }
+  }
+
   // フォルダの階層深さを計算
   const getFolderDepth = (folderId: string): number => {
     const folder = folders.find(f => f.id === folderId)
@@ -110,13 +173,13 @@ export default function OcrSidebar({ sidebarCollapsed, setSidebarCollapsed, side
 
   // フォルダツリーノードをレンダリング
   const renderFolderNode = (node: FolderTreeNode, depth: number = 0, menuSection: string = 'all-docs') => {
-    const isExpanded = expandedFolders.has(node.id)
-    const isSelected = selectedFolderId === node.id
+    const isExpanded = expandedFolders.has(node.folder.id)
+    const isSelected = selectedFolderId === node.folder.id
     const hasChildren = node.children && node.children.length > 0
-    const stats = getFolderStats(node.id, folders)
+    const stats = getFolderStats(node.folder.id)
 
     return (
-      <div key={node.id}>
+      <div key={node.folder.id}>
         <div
           className={`
             flex items-center gap-2 px-3 py-1.5 rounded-md text-sm transition-colors group
@@ -132,7 +195,7 @@ export default function OcrSidebar({ sidebarCollapsed, setSidebarCollapsed, side
             <button
               onClick={(e) => {
                 e.stopPropagation()
-                toggleFolder(node.id)
+                toggleFolder(node.folder.id)
               }}
               className="flex-shrink-0 hover:bg-muted rounded p-0.5"
             >
@@ -149,17 +212,17 @@ export default function OcrSidebar({ sidebarCollapsed, setSidebarCollapsed, side
           {/* フォルダアイコン */}
           <button
             onClick={() => {
-              navigate(`/ocr?folder=${node.id}`)
+              navigate(`/ocr?folder=${node.folder.id}`)
               setSidebarOpen(false)
             }}
             className="flex items-center gap-2 flex-1 min-w-0"
           >
             {isExpanded ? (
-              <FolderOpen className="w-4 h-4 flex-shrink-0" style={{ color: node.color }} />
+              <FolderOpen className="w-4 h-4 flex-shrink-0" style={{ color: node.folder.color }} />
             ) : (
-              <Folder className="w-4 h-4 flex-shrink-0" style={{ color: node.color }} />
+              <Folder className="w-4 h-4 flex-shrink-0" style={{ color: node.folder.color }} />
             )}
-            <span className="truncate">{node.name}</span>
+            <span className="truncate">{node.folder.name}</span>
           </button>
 
           {/* ドキュメント数 */}
@@ -178,8 +241,8 @@ export default function OcrSidebar({ sidebarCollapsed, setSidebarCollapsed, side
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               {/* 2階層目以降はサブフォルダ追加不可 */}
-              {getFolderDepth(node.id) < 1 && (
-                <DropdownMenuItem onClick={() => handleAddFolder(node.id, menuSection)}>
+              {getFolderDepth(node.folder.id) < 1 && (
+                <DropdownMenuItem onClick={() => handleAddFolder(node.folder.id, menuSection)}>
                   <Plus className="w-3 h-3 mr-2" />
                   サブフォルダを追加
                 </DropdownMenuItem>
@@ -189,7 +252,7 @@ export default function OcrSidebar({ sidebarCollapsed, setSidebarCollapsed, side
                 編集
               </DropdownMenuItem>
               <DropdownMenuItem 
-                onClick={() => handleDeleteFolder(node.id)}
+                onClick={() => handleDeleteFolder(node.folder.id)}
                 className="text-destructive"
               >
                 <Trash2 className="w-4 h-4 mr-2" />
@@ -215,7 +278,7 @@ export default function OcrSidebar({ sidebarCollapsed, setSidebarCollapsed, side
     setIsAddMenuOpen(true)
   }
   
-  const executeAddMenu = () => {
+  const executeAddMenu = async () => {
     if (!menuName.trim()) {
       alert('メニュー名を入力してください')
       return
@@ -228,16 +291,22 @@ export default function OcrSidebar({ sidebarCollapsed, setSidebarCollapsed, side
       return
     }
     
-    const newMenu: MenuSection = {
-      id: `menu-${Date.now()}`,
-      name: trimmedName,
-      createdAt: new Date().toISOString(),
+    try {
+      const created = await createSection({
+        name: trimmedName,
+        description: '',
+        displayOrder: menuSections.length + 1,
+        isDefault: false,
+        color: '#3b82f6',
+      })
+      
+      setExpandedFolders(prev => new Set([...prev, created.id]))
+      setIsAddMenuOpen(false)
+      setMenuName('')
+    } catch (error) {
+      console.error('メニュー追加エラー:', error)
+      alert('メニューの追加に失敗しました')
     }
-    
-    setMenuSections([...menuSections, newMenu])
-    setExpandedFolders(prev => new Set([...prev, newMenu.id]))
-    setIsAddMenuOpen(false)
-    setMenuName('')
   }
   
   // メニューセクション編集
@@ -250,7 +319,7 @@ export default function OcrSidebar({ sidebarCollapsed, setSidebarCollapsed, side
     }
   }
   
-  const executeEditMenu = () => {
+  const executeEditMenu = async () => {
     if (!menuName.trim()) {
       alert('メニュー名を入力してください')
       return
@@ -263,33 +332,51 @@ export default function OcrSidebar({ sidebarCollapsed, setSidebarCollapsed, side
       return
     }
     
-    setMenuSections(menuSections.map(m => 
-      m.id === editingMenuId ? { ...m, name: trimmedName } : m
-    ))
-    setIsEditMenuOpen(false)
-    setEditingMenuId(null)
-    setMenuName('')
+    if (!editingMenuId) return
+    
+    try {
+      await updateSection(editingMenuId, {
+        name: trimmedName,
+      })
+      
+      setIsEditMenuOpen(false)
+      setEditingMenuId(null)
+      setMenuName('')
+    } catch (error) {
+      console.error('メニュー更新エラー:', error)
+      alert('メニューの更新に失敗しました')
+    }
   }
   
   // メニューセクション削除
-  const handleDeleteMenu = (menuId: string) => {
+  const handleDeleteMenu = async (menuId: string) => {
     const menu = menuSections.find(m => m.id === menuId)
     if (!menu) return
     
-    const foldersInSection = folders.filter(f => f.parentId === null && f.path.startsWith(`/${menuId}/`))
+    const foldersInSection = folders.filter(f => f.menuSection === menuId)
     const message = foldersInSection.length > 0
       ? `メニュー「${menu.name}」と配下のフォルダをすべて削除してもよろしいですか?\n(ドキュメントは削除されません)`
       : `メニュー「${menu.name}」を削除してもよろしいですか?`
     
     if (confirm(message)) {
-      setMenuSections(menuSections.filter(m => m.id !== menuId))
-      // 該当メニュー配下のフォルダも削除
-      setFolders(folders.filter(f => !f.path.startsWith(`/${menuId}/`)))
-      setExpandedFolders(prev => {
-        const newSet = new Set(prev)
-        newSet.delete(menuId)
-        return newSet
-      })
+      try {
+        // 配下のフォルダを削除
+        for (const folder of foldersInSection) {
+          await deleteFolder(folder.id)
+        }
+        
+        // メニューセクションを削除
+        await deleteSection(menuId)
+        
+        setExpandedFolders(prev => {
+          const newSet = new Set(prev)
+          newSet.delete(menuId)
+          return newSet
+        })
+      } catch (error) {
+        console.error('メニュー削除エラー:', error)
+        alert('メニューの削除に失敗しました')
+      }
     }
   }
   
@@ -313,7 +400,7 @@ export default function OcrSidebar({ sidebarCollapsed, setSidebarCollapsed, side
   }
   
   // フォルダ追加実行
-  const executeAddFolder = () => {
+  const executeAddFolder = async () => {
     if (!folderName.trim()) {
       alert('フォルダ名を入力してください')
       return
@@ -333,7 +420,7 @@ export default function OcrSidebar({ sidebarCollapsed, setSidebarCollapsed, side
     } else {
       // ルートフォルダの場合: ルートレベルで重複チェック
       const rootFoldersWithSameName = folders.filter(
-        f => f.parentId === null && f.name === trimmedName
+        f => f.parentId === null && f.name === trimmedName && f.menuSection === currentMenuSection
       )
       if (rootFoldersWithSameName.length > 0) {
         alert('同じ階層に同じ名前のフォルダが既に存在します')
@@ -341,43 +428,46 @@ export default function OcrSidebar({ sidebarCollapsed, setSidebarCollapsed, side
       }
     }
     
-    const parentFolder = currentParentId ? folders.find(f => f.id === currentParentId) : null
-    const path = parentFolder ? `${parentFolder.path}/${trimmedName}` : `/${trimmedName}`
-    
-    const newFolder: OcrFolder = {
-      id: `folder-${Date.now()}`,
-      name: trimmedName,
-      description: folderDescription,
-      color: folderColor,
-      parentId: currentParentId || null,
-      path: path,
-      folderCount: 0,
-      documentCount: 0,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-      createdBy: 'current-user',
-      menuSection: currentMenuSection, // メニューセクションを記録
+    try {
+      const parentFolder = currentParentId ? folders.find(f => f.id === currentParentId) : null
+      const path = parentFolder ? `${parentFolder.path}/${trimmedName}` : `/${trimmedName}`
+      
+      // メニューセクションのGUIDを取得
+      // 'all-docs'の場合はnullまたはデフォルトメニューセクションを使用
+      let menuSectionId: string | undefined = undefined
+      if (currentMenuSection !== 'all-docs') {
+        const menuSection = menuSections.find(m => m.id === currentMenuSection)
+        menuSectionId = menuSection?.id
+      } else {
+        // デフォルトメニューセクションを使用
+        const defaultSection = menuSections.find(m => m.isDefault)
+        menuSectionId = defaultSection?.id
+      }
+      
+      if (!menuSectionId) {
+        alert('メニューセクションが見つかりません。先にメニューセクションを作成してください。')
+        return
+      }
+      
+      const created = await createFolder({
+        name: trimmedName,
+        description: folderDescription,
+        color: folderColor,
+        parentId: currentParentId || null,
+        path: path,
+        menuSection: menuSectionId,
+      })
+      
+      // 親フォルダを展開
+      if (currentParentId) {
+        setExpandedFolders(prev => new Set([...prev, currentParentId]))
+      }
+      
+      setIsAddDialogOpen(false)
+    } catch (error) {
+      console.error('フォルダ追加エラー:', error)
+      alert('フォルダの追加に失敗しました')
     }
-    
-    // フォルダを追加
-    setFolders(prev => [...prev, newFolder])
-    
-    // 親フォルダのfolderCountを更新
-    if (currentParentId) {
-      setFolders(prev => prev.map(f => 
-        f.id === currentParentId 
-          ? { ...f, folderCount: f.folderCount + 1 }
-          : f
-      ))
-    }
-    
-    // 親フォルダを展開
-    if (currentParentId) {
-      setExpandedFolders(prev => new Set([...prev, currentParentId]))
-    }
-    
-    setIsAddDialogOpen(false)
-    console.log('フォルダを追加:', newFolder)
   }
 
   // フォルダ編集ハンドラー
@@ -390,7 +480,7 @@ export default function OcrSidebar({ sidebarCollapsed, setSidebarCollapsed, side
   }
   
   // フォルダ編集実行
-  const executeEditFolder = () => {
+  const executeEditFolder = async () => {
     if (!editingFolder || !folderName.trim()) {
       alert('フォルダ名を入力してください')
       return
@@ -425,48 +515,28 @@ export default function OcrSidebar({ sidebarCollapsed, setSidebarCollapsed, side
       }
     }
     
-    // フォルダ情報を更新
-    setFolders(prev => prev.map(f => {
-      if (f.id === editingFolder.id) {
-        const parentPath = f.path.split('/').slice(0, -1).join('/')
-        return {
-          ...f,
-          name: trimmedName,
-          description: folderDescription,
-          color: folderColor,
-          path: parentPath ? `${parentPath}/${trimmedName}` : `/${trimmedName}`,
-        }
-      }
-      return f
-    }))
-    
-    // 子フォルダのパスも更新
-    const updateChildPaths = (oldPath: string, newPath: string) => {
-      setFolders(prev => prev.map(f => {
-        if (f.path.startsWith(oldPath + '/')) {
-          return {
-            ...f,
-            path: f.path.replace(oldPath, newPath),
-          }
-        }
-        return f
-      }))
+    try {
+      const oldPath = editingFolder.path
+      const parentPath = oldPath.split('/').slice(0, -1).join('/')
+      const newPath = parentPath ? `${parentPath}/${trimmedName}` : `/${trimmedName}`
+      
+      await updateFolder(editingFolder.id, {
+        name: trimmedName,
+        description: folderDescription,
+        color: folderColor,
+        path: newPath,
+      })
+      
+      setIsEditDialogOpen(false)
+      console.log('フォルダを編集:', { id: editingFolder.id, name: folderName })
+    } catch (error) {
+      console.error('フォルダ更新エラー:', error)
+      alert('フォルダの更新に失敗しました')
     }
-    
-    const oldPath = editingFolder.path
-    const parentPath = oldPath.split('/').slice(0, -1).join('/')
-    const newPath = parentPath ? `${parentPath}/${folderName}` : `/${folderName}`
-    
-    if (oldPath !== newPath) {
-      updateChildPaths(oldPath, newPath)
-    }
-    
-    setIsEditDialogOpen(false)
-    console.log('フォルダを編集:', { id: editingFolder.id, name: folderName })
   }
 
   // フォルダ削除ハンドラー
-  const handleDeleteFolder = (folderId: string) => {
+  const handleDeleteFolder = async (folderId: string) => {
     const folder = folders.find(f => f.id === folderId)
     if (!folder) return
     
@@ -476,32 +546,30 @@ export default function OcrSidebar({ sidebarCollapsed, setSidebarCollapsed, side
       : `フォルダ「${folder.name}」を削除してもよろしいですか?\n(ドキュメントは削除されません)`
     
     if (confirm(message)) {
-      // 削除対象のフォルダID一覧を取得(再帰的に)
-      const getFolderIdsToDelete = (id: string): string[] => {
-        const childIds = folders.filter(f => f.parentId === id).map(f => f.id)
-        return [id, ...childIds.flatMap(getFolderIdsToDelete)]
+      try {
+        // 削除対象のフォルダID一覧を取得(再帰的に)
+        const getFolderIdsToDelete = (id: string): string[] => {
+          const childIds = folders.filter(f => f.parentId === id).map(f => f.id)
+          return [id, ...childIds.flatMap(getFolderIdsToDelete)]
+        }
+        
+        const idsToDelete = getFolderIdsToDelete(folderId)
+        
+        // 子フォルダから順に削除
+        for (const id of idsToDelete.reverse()) {
+          await deleteFolder(id)
+        }
+        
+        // 選択中のフォルダが削除された場合、トップページに戻る
+        if (idsToDelete.includes(selectedFolderId || '')) {
+          navigate('/ocr')
+        }
+        
+        console.log('フォルダを削除:', idsToDelete)
+      } catch (error) {
+        console.error('フォルダ削除エラー:', error)
+        alert('フォルダの削除に失敗しました')
       }
-      
-      const idsToDelete = getFolderIdsToDelete(folderId)
-      
-      // フォルダを削除
-      setFolders(prev => prev.filter(f => !idsToDelete.includes(f.id)))
-      
-      // 親フォルダのfolderCountを更新
-      if (folder.parentId) {
-        setFolders(prev => prev.map(f => 
-          f.id === folder.parentId
-            ? { ...f, folderCount: Math.max(0, f.folderCount - 1) }
-            : f
-        ))
-      }
-      
-      // 選択中のフォルダが削除された場合、トップページに戻る
-      if (idsToDelete.includes(selectedFolderId || '')) {
-        navigate('/ocr')
-      }
-      
-      console.log('フォルダを削除:', idsToDelete)
     }
   }
 

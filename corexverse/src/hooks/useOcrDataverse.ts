@@ -27,8 +27,8 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
-import { ocrDataverseService, type MenuSectionRecord } from '@/services/ocrDataverseService';
-import type { OcrFolder, OcrDocument } from '@/types';
+import ocrDataverseService from '@/services/ocrDataverseService';
+import type { OcrFolder, OcrDocument, MenuSection } from '@/types';
 
 /**
  * メニューセクション取得フック
@@ -45,7 +45,7 @@ import type { OcrFolder, OcrDocument } from '@/types';
  * ```
  */
 export function useMenuSections() {
-  const [sections, setSections] = useState<MenuSectionRecord[]>([]);
+  const [sections, setSections] = useState<MenuSection[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
@@ -67,11 +67,32 @@ export function useMenuSections() {
     fetchSections();
   }, [fetchSections]);
 
-  const createSection = useCallback(async (section: Partial<MenuSectionRecord>) => {
+  const createSection = useCallback(async (section: Partial<MenuSection>) => {
     try {
       const created = await ocrDataverseService.createMenuSection(section);
       setSections(prev => [...prev, created]);
       return created;
+    } catch (err) {
+      setError(err as Error);
+      throw err;
+    }
+  }, []);
+
+  const updateSection = useCallback(async (id: string, updates: Partial<MenuSection>) => {
+    try {
+      const updated = await ocrDataverseService.updateMenuSection(id, updates);
+      setSections(prev => prev.map(s => s.id === id ? updated : s));
+      return updated;
+    } catch (err) {
+      setError(err as Error);
+      throw err;
+    }
+  }, []);
+
+  const deleteSection = useCallback(async (id: string) => {
+    try {
+      await ocrDataverseService.deleteMenuSection(id);
+      setSections(prev => prev.filter(s => s.id !== id));
     } catch (err) {
       setError(err as Error);
       throw err;
@@ -84,6 +105,8 @@ export function useMenuSections() {
     error,
     refresh: fetchSections,
     createSection,
+    updateSection,
+    deleteSection,
   };
 }
 
