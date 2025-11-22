@@ -33,6 +33,7 @@ import OcrUploadPage from "@/features/ocr/pages/ocr-upload"
 import OcrDocumentDetailPage from "@/features/ocr/pages/ocr-document-detail"
 import DataverseSettings from "@/features/tool-portal/pages/dataverse-settings"
 import SettingsPage from "@/features/settings/pages/settings"
+import SettingsIndexRedirect from "@/features/settings/components/SettingsIndexRedirect"
 import UsersSettingsPage from "@/features/settings/pages/users"
 import ClientsSettingsPage from "@/features/settings/pages/clients"
 import AISettingsPage from "@/features/settings/pages/ai-settings"
@@ -110,7 +111,7 @@ export const router = createBrowserRouter([
     errorElement: <NotFoundPage />,
     children: [
       // 設定画面 (Settings)
-      { index: true, element: <Navigate to="/settings/users" replace /> },
+      { index: true, element: <SettingsIndexRedirect /> },
       { path: "users", element: <UsersSettingsPage /> },
       { path: "clients", element: <ClientsSettingsPage /> },
       { path: "contracts", element: <UnderConstructionPage /> },

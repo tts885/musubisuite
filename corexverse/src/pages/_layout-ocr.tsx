@@ -4,28 +4,31 @@
  * OCRアプリケーション専用のレイアウトコンポーネント。
  * 現代的なWebUIデザインを採用
  * 
+ * Zustandストアで状態管理を行うため、localStorageの直接操作は不要。
+ * 
  * @component
  * 
  * @returns {JSX.Element} OCRレイアウトUI
  */
 
-import { useState, useEffect } from 'react'
-import { Outlet } from 'react-router-dom'
+import { useEffect } from 'react'
+import { Outlet, useLocation } from 'react-router-dom'
 import AppSwitcher from '@/components/AppSwitcher'
 import OcrSidebar from '../components/ocr/OcrSidebar'
+import { useOcrStateStore } from '@/stores/ocrStateStore'
+import { useRouteTracker } from '@/hooks/use-route-tracker'
 
 export default function OcrLayout() {
-  const [sidebarOpen, setSidebarOpen] = useState(false)
-  // localStorageから初期状態を読み込み、デフォルトはfalse(展開)
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
-    const saved = localStorage.getItem('app-sidebar-collapsed')
-    return saved ? JSON.parse(saved) : false
-  })
-
-  // サイドバーの状態が変更されたらlocalStorageに保存
+  const location = useLocation()
+  const state = useOcrStateStore()
+  
+  // ルート追跡フック
+  useRouteTracker()
+  
+  // ロケーション変更を監視(必要に応じてデバッグ用)
   useEffect(() => {
-    localStorage.setItem('app-sidebar-collapsed', JSON.stringify(sidebarCollapsed))
-  }, [sidebarCollapsed])
+    // ロケーション変更時の処理が必要な場合はここに追加
+  }, [location, state])
 
   return (
     <div className="flex h-screen overflow-hidden bg-background">
@@ -33,12 +36,7 @@ export default function OcrLayout() {
       <AppSwitcher />
 
       {/* OCRサイドバー - ナビゲーション */}
-      <OcrSidebar 
-        sidebarCollapsed={sidebarCollapsed}
-        setSidebarCollapsed={setSidebarCollapsed}
-        sidebarOpen={sidebarOpen}
-        setSidebarOpen={setSidebarOpen}
-      />
+      <OcrSidebar />
 
       {/* メインコンテンツエリア */}
       <main className="flex-1 overflow-auto">

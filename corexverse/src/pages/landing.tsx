@@ -42,31 +42,24 @@ import { getLastVisitedPath, isExplicitHomeNavigation } from "@/hooks/use-route-
  * - グラデーション背景とアニメーション効果
  * - 現代的なWebUIデザイン
  * - 再訪問時は最後に訪問したページにリダイレクト
+ * - 明示的なホームナビゲーション時はランディングページを表示
  */
 export default function LandingPage() {
   const navigate = useNavigate()
 
   useEffect(() => {
-    // Power Appsからのアクセスを検出
-    const urlParams = new URLSearchParams(window.location.search)
-    const isPowerApps = urlParams.has('_localAppUrl') || urlParams.has('_localConnectionUrl')
-    
-    // Power Appsからのアクセスの場合、ダッシュボードにリダイレクト
-    if (isPowerApps) {
-      navigate('/dashboard', { replace: true })
-      return
-    }
-
-    // 明示的なホーム遷移の場合はリダイレクトしない
+    // 明示的なホームナビゲーション(ホームボタンクリック)の場合はランディングページを表示
     if (isExplicitHomeNavigation()) {
-      return
+      return // ランディングページを表示
     }
-
-    // 最後に訪問したページがある場合、そこにリダイレクト
+    
+    // F5リロードまたは直接アクセスの場合: 最後に訪問したページにリダイレクト
     const lastPath = getLastVisitedPath()
-    if (lastPath && lastPath !== "/" && !lastPath.startsWith("/landing")) {
-      navigate(lastPath, { replace: true })
-    }
+    const targetRoute = lastPath && lastPath !== '/' && lastPath !== '/landing'
+      ? lastPath
+      : '/dashboard'
+    
+    navigate(targetRoute, { replace: true })
   }, [navigate])
 
   // 各ツールの情報

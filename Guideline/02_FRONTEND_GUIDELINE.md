@@ -51,72 +51,146 @@ npm run lint
 
 ## プロジェクト構造
 
-### ディレクトリ構成
+### ディレクトリ構成 (更新版)
+
 ```
-/
+corexverse/
 ├── src/
 │   ├── main.tsx              # エントリーポイント
-│   ├── App.tsx               # ルートコンポーネント
 │   ├── router.tsx            # ルーティング設定
 │   ├── index.css             # グローバルスタイル
 │   │
-│   ├── components/           # 再利用可能なコンポーネント
-│   │   ├── ui/              # UIプリミティブ (Shadcn/ui)
+│   ├── features/             # 機能ベースモジュール (NEW)
+│   │   ├── auth/             # 認証・ログイン機能
+│   │   │   ├── pages/        # 認証関連ページ
+│   │   │   ├── components/   # 認証専用コンポーネント
+│   │   │   └── hooks/        # 認証カスタムフック
+│   │   │
+│   │   ├── projects/         # プロジェクト管理機能
+│   │   │   ├── pages/        # プロジェクト一覧、詳細ページ
+│   │   │   ├── components/   # プロジェクト専用コンポーネント
+│   │   │   └── hooks/        # プロジェクトデータフック
+│   │   │
+│   │   ├── ocr/              # OCR機能
+│   │   │   ├── pages/        # OCRアップロード、結果ページ
+│   │   │   │   ├── ocr.tsx
+│   │   │   │   ├── ocr-upload.tsx
+│   │   │   │   ├── ocr-document-list.tsx
+│   │   │   │   └── ocr-document-detail.tsx
+│   │   │   ├── components/   # OCR専用コンポーネント
+│   │   │   └── hooks/        # OCRデータフック
+│   │   │
+│   │   ├── settings/         # 設定画面
+│   │   │   ├── pages/
+│   │   │   │   ├── settings.tsx
+│   │   │   │   ├── users.tsx
+│   │   │   │   ├── clients.tsx
+│   │   │   │   └── ai-settings.tsx
+│   │   │   └── components/
+│   │   │
+│   │   ├── tasks/            # タスク管理
+│   │   ├── dashboard/        # ダッシュボード
+│   │   └── tool-portal/      # ツールポータル
+│   │
+│   ├── components/           # 共通UIコンポーネント
+│   │   ├── ui/               # Shadcn/ui基本コンポーネント
 │   │   │   ├── button.tsx
 │   │   │   ├── card.tsx
+│   │   │   ├── dialog.tsx
+│   │   │   ├── table.tsx
+│   │   │   ├── alert-dialog.tsx  # (NEW)
+│   │   │   ├── checkbox.tsx
 │   │   │   └── ...
-│   │   ├── AppSwitcher.tsx  # アプリ切り替え
-│   │   └── mode-toggle.tsx  # テーマ切り替え
+│   │   │
+│   │   ├── layout/           # レイアウトコンポーネント
+│   │   │   ├── Header.tsx
+│   │   │   ├── Sidebar.tsx
+│   │   │   └── Footer.tsx
+│   │   │
+│   │   └── ocr/              # OCR共通コンポーネント
+│   │       ├── OcrSidebar.tsx
+│   │       ├── OcrFileUpload.tsx
+│   │       ├── OcrDocumentPreview.tsx
+│   │       └── OcrResultEditor.tsx
 │   │
-│   ├── pages/               # ページコンポーネント
-│   │   ├── _layout.tsx      # レイアウトコンポーネント
-│   │   ├── landing.tsx      # ランディングページ
-│   │   ├── dashboard.tsx    # ダッシュボード
-│   │   ├── projects.tsx     # プロジェクト一覧
-│   │   ├── project-detail.tsx
-│   │   ├── members.tsx
-│   │   ├── clients.tsx
-│   │   └── ...
+│   ├── pages/                # ページコンポーネント (レイアウトのみ)
+│   │   ├── _layout.tsx       # メインレイアウト
+│   │   ├── _layout-ocr.tsx   # OCRレイアウト
+│   │   ├── _layout-project-management.tsx
+│   │   ├── _layout-tool-portal.tsx
+│   │   ├── _layout-home.tsx
+│   │   ├── landing.tsx       # ランディングページ
+│   │   └── not-found.tsx     # 404ページ
 │   │
-│   ├── services/            # API通信・ビジネスロジック
-│   │   ├── djangoAPI.ts     # Django APIクライアント
-│   │   ├── powerAppsDataverseService.ts
-│   │   └── dataverseAdminService.ts
+│   ├── services/             # APIクライアント層 (NEW: サービス層)
+│   │   ├── djangoAPI.ts      # Django REST API統合
+│   │   ├── ocrService.ts     # OCRサービス
+│   │   ├── ocrDataverseService.ts  # OCR Dataverse連携
+│   │   └── dataverseService.ts     # Dataverse汎用サービス
 │   │
-│   ├── hooks/               # カスタムフック
-│   │   └── use-theme.ts
+│   ├── hooks/                # グローバルカスタムフック
+│   │   ├── use-theme.ts      # テーマフック
+│   │   ├── useAuth.ts        # 認証フック
+│   │   ├── useOcrDataverse.ts # OCR Dataverseフック
+│   │   └── useProjects.ts    # プロジェクトフック
 │   │
-│   ├── lib/                 # ユーティリティ・Store
-│   │   ├── utils.ts         # ヘルパー関数
-│   │   └── dataverseStore.ts # Zustand Store
+│   ├── lib/                  # ユーティリティ
+│   │   ├── utils.ts          # 汎用ユーティリティ
+│   │   └── cn.ts             # クラス名結合
 │   │
-│   ├── types/               # TypeScript型定義
-│   │   ├── dataverse.ts
-│   │   └── ...
+│   ├── types/                # TypeScript型定義
+│   │   ├── index.ts          # 共通型
+│   │   ├── ocr.ts            # OCR関連型
+│   │   ├── powerplatform.ts  # Power Platform型
+│   │   └── dataverse.ts
 │   │
-│   ├── providers/           # Contextプロバイダー
+│   ├── providers/            # Contextプロバイダー
 │   │   ├── theme-provider.tsx
 │   │   ├── query-provider.tsx
 │   │   ├── power-provider.tsx
 │   │   └── sonner-provider.tsx
 │   │
-│   ├── data/                # モックデータ・スキーマ
+│   ├── generated/            # 自動生成コード
+│   │   ├── models/           # Dataverseモデル
+│   │   └── services/         # Dataverseサービス
+│   │
+│   ├── data/                 # モックデータ・スキーマ
 │   │   ├── mockData.ts
 │   │   └── tableSchemas.ts
 │   │
-│   └── assets/              # 静的アセット
+│   └── assets/               # 静的アセット
 │
-├── plugins/                 # Viteプラグイン
+├── plugins/                  # Viteプラグイン
 │   └── plugin-power-apps.ts
 │
-├── public/                  # 公開静的ファイル
-├── components.json          # Shadcn/ui設定
-├── tsconfig.json            # TypeScript設定
-├── vite.config.ts           # Vite設定
-├── eslint.config.js         # ESLint設定
-├── tailwind.config.js       # Tailwind CSS設定
+├── public/                   # 公開静的ファイル
+├── Dockerfile                # フロントエンドコンテナ定義 (NEW)
+├── nginx.conf                # Nginx設定 (NEW)
+├── components.json           # Shadcn/ui設定
+├── tsconfig.json             # TypeScript設定
+├── vite.config.ts            # Vite設定
+├── eslint.config.js          # ESLint設定
+├── tailwind.config.js        # Tailwind CSS設定
 └── package.json
 ```
+
+### 主な変更点
+
+1. **features/ディレクトリの追加**
+   - 機能ごとにpages/components/hooks/を持つ
+   - スケーラビリティと保守性の向上
+   - 機能単位での独立性
+
+2. **services/層の強化**
+   - ビジネスロジックの集約
+   - API通信の抽象化
+   - データ変換とエラーハンドリング
+
+3. **Docker対応**
+   - Dockerfile追加
+   - nginx.conf追加
+   - コンテナ化による環境統一
+
 
 ### ファイル命名規則
 

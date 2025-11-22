@@ -20,6 +20,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { useMenuSections, useOcrFolders } from '@/hooks/useOcrDataverse'
 import ocrDataverseService from '@/services/ocrDataverseService'
+import { useOcrStateStore } from '@/stores/ocrStateStore'
 import type { OcrFolder } from '@/types'
 
 interface FolderTreeNode {
@@ -28,21 +29,32 @@ interface FolderTreeNode {
 }
 
 interface OcrSidebarProps {
-  sidebarCollapsed: boolean
-  setSidebarCollapsed: (collapsed: boolean) => void
-  sidebarOpen: boolean
-  setSidebarOpen: (open: boolean) => void
+  // Zustandストアから状態を取得するため、propsは不要
+  // 後方互換性のため残すが、内部ではストアを使用
 }
 
 /**
  * OCRアプリケーションのサイドバー
  * 現代的なサイドバーデザイン
+ * 
+ * Zustandストアを使用して状態を永続化し、
+ * ページリロード後も展開状態を保持します。
  */
-export default function OcrSidebar({ sidebarCollapsed, setSidebarCollapsed, sidebarOpen, setSidebarOpen }: OcrSidebarProps) {
+export default function OcrSidebar(_props: OcrSidebarProps) {
   const navigate = useNavigate()
   const location = useLocation()
   const [searchParams] = useSearchParams()
-  const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set(['all-docs']))
+  
+  // Zustandストアから状態を取得
+  const {
+    expandedFolders,
+    sidebarCollapsed,
+    sidebarOpen,
+    toggleFolder: toggleFolderInStore,
+    expandFolders,
+    setSidebarCollapsed,
+    setSidebarOpen,
+  } = useOcrStateStore()
 
   // Dataverseからメニューセクションとフォルダを取得
   const { sections: menuSectionsData, createSection, updateSection, deleteSection } = useMenuSections()
@@ -85,6 +97,35 @@ export default function OcrSidebar({ sidebarCollapsed, setSidebarCollapsed, side
         children: buildFolderTree(folder.id, foldersList)
       }))
   }
+  
+  // 選択中のフォルダの親階層を自動展開
+  useEffect(() => {
+    if (selectedFolderId && folders.length > 0) {
+      // 選択中のフォルダを見つける
+      const currentFolder = folders.find(f => f.id === selectedFolderId)
+      if (currentFolder) {
+        // 親階層のIDを収集
+        const parentIds: string[] = []
+        let parentId = currentFolder.parentId
+        
+        while (parentId) {
+          parentIds.push(parentId)
+          const parentFolder = folders.find(f => f.id === parentId)
+          parentId = parentFolder?.parentId || null
+        }
+        
+        // メニューセクションIDも追加
+        if (currentFolder.menuSection) {
+          parentIds.push(currentFolder.menuSection)
+        }
+        
+        // 親階層を全て展開
+        if (parentIds.length > 0) {
+          expandFolders(parentIds)
+        }
+      }
+    }
+  }, [selectedFolderId, folders, expandFolders])
 
   // ドキュメント数を取得
   const [documentCounts, setDocumentCounts] = useState<Record<string, number>>({})
@@ -149,15 +190,7 @@ export default function OcrSidebar({ sidebarCollapsed, setSidebarCollapsed, side
 
   // フォルダの展開/折りたたみ
   const toggleFolder = (folderId: string) => {
-    setExpandedFolders(prev => {
-      const newSet = new Set(prev)
-      if (newSet.has(folderId)) {
-        newSet.delete(folderId)
-      } else {
-        newSet.add(folderId)
-      }
-      return newSet
-    })
+    toggleFolderInStore(folderId)
   }
 
   // フォルダツリーノードをレンダリング
@@ -289,7 +322,7 @@ export default function OcrSidebar({ sidebarCollapsed, setSidebarCollapsed, side
         color: '#3b82f6',
       })
 
-      setExpandedFolders(prev => new Set([...prev, created.id]))
+      expandFolders([created.id])
       setIsAddMenuOpen(false)
       setMenuName('')
     } catch (error) {
@@ -357,11 +390,7 @@ export default function OcrSidebar({ sidebarCollapsed, setSidebarCollapsed, side
         // メニューセクションを削除
         await deleteSection(menuId)
 
-        setExpandedFolders(prev => {
-          const newSet = new Set(prev)
-          newSet.delete(menuId)
-          return newSet
-        })
+        toggleFolderInStore(menuId) // 削除されたメニューの展開状態を解除
       } catch (error) {
         console.error('メニュー削除エラー:', error)
         alert('メニューの削除に失敗しました')
@@ -449,7 +478,7 @@ export default function OcrSidebar({ sidebarCollapsed, setSidebarCollapsed, side
 
       // 親フォルダを展開
       if (currentParentId) {
-        setExpandedFolders(prev => new Set([...prev, currentParentId]))
+        expandFolders([currentParentId])
       }
 
       setIsAddDialogOpen(false)

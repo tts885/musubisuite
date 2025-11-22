@@ -52,12 +52,15 @@ flake8 .
 
 ## プロジェクト構造
 
-### ディレクトリ構成
+### ディレクトリ構成 (更新版)
+
 ```
-/
+corexverseAPI/
 ├── manage.py                # Django管理スクリプト
-├── db.sqlite3              # SQLiteデータベース
+├── db.sqlite3              # SQLiteデータベース (開発環境)
 ├── requirements.txt        # Python依存関係
+├── Dockerfile              # バックエンドコンテナ定義 (NEW)
+├── QUICKSTART.md           # クイックスタートガイド
 │
 ├── config/                 # プロジェクト設定
 │   ├── __init__.py
@@ -66,28 +69,70 @@ flake8 .
 │   ├── wsgi.py            # WSGIエントリーポイント
 │   └── asgi.py            # ASGIエントリーポイント
 │
-├── projects/              # プロジェクトアプリ
+├── services/              # ビジネスロジック層 (NEW)
 │   ├── __init__.py
-│   ├── models.py         # データモデル
+│   ├── project_service.py # プロジェクト関連ビジネスロジック
+│   │   # - get_project_stats()
+│   │   # - get_project_attachments()
+│   │   # - calculate_project_metrics()
+│   │
+│   └── ai_service.py      # AI統合ビジネスロジック
+│       # - stream_ai_response()
+│       # - process_ocr_with_ai()
+│
+├── projects/              # Djangoアプリ: プロジェクト管理
+│   ├── __init__.py
+│   ├── models.py         # データモデル (Project, Attachment, Comment)
 │   ├── serializers.py    # シリアライザー
-│   ├── views.py          # ビューロジック
-│   ├── admin.py          # Admin設定
+│   ├── views.py          # APIビュー (ProjectViewSet)
+│   ├── urls.py           # URLパターン
+│   ├── admin.py          # Django Admin設定
 │   ├── apps.py           # アプリ設定
 │   ├── tests.py          # テスト
 │   └── migrations/       # マイグレーション
 │
-├── members/              # メンバーアプリ
+├── tasks/                # Djangoアプリ: タスク管理
 │   └── ... (同上)
 │
-├── clients/              # クライアントアプリ
+├── clients/              # Djangoアプリ: クライアント管理
 │   └── ... (同上)
 │
-├── tasks/                # タスクアプリ
+├── members/              # Djangoアプリ: メンバー管理
 │   └── ... (同上)
 │
-└── activities/           # アクティビティアプリ
+├── activities/           # Djangoアプリ: アクティビティログ
+│   └── ... (同上)
+│
+├── contracts/            # Djangoアプリ: 契約管理
+│   └── ... (同上)
+│
+├── masters/              # Djangoアプリ: マスタデータ
+│   └── ... (同上)
+│
+├── ai_services/          # Djangoアプリ: AI連携
+│   └── ... (同上)
+│
+└── ai_settings/          # Djangoアプリ: AI設定
     └── ... (同上)
 ```
+
+### 主な変更点
+
+1. **services/層の追加**
+   - ビジネスロジックをViewから分離
+   - 再利用性とテスト容易性の向上
+   - 複雑なビジネスルールの集約
+
+2. **Docker対応**
+   - Dockerfile追加
+   - コンテナ化による環境統一
+   - docker-compose.ymlでの統合
+
+3. **サービス層の役割**
+   - データ取得と集計
+   - ビジネスルールの実装
+   - 外部API連携
+
 
 ### ファイル命名規則
 - **snake_case**: すべてのPythonファイル

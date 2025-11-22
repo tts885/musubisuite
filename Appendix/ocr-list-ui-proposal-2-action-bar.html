@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>提案2: アクションバー統合型</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .action-bar-enter {
+            opacity: 0;
+            transform: translateY(-10px);
+        }
+        .action-bar-enter-active {
+            opacity: 1;
+            transform: translateY(0);
+            transition: all 0.2s ease-out;
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <div class="min-h-screen p-8">
+        <!-- ヘッダーエリア（状態によって切り替わる） -->
+        <div class="bg-white rounded-t-lg shadow-sm border border-gray-200 p-4 mb-0 relative overflow-hidden h-20">
+            
+            <!-- 通常時のヘッダー -->
+            <div class="absolute inset-0 p-4 flex items-center justify-between transition-all duration-300 transform opacity-0 pointer-events-none" style="opacity: 0; transform: translateY(-20px);">
+                <div class="flex items-center gap-4 flex-1">
+                    <h1 class="text-xl font-bold text-gray-800 whitespace-nowrap">ドキュメント</h1>
+                    <div class="relative flex-1 max-w-xl">
+                        <svg class="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                        </svg>
+                        <input type="text" placeholder="検索..." class="w-full pl-10 pr-4 py-2 bg-gray-100 border-transparent rounded-lg focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors" />
+                    </div>
+                </div>
+                <button class="ml-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium flex items-center gap-2 shadow-sm">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                    </svg>
+                    新規アップロード
+                </button>
+            </div>
+
+            <!-- 選択時のアクションバー（現在アクティブ） -->
+            <div class="absolute inset-0 bg-blue-50 p-4 flex items-center justify-between transition-all duration-300 transform">
+                <div class="flex items-center gap-6">
+                    <div class="flex items-center gap-3">
+                        <button class="text-gray-500 hover:text-gray-700">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                            </svg>
+                        </button>
+                        <span class="text-lg font-semibold text-blue-900">2件選択中</span>
+                    </div>
+                    <div class="h-6 w-px bg-blue-200"></div>
+                    <div class="flex items-center gap-2">
+                        <button class="p-2 text-blue-800 hover:bg-blue-100 rounded-full tooltip" title="すべて選択">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-2">
+                    <button class="px-4 py-2 text-gray-700 hover:bg-blue-100 rounded-lg flex items-center gap-2 transition-colors">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+                        </svg>
+                        ダウンロード
+                    </button>
+                    <button class="px-4 py-2 text-gray-700 hover:bg-blue-100 rounded-lg flex items-center gap-2 transition-colors">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path>
+                        </svg>
+                        タグ付け
+                    </button>
+                    <div class="h-6 w-px bg-blue-200 mx-2"></div>
+                    <button class="px-4 py-2 text-red-600 hover:bg-red-50 rounded-lg flex items-center gap-2 transition-colors">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                        </svg>
+                        削除
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- テーブル -->
+        <div class="bg-white rounded-b-lg shadow-sm border-x border-b border-gray-200 overflow-hidden mb-8">
+            <table class="w-full">
+                <thead class="bg-gray-50 border-b border-gray-200">
+                    <tr>
+                        <th class="px-6 py-3 text-left w-12">
+                            <input type="checkbox" class="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500" />
+                        </th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ファイル名</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ステータス</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">更新日</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">アクション</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-200">
+                    <!-- 選択済み行 -->
+                    <tr class="bg-blue-50/50">
+                        <td class="px-6 py-4">
+                            <input type="checkbox" checked class="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500" />
+                        </td>
+                        <td class="px-6 py-4">
+                            <div class="flex items-center">
+                                <svg class="w-8 h-8 text-red-500 mr-3" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z"></path>
+                                </svg>
+                                <div>
+                                    <div class="text-sm font-medium text-gray-900">契約書_2024_A001.pdf</div>
+                                    <div class="text-xs text-gray-500">2.4 MB</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4">
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">完了</span>
+                        </td>
+                        <td class="px-6 py-4 text-sm text-gray-500">今日 15:20</td>
+                        <td class="px-6 py-4 text-right">
+                            <button class="text-gray-400 hover:text-gray-600">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"></path>
+                                </svg>
+                            </button>
+                        </td>
+                    </tr>
+                    <!-- 選択済み行 -->
+                    <tr class="bg-blue-50/50">
+                        <td class="px-6 py-4">
+                            <input type="checkbox" checked class="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500" />
+                        </td>
+                        <td class="px-6 py-4">
+                            <div class="flex items-center">
+                                <svg class="w-8 h-8 text-blue-500 mr-3" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z"></path>
+                                </svg>
+                                <div>
+                                    <div class="text-sm font-medium text-gray-900">見積書_2024_002.docx</div>
+                                    <div class="text-xs text-gray-500">1.1 MB</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4">
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">処理中</span>
+                        </td>
+                        <td class="px-6 py-4 text-sm text-gray-500">昨日 09:15</td>
+                        <td class="px-6 py-4 text-right">
+                            <button class="text-gray-400 hover:text-gray-600">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"></path>
+                                </svg>
+                            </button>
+                        </td>
+                    </tr>
+                    <!-- 未選択行 -->
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-6 py-4">
+                            <input type="checkbox" class="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500" />
+                        </td>
+                        <td class="px-6 py-4">
+                            <div class="flex items-center">
+                                <svg class="w-8 h-8 text-red-500 mr-3" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z"></path>
+                                </svg>
+                                <div>
+                                    <div class="text-sm font-medium text-gray-900">請求書_2024_001.pdf</div>
+                                    <div class="text-xs text-gray-500">540 KB</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4">
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">完了</span>
+                        </td>
+                        <td class="px-6 py-4 text-sm text-gray-500">3日前</td>
+                        <td class="px-6 py-4 text-right">
+                            <button class="text-gray-400 hover:text-gray-600">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"></path>
+                                </svg>
+                            </button>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- 説明パネル -->
+        <div class="bg-white border border-gray-200 p-6 rounded-lg shadow-sm">
+            <h3 class="text-lg font-bold text-gray-900 mb-3">💡 提案2: アクションバー統合型</h3>
+            <div class="space-y-3 text-sm text-gray-600">
+                <div class="flex items-start gap-2">
+                    <span class="font-semibold min-w-[80px] text-gray-900">特徴:</span>
+                    <span>Gmail、Outlook、GitHub Issuesなどで見られる、ヘッダー領域を活用するパターン</span>
+                </div>
+                <div class="flex items-start gap-2">
+                    <span class="font-semibold min-w-[80px] text-gray-900">メリット:</span>
+                    <ul class="space-y-1">
+                        <li>• 視線移動が少なく、操作が画面上部に集中する</li>
+                        <li>• 選択時にヘッダーが切り替わることで、モードの変化が明確</li>
+                        <li>• デスクトップアプリケーションのような堅牢な印象を与える</li>
+                        <li>• ツールバーがコンテンツを隠すことがない</li>
+                    </ul>
+                </div>
+                <div class="flex items-start gap-2">
+                    <span class="font-semibold min-w-[80px] text-gray-900">UXフロー:</span>
+                    <span>チェックボックス選択 → ヘッダーがアクションバーに変身 → 操作実行</span>
+                </div>
+                <div class="flex items-start gap-2">
+                    <span class="font-semibold min-w-[80px] text-gray-900">推奨度:</span>
+                    <span class="text-yellow-600">⭐⭐⭐⭐ 業務アプリとして安定感がある</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

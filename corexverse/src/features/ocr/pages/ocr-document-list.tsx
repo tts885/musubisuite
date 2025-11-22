@@ -2,39 +2,27 @@ import { useState, useEffect } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { format } from 'date-fns'
 import { ja } from 'date-fns/locale'
-import {
-  Search,
-  Filter,
-  CheckCircle,
-  Clock,
+import { 
+  Search, 
   FileText,
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
   Trash2,
+  Download,
+  Archive,
+  Edit2
 } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Badge } from '@/components/ui/badge'
 import { Checkbox } from '@/components/ui/checkbox'
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog'
-import { toast } from 'sonner'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import {
   Table,
   TableBody,
@@ -43,16 +31,9 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-
-import { formatBytes } from '@/lib/utils'
-import type { OcrDocument, OcrFolder } from '@/types'
-import { useOcrFolders, useMenuSections } from '@/hooks/useOcrDataverse'
+import type { OcrDocument } from '@/types'
 import ocrDataverseService from '@/services/ocrDataverseService'
-
-interface FolderTreeNode {
-  folder: OcrFolder
-  children: FolderTreeNode[]
-}
+import { useOcrStateStore } from '@/stores/ocrStateStore'
 
 /**
  * OCRドキュメント一覧ページ
@@ -61,19 +42,32 @@ interface FolderTreeNode {
 export default function OcrDocumentListPage() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
+  
+  // Zustandストアから状態を取得・復元
+  const { setSelectedFolderId: setSelectedFolderIdInStore } = useOcrStateStore()
+  
+  // URLパラメータからフォルダIDを取得
+  const urlFolderId = searchParams.get('folder')
+  
   const [searchKeyword, setSearchKeyword] = useState('')
-  const [statusFilter, setStatusFilter] = useState<string>('all')
-  const [folderFilter, setFolderFilter] = useState<string>('all')
+  const [folderFilter, setFolderFilter] = useState<string>(urlFolderId || 'all')
   const [currentPage, setCurrentPage] = useState(1)
   const itemsPerPage = 20
-  const [selectedDocuments, setSelectedDocuments] = useState<string[]>([])
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
-  const [isDeleting, setIsDeleting] = useState(false)
-
+  
   // Dataverseからデータ取得
-  const { folders } = useOcrFolders()
-  const { sections: menuSections } = useMenuSections()
   const [documents, setDocuments] = useState<OcrDocument[]>([])
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+  
+  // URLパラメータが変更されたらフォルダフィルターを更新し、ストアに保存
+  useEffect(() => {
+    if (urlFolderId) {
+      setFolderFilter(urlFolderId)
+      setSelectedFolderIdInStore(urlFolderId)
+    } else {
+      setFolderFilter('all')
+      setSelectedFolderIdInStore(null)
+    }
+  }, [urlFolderId, setSelectedFolderIdInStore])
 
   // ドキュメント取得
   useEffect(() => {
@@ -87,63 +81,9 @@ export default function OcrDocumentListPage() {
     }
     fetchDocuments()
   }, [])
-
-  // フォルダツリーを構築
-  const buildFolderTree = (parentId: string | null = null): FolderTreeNode[] => {
-    return folders
-      .filter(folder => folder.parentId === parentId)
-      .map(folder => ({
-        folder,
-        children: buildFolderTree(folder.id)
-      }))
-  }
-
-  const folderTree = buildFolderTree()
-  const currentFolder = folderFilter !== 'all' ? folders.find(f => f.id === folderFilter) : null
-
+  
   // パンくずリストを生成（M001>F003/F003形式）
-  const getBreadcrumbPath = () => {
-    if (!currentFolder) return null
 
-    // メニューセクション名を取得
-    const menuSection = menuSections.find(m => m.id === currentFolder.menuSection)
-    const menuName = menuSection ? menuSection.name : 'すべてのドキュメント'
-
-    // フォルダの階層パスを構築
-    const buildFolderPath = (folderId: string): string[] => {
-      const folder = folders.find(f => f.id === folderId)
-      if (!folder) return []
-
-      const path: string[] = [folder.name]
-      if (folder.parentId) {
-        path.unshift(...buildFolderPath(folder.parentId))
-      }
-      return path
-    }
-
-    const folderPath = buildFolderPath(currentFolder.id)
-
-    return {
-      menuName,
-      folderPath
-    }
-  }
-
-  const breadcrumb = getBreadcrumbPath()
-
-  // フォルダツリーを平坦化して選択肖を生成
-  const flattenFolderTree = (nodes: FolderTreeNode[], depth: number = 0): Array<{ node: FolderTreeNode, depth: number }> => {
-    const result: Array<{ node: FolderTreeNode, depth: number }> = []
-    nodes.forEach(node => {
-      result.push({ node, depth })
-      if (node.children && node.children.length > 0) {
-        result.push(...flattenFolderTree(node.children, depth + 1))
-      }
-    })
-    return result
-  }
-
-  const flatFolders = flattenFolderTree(folderTree)
 
   // URLパラメータからフォルダフィルターを取得
   useEffect(() => {
@@ -164,15 +104,10 @@ export default function OcrDocumentListPage() {
       filtered = filtered.filter(doc => doc.folderId === folderFilter)
     }
 
-    // ステータスフィルター
-    if (statusFilter !== 'all') {
-      filtered = filtered.filter(doc => doc.status === statusFilter)
-    }
-
     // 検索フィルター
     if (searchKeyword.trim()) {
       const lowerKeyword = searchKeyword.toLowerCase()
-      filtered = filtered.filter(doc =>
+      filtered = filtered.filter(doc => 
         doc.fileName.toLowerCase().includes(lowerKeyword) ||
         (doc.tags && doc.tags.some(tag => tag.toLowerCase().includes(lowerKeyword)))
       )
@@ -182,298 +117,277 @@ export default function OcrDocumentListPage() {
   }
 
   const filteredDocuments = getFilteredDocuments()
-
+  
   // ページネーション
   const totalPages = Math.ceil(filteredDocuments.length / itemsPerPage)
   const startIndex = (currentPage - 1) * itemsPerPage
   const endIndex = startIndex + itemsPerPage
   const currentDocuments = filteredDocuments.slice(startIndex, endIndex)
 
-  // ステータスバッジ
-  const getStatusBadge = (doc: OcrDocument) => {
-    switch (doc.status) {
-      case 'completed':
-        return <Badge variant="default" className="bg-green-600 dark:bg-green-700"><CheckCircle className="w-3 h-3 mr-1" />完了</Badge>
-      case 'processing':
-        return <Badge variant="secondary"><Clock className="w-3 h-3 mr-1" />処理中</Badge>
-      case 'error':
-        return <Badge variant="destructive">失敗</Badge>
-      case 'pending':
-        return <Badge variant="secondary"><Clock className="w-3 h-3 mr-1" />処理待ち</Badge>
-      case 'uploaded':
-      default:
-        return <Badge variant="secondary">アップロード済み</Badge>
+  // 選択ハンドラー
+  const toggleSelection = (id: string) => {
+    const newSelected = new Set(selectedIds)
+    if (newSelected.has(id)) {
+      newSelected.delete(id)
+    } else {
+      newSelected.add(id)
+    }
+    setSelectedIds(newSelected)
+  }
+
+  const toggleAllSelection = () => {
+    // 現在のページのアイテムがすべて選択されているか確認
+    const allSelected = currentDocuments.length > 0 && currentDocuments.every(d => selectedIds.has(d.id))
+    
+    const newSelected = new Set(selectedIds)
+    if (allSelected) {
+      currentDocuments.forEach(d => newSelected.delete(d.id))
+    } else {
+      currentDocuments.forEach(d => newSelected.add(d.id))
+    }
+    setSelectedIds(newSelected)
+  }
+
+  // 削除処理
+  const handleDelete = (id: string) => {
+    if (confirm('このドキュメントを削除してもよろしいですか?')) {
+      // TODO: 実際の削除APIを呼び出す
+      console.log('Delete document:', id)
     }
   }
 
-  // 信頼度バッジ（現在は使用しない）
-  const getConfidenceBadge = (confidence: number) => {
-    if (confidence >= 0.95) {
-      return <Badge variant="default" className="bg-green-600 dark:bg-green-700">{(confidence * 100).toFixed(0)}%</Badge>
-    } else if (confidence >= 0.85) {
-      return <Badge variant="secondary" className="bg-yellow-600 dark:bg-yellow-700">{(confidence * 100).toFixed(0)}%</Badge>
-    } else {
-      return <Badge variant="destructive">{(confidence * 100).toFixed(0)}%</Badge>
+  const handleBulkDelete = () => {
+    if (selectedIds.size === 0) return
+    if (confirm(`選択した${selectedIds.size}件のドキュメントを削除してもよろしいですか?`)) {
+      // TODO: 実際の一括削除APIを呼び出す
+      console.log('Bulk delete:', Array.from(selectedIds))
+      setSelectedIds(new Set())
     }
+  }
+
+  const handleBulkDownload = () => {
+    if (selectedIds.size === 0) return
+    console.log('Bulk download:', Array.from(selectedIds))
+  }
+
+  const handleBulkArchive = () => {
+    if (selectedIds.size === 0) return
+    console.log('Bulk archive:', Array.from(selectedIds))
   }
 
   // 行クリック時の処理
-  const handleRowClick = (doc: OcrDocument, e: React.MouseEvent) => {
-    // チェックボックスクリック時は行クリックを無視
-    if ((e.target as HTMLElement).closest('[data-checkbox]')) {
-      return
-    }
+  const handleRowClick = (doc: OcrDocument) => {
     if (doc.ocrResult) {
       navigate(`/ocr/documents/${doc.id}`)
     }
   }
 
-  // 全選択/全解除
-  const handleSelectAll = (checked: boolean) => {
-    if (checked) {
-      setSelectedDocuments(currentDocuments.map(doc => doc.id))
-    } else {
-      setSelectedDocuments([])
-    }
-  }
-
-  // 個別選択
-  const handleSelectDocument = (documentId: string, checked: boolean) => {
-    if (checked) {
-      setSelectedDocuments(prev => [...prev, documentId])
-    } else {
-      setSelectedDocuments(prev => prev.filter(id => id !== documentId))
-    }
-  }
-
-  // 削除処理
-  const handleDelete = async () => {
-    setIsDeleting(true)
-    try {
-      const result = await ocrDataverseService.deleteDocuments(selectedDocuments)
-
-      if (result.success > 0) {
-        toast.success(`${result.success}件のドキュメントを削除しました`)
-        // ドキュメントリストを再取得
-        const docs = await ocrDataverseService.getDocuments()
-        setDocuments(docs)
-        setSelectedDocuments([])
-      }
-
-      if (result.failed > 0) {
-        toast.error(`${result.failed}件のドキュメントの削除に失敗しました`)
-      }
-    } catch (error) {
-      console.error('削除エラー:', error)
-      toast.error('ドキュメントの削除に失敗しました')
-    } finally {
-      setIsDeleting(false)
-      setDeleteDialogOpen(false)
-    }
-  }
-
-  // 統計情報
-  const filteredStats = {
-    total: filteredDocuments.length,
-    completed: filteredDocuments.filter(d => d.ocrResult?.status === 'completed').length,
-    pending: filteredDocuments.filter(d => !d.ocrResult).length,
-  }
-
   return (
-    <div className="flex flex-col h-full bg-background">
-      {/* ヘッダー */}
-      <div className="border-b border-border bg-card p-6">
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <h1 className="text-2xl font-bold text-foreground">
-              {breadcrumb ? (
-                <>
-                  <span className="text-muted-foreground text-base">{breadcrumb.menuName} &gt; </span>
-                  {breadcrumb.folderPath.map((name, index) => (
-                    <span key={index}>
-                      {index > 0 && <span className="text-muted-foreground text-base">/</span>}
-                      {index === breadcrumb.folderPath.length - 1 ? (
-                        <span>{name}</span>
-                      ) : (
-                        <span className="text-muted-foreground text-base">{name}</span>
-                      )}
-                    </span>
-                  ))}
-                </>
-              ) : (
-                'OCRドキュメント一覧'
-              )}
-            </h1>
-            <p className="text-sm text-muted-foreground mt-1">
-              {currentFolder && currentFolder.description && (
-                <span className="mr-4">{currentFolder.description} | </span>
-              )}
-              全 <span className="text-foreground font-semibold">{filteredStats.total}</span> 件 | 完了 <span className="text-foreground font-semibold">{filteredStats.completed}</span> 件 | 処理待ち <span className="text-foreground font-semibold">{filteredStats.pending}</span> 件
-            </p>
-          </div>
-          <div className="flex gap-2">
-            {selectedDocuments.length > 0 && (
-              <Button
-                variant="destructive"
-                onClick={() => setDeleteDialogOpen(true)}
-                disabled={isDeleting}
-              >
-                <Trash2 className="w-4 h-4 mr-2" />
-                削除 ({selectedDocuments.length})
-              </Button>
-            )}
-            <Button onClick={() => {
-              // 現在のフォルダフィルターがあれば、そのフォルダIDを渡す
-              const uploadPath = folderFilter !== 'all'
-                ? `/ocr/upload?folder=${folderFilter}`
-                : '/ocr/upload'
-              navigate(uploadPath)
-            }}>
-              <FileText className="w-4 h-4 mr-2" />
-              新規アップロード
-            </Button>
-          </div>
-        </div>
-
-        {/* 検索・フィルター */}
-        <div className="flex gap-4">
-          <div className="flex-1 relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+    <div className="flex flex-col h-full bg-gray-50">
+      {/* トップバー */}
+      <div className="flex items-center justify-between px-8 py-5 bg-gray-50">
+        <h1 className="text-2xl font-bold text-gray-900">ドキュメント</h1>
+        
+        <div className="flex items-center gap-3">
+          {/* 検索 */}
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
             <Input
-              placeholder="ファイル名、タグで検索..."
+              placeholder="検索"
               value={searchKeyword}
               onChange={(e) => {
                 setSearchKeyword(e.target.value)
                 setCurrentPage(1)
               }}
-              className="pl-10"
+              className="pl-9 pr-4 w-64 bg-white border-gray-200"
             />
           </div>
 
-          <Select value={folderFilter} onValueChange={(value) => {
-            setFolderFilter(value)
-            setCurrentPage(1)
-          }}>
-            <SelectTrigger className="w-[250px]">
-              <Filter className="w-4 h-4 mr-2" />
-              <SelectValue placeholder="フォルダ" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">すべてのフォルダ</SelectItem>
-              {flatFolders.map(({ node, depth }) => (
-                <SelectItem key={node.folder.id} value={node.folder.id}>
-                  <div className="flex items-center gap-2">
-                    <span style={{ marginLeft: `${depth * 16}px` }}>
-                      {depth > 0 && '└ '}
-                    </span>
-                    <div
-                      className="w-3 h-3 rounded-sm"
-                      style={{ backgroundColor: node.folder.color }}
-                    />
-                    <span>{node.folder.name}</span>
-                  </div>
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          <Select value={statusFilter} onValueChange={(value) => {
-            setStatusFilter(value)
-            setCurrentPage(1)
-          }}>
-            <SelectTrigger className="w-[180px]">
-              <Filter className="w-4 h-4 mr-2" />
-              <SelectValue placeholder="ステータス" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">すべて</SelectItem>
-              <SelectItem value="completed">完了</SelectItem>
-              <SelectItem value="pending">処理待ち</SelectItem>
-              <SelectItem value="processing">処理中</SelectItem>
-              <SelectItem value="failed">失敗</SelectItem>
-            </SelectContent>
-          </Select>
+          {/* スプリットボタン（新規作成） */}
+          <div className="relative inline-flex shadow-sm rounded-md">
+            <Button 
+              className="rounded-r-none bg-indigo-600 hover:bg-indigo-700 text-white border-0 text-sm font-medium px-4 py-2"
+              onClick={() => {
+                const uploadPath = folderFilter !== 'all'
+                  ? `/ocr/upload?folder=${folderFilter}`
+                  : '/ocr/upload'
+                navigate(uploadPath)
+              }}
+            >
+              <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4"></path>
+              </svg>
+              新規アップロード
+            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button className="rounded-l-none bg-indigo-600 hover:bg-indigo-700 text-white border-0 border-l border-indigo-700 px-2 py-2">
+                  <ChevronDown className="h-5 w-5" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => navigate('/ocr/upload')}>
+                  ファイルを選択
+                </DropdownMenuItem>
+                <DropdownMenuItem disabled>
+                  フォルダをアップロード (未実装)
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </div>
       </div>
 
+      {/* 一括操作バー（選択時のみ表示） */}
+      {selectedIds.size > 0 && (
+        <div className="mx-8 mb-4 bg-indigo-50 border border-indigo-100 rounded-lg p-3 flex items-center justify-between transition-all duration-300">
+          <div className="flex items-center gap-4">
+            <span className="bg-indigo-100 text-indigo-700 px-3 py-1 rounded-md text-sm font-medium">
+              {selectedIds.size}件選択
+            </span>
+            <div className="h-4 w-px bg-indigo-200"></div>
+            <button 
+              onClick={() => setSelectedIds(new Set())}
+              className="text-sm text-gray-600 hover:text-indigo-600 font-medium transition-colors"
+            >
+              すべて選択解除
+            </button>
+          </div>
+          <div className="flex items-center gap-2">
+            <button 
+              onClick={handleBulkDownload}
+              className="p-2 text-gray-500 hover:text-indigo-600 hover:bg-indigo-100 rounded-md transition-colors" 
+              title="ダウンロード"
+            >
+              <Download className="w-5 h-5" />
+            </button>
+            <button 
+              onClick={handleBulkArchive}
+              className="p-2 text-gray-500 hover:text-indigo-600 hover:bg-indigo-100 rounded-md transition-colors" 
+              title="アーカイブ"
+            >
+              <Archive className="w-5 h-5" />
+            </button>
+            <button 
+              onClick={handleBulkDelete}
+              className="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors" 
+              title="削除"
+            >
+              <Trash2 className="w-5 h-5" />
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* テーブル */}
-      <div className="flex-1 overflow-auto p-6">
-        <div className="bg-card rounded-lg border border-border">
+      <div className="flex-1 overflow-auto px-8 pb-6">
+        <div className="bg-white border border-gray-200 shadow-sm rounded-lg">
           <Table>
             <TableHeader>
-              <TableRow>
-                <TableHead className="w-[5%]">
-                  <Checkbox
-                    data-checkbox
-                    checked={currentDocuments.length > 0 && selectedDocuments.length === currentDocuments.length}
-                    onCheckedChange={handleSelectAll}
+              <TableRow className="bg-gray-50 border-b border-gray-200">
+                <TableHead className="w-[4%] p-4">
+                  <Checkbox 
+                    checked={currentDocuments.length > 0 && currentDocuments.every(d => selectedIds.has(d.id))}
+                    onCheckedChange={toggleAllSelection}
+                    className="text-indigo-600"
                   />
                 </TableHead>
-                <TableHead className="w-[6%]">No.</TableHead>
-                <TableHead className="w-[30%]">ファイル名</TableHead>
-                <TableHead className="w-[12%]">ステータス</TableHead>
-                <TableHead className="w-[10%]">信頼度</TableHead>
-                <TableHead className="w-[10%]">サイズ</TableHead>
-                <TableHead className="w-[15%]">アップロード日時</TableHead>
-                <TableHead className="w-[12%]">タグ</TableHead>
+                <TableHead className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">名前</TableHead>
+                <TableHead className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">ステータス</TableHead>
+                <TableHead className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">作成者</TableHead>
+                <TableHead className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">更新日時</TableHead>
+                <TableHead className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider text-right"></TableHead>
               </TableRow>
             </TableHeader>
-            <TableBody>
+            <TableBody className="divide-y divide-gray-100 bg-white">
               {currentDocuments.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={8} className="text-center py-12 text-muted-foreground">
+                  <TableCell colSpan={6} className="text-center py-12 text-gray-500">
                     該当するドキュメントが見つかりません
                   </TableCell>
                 </TableRow>
               ) : (
-                currentDocuments.map((doc, index) => (
-                  <TableRow
-                    key={doc.id}
-                    className="cursor-pointer hover:bg-muted/50"
-                    onClick={(e) => handleRowClick(doc, e)}
-                  >
-                    <TableCell onClick={(e) => e.stopPropagation()}>
-                      <Checkbox
-                        data-checkbox
-                        checked={selectedDocuments.includes(doc.id)}
-                        onCheckedChange={(checked) => handleSelectDocument(doc.id, checked as boolean)}
-                      />
-                    </TableCell>
-                    <TableCell className="text-sm text-muted-foreground">
-                      {startIndex + index + 1}
-                    </TableCell>
-                    <TableCell className="font-medium">
-                      <div className="flex items-center gap-2">
-                        <FileText className="w-4 h-4 text-muted-foreground" />
-                        {doc.fileName}
-                      </div>
-                    </TableCell>
-                    <TableCell>{getStatusBadge(doc)}</TableCell>
-                    <TableCell>
-                      {doc.ocrResult ? getConfidenceBadge(doc.ocrResult.overallConfidence) : '-'}
-                    </TableCell>
-                    <TableCell className="text-sm text-muted-foreground">
-                      {formatBytes(doc.fileSize)}
-                    </TableCell>
-                    <TableCell className="text-sm text-muted-foreground">
-                      {doc.uploadedDate ? format(new Date(doc.uploadedDate), 'yyyy/MM/dd HH:mm', { locale: ja }) : '-'}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex gap-1 flex-wrap">
-                        {doc.tags && doc.tags.slice(0, 2).map((tag, idx) => (
-                          <Badge key={idx} variant="outline" className="text-xs">
-                            {tag}
-                          </Badge>
-                        ))}
-                        {doc.tags && doc.tags.length > 2 && (
-                          <Badge variant="outline" className="text-xs">
-                            +{doc.tags.length - 2}
-                          </Badge>
-                        )}
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))
+                currentDocuments.map((doc) => {
+                  const isSelected = selectedIds.has(doc.id)
+                  return (
+                    <TableRow 
+                      key={doc.id}
+                      className={`group transition-colors cursor-pointer ${isSelected ? 'bg-indigo-50/30 hover:bg-indigo-50/50' : 'bg-white hover:bg-gray-50'}`}
+                      onClick={(e) => {
+                        if ((e.target as HTMLElement).closest('[role="checkbox"]') || 
+                            (e.target as HTMLElement).closest('button')) return
+                        handleRowClick(doc)
+                      }}
+                    >
+                      <TableCell className="p-4">
+                        <Checkbox 
+                          checked={isSelected}
+                          onCheckedChange={() => toggleSelection(doc.id)}
+                          onClick={(e) => e.stopPropagation()}
+                          className="text-indigo-600"
+                        />
+                      </TableCell>
+                      <TableCell className="px-6 py-4">
+                        <div className="flex items-center gap-3">
+                          <FileText className="w-5 h-5 text-gray-400 flex-shrink-0" />
+                          <span className="font-medium text-gray-900">{doc.fileName}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell className="px-6 py-4">
+                        <div className="flex items-center gap-2">
+                          <div className={`h-2 w-2 rounded-full ${
+                            doc.status === 'completed' ? 'bg-green-500' : 
+                            doc.status === 'processing' ? 'bg-yellow-500' : 
+                            'bg-gray-400'
+                          }`}></div>
+                          <span className="text-sm text-gray-600">
+                            {doc.status === 'completed' ? '完了' : 
+                             doc.status === 'processing' ? '処理中' : 
+                             doc.status === 'pending' ? '処理待ち' : 'アップロード済み'}
+                          </span>
+                        </div>
+                      </TableCell>
+                      <TableCell className="px-6 py-4">
+                        <div className="flex items-center gap-2">
+                          <div className="w-6 h-6 rounded-full bg-gray-200 flex items-center justify-center text-xs font-medium text-gray-600 flex-shrink-0">
+                            {doc.fileName.substring(0, 1).toUpperCase()}
+                          </div>
+                          <span className="text-sm text-gray-600">ユーザー</span>
+                        </div>
+                      </TableCell>
+                      <TableCell className="px-6 py-4">
+                        <span className="text-sm text-gray-500">
+                          {doc.uploadedDate ? format(new Date(doc.uploadedDate), 'yyyy/MM/dd', { locale: ja }) : '-'}
+                        </span>
+                      </TableCell>
+                      <TableCell className="px-6 py-4 text-right">
+                        {/* インラインアクション（ホバー時表示） */}
+                        <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <button 
+                            className="p-1 text-gray-400 hover:text-gray-600 rounded"
+                            onClick={(e) => { 
+                              e.stopPropagation()
+                              navigate(`/ocr/documents/${doc.id}`)
+                            }}
+                            title="編集"
+                          >
+                            <Edit2 className="w-4 h-4" />
+                          </button>
+                          <button 
+                            className="p-1 text-gray-400 hover:text-red-600 rounded"
+                            onClick={(e) => { 
+                              e.stopPropagation()
+                              handleDelete(doc.id)
+                            }}
+                            title="削除"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  )
+                })
               )}
             </TableBody>
           </Table>
@@ -521,29 +435,6 @@ export default function OcrDocumentListPage() {
           </div>
         )}
       </div>
-
-      {/* 削除確認ダイアログ */}
-      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>ドキュメントを削除しますか?</AlertDialogTitle>
-            <AlertDialogDescription>
-              選択した{selectedDocuments.length}件のドキュメントを削除します。
-              この操作は取り消せません。
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={isDeleting}>キャンセル</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleDelete}
-              disabled={isDeleting}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
-              {isDeleting ? '削除中...' : '削除'}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   )
 }

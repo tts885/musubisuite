@@ -24,7 +24,7 @@
  */
 
 import { useState, useEffect, useMemo } from "react"
-import { useNavigate, useSearchParams, useLocation } from "react-router-dom"
+import { useNavigate, useSearchParams } from "react-router-dom"
 import { ArrowLeft, Upload, CheckCircle, Folder, ChevronRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
@@ -66,107 +66,86 @@ interface FlatFolder {
 export default function OcrUploadPage() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
-  const location = useLocation()
   
   // Zustandストアから状態を取得・復元
-  const { selectedFolderId: storedFolderId, setSelectedFolderId: setSelectedFolderIdInStore, setLastOcrPath } = useOcrStateStore()
+  const { selectedFolderId: storedFolderId, setSelectedFolderId: setSelectedFolderIdInStore } = useOcrStateStore()
   
-  // 選択されたフォルダーIDの状態管理
-  const [selectedFolderId, setSelectedFolderId] = useState<string>('')
-  const [isInitialized, setIsInitialized] = useState(false)
-
+  // URLパラメータからフォルダIDを取得（優先度: URLパラメータ > ストア）
+  const urlFolderId = searchParams.get('folder')
+  const initialFolderId = urlFolderId || storedFolderId || ''
+  
   const [selectedFiles, setSelectedFiles] = useState<File[]>([])
   const [uploadState, setUploadState] = useState<UploadState>('idle')
   const [uploadProgress, setUploadProgress] = useState(0)
-
+  const [selectedFolderId, setSelectedFolderId] = useState<string>(initialFolderId)
+  
   // Dataverseからメニューセクションとフォルダを取得
   const { sections: menuSections } = useMenuSections()
   const { folders, loading: foldersLoading } = useOcrFolders()
   
-  // 初期化処理: URLパラメータ > ストアの順で優先してフォルダーIDを復元
-  useEffect(() => {
-    if (isInitialized) return
-    
-    const urlFolderId = searchParams.get('folder')
-    
-    if (urlFolderId) {
-      // URLパラメータが最優先
-      setSelectedFolderId(urlFolderId)
-      setIsInitialized(true)
-    } else if (storedFolderId && folders.length > 0) {
-      // ストアから復元（F5リロード時）: URLにフォルダーパラメータを追加してナビゲート
-      navigate(`/ocr/upload?folder=${storedFolderId}`, { replace: true })
-      setSelectedFolderId(storedFolderId)
-      setIsInitialized(true)
-    } else if (folders.length > 0 && !foldersLoading) {
-      // フォルダーがロードされたが選択なし → 初期化完了
-      setIsInitialized(true)
-    }
-  }, [searchParams, storedFolderId, folders.length, foldersLoading, isInitialized, navigate])
-  
   // フォルダ選択が変更されたらストアに保存
   useEffect(() => {
-    if (selectedFolderId && isInitialized) {
+    if (selectedFolderId) {
       setSelectedFolderIdInStore(selectedFolderId)
     }
-  }, [selectedFolderId, setSelectedFolderIdInStore, isInitialized])
+  }, [selectedFolderId, setSelectedFolderIdInStore])
   
-  // 現在のOCRパスをストアに保存（F5リロード時の復元用）
-  useEffect(() => {
-    if (isInitialized) {
-      const fullPath = `${location.pathname}${location.search}`
-      setLastOcrPath(fullPath)
-    }
-  }, [location.pathname, location.search, isInitialized, setLastOcrPath])
-
   // 選択されたフォルダを取得
-  const selectedFolder = useMemo(() =>
+  const selectedFolder = useMemo(() => 
     folders.find(f => f.id === selectedFolderId),
     [folders, selectedFolderId]
   )
-
+  
   // 選択されたフォルダの完全なパス（メニュー名を含む）
   const selectedFolderFullPath = useMemo(() => {
     if (!selectedFolder) return ''
-
+    
     const menu = menuSections.find(m => m.id === selectedFolder.menuSection)
     const menuName = menu?.name || 'メニュー'
-
+    
     return `${menuName} > ${selectedFolder.path}`
   }, [selectedFolder, menuSections])
-
+  
+  // URLパラメータからフォルダIDを取得
+  useEffect(() => {
+    const folderParam = searchParams.get('folder')
+    if (folderParam) {
+      setSelectedFolderId(folderParam)
+    }
+  }, [searchParams])
+  
   // メニューセクションごとにフォルダをグループ化して表示用データを構築
   const foldersByMenu = useMemo(() => {
     const result: Array<{ type: 'menu', menuId: string, menuName: string } | { type: 'folder', data: FlatFolder }> = []
-
+    
     // フォルダの階層構造を構築する関数
     const buildHierarchy = (parentId: string | null, menuSectionId: string, depth: number = 0): FlatFolder[] => {
       const hierarchyResult: FlatFolder[] = []
-      const children = folders.filter(f =>
-        f.parentId === parentId &&
+      const children = folders.filter(f => 
+        f.parentId === parentId && 
         f.menuSection === menuSectionId
       )
-
+      
       children.forEach(folder => {
         const path = folder.path || `/${folder.name}`
-
+        
         hierarchyResult.push({
           folder,
           depth,
           path
         })
-
+        
         // 子フォルダを再帰的に追加
         hierarchyResult.push(...buildHierarchy(folder.id, menuSectionId, depth + 1))
       })
-
+      
       return hierarchyResult
     }
-
+    
     // 各メニューセクションごとにフォルダをグループ化
     menuSections.forEach(menu => {
       const menuFolders = buildHierarchy(null, menu.id, 0)
-
+      
       if (menuFolders.length > 0) {
         // メニューヘッダーを追加
         result.push({
@@ -174,7 +153,7 @@ export default function OcrUploadPage() {
           menuId: menu.id,
           menuName: menu.name
         })
-
+        
         // そのメニュー配下のフォルダを追加
         menuFolders.forEach(flatFolder => {
           result.push({
@@ -184,7 +163,7 @@ export default function OcrUploadPage() {
         })
       }
     })
-
+    
     return result
   }, [folders, menuSections])
 
@@ -214,7 +193,7 @@ export default function OcrUploadPage() {
       toast.error('ファイルを選択してください')
       return
     }
-
+    
     if (!selectedFolderId) {
       toast.error('保存先フォルダを選択してください')
       return
@@ -226,7 +205,7 @@ export default function OcrUploadPage() {
 
       const totalFiles = selectedFiles.length
       let uploadedCount = 0
-
+      
       // 各ファイルを順次アップロード
       for (const file of selectedFiles) {
         try {
@@ -235,13 +214,13 @@ export default function OcrUploadPage() {
             folderId: selectedFolderId,
             status: 'uploaded',
           }
-
+          
           await ocrDataverseService.createDocument(document, file)
-
+          
           uploadedCount++
           const progress = Math.round((uploadedCount / totalFiles) * 100)
           setUploadProgress(progress)
-
+          
           toast.success(`${file.name} をアップロードしました`)
         } catch (error) {
           console.error(`ファイルアップロードエラー: ${file.name}`, error)
@@ -311,15 +290,15 @@ export default function OcrUploadPage() {
             <CardContent>
               <div className="space-y-2">
                 <Label htmlFor="folder">保存先フォルダ *</Label>
-                <Select
-                  value={selectedFolderId}
+                <Select 
+                  value={selectedFolderId} 
                   onValueChange={setSelectedFolderId}
                   disabled={uploadState !== 'idle' || foldersLoading}
                 >
                   <SelectTrigger id="folder" className="h-12 text-base w-full">
                     <SelectValue placeholder={
-                      foldersLoading
-                        ? "読み込み中..."
+                      foldersLoading 
+                        ? "読み込み中..." 
                         : foldersByMenu.filter(item => item.type === 'folder').length === 0
                           ? "フォルダがありません"
                           : "フォルダを選択してください"
@@ -344,8 +323,8 @@ export default function OcrUploadPage() {
                               <span style={{ marginLeft: `${depth * 16}px` }}>
                                 {depth > 0 && <ChevronRight className="w-4 h-4 inline" />}
                               </span>
-                              <Folder
-                                className="w-5 h-5"
+                              <Folder 
+                                className="w-5 h-5" 
                                 style={{ color: folder.color }}
                               />
                               <span className="text-base">{folder.name}</span>
@@ -431,7 +410,7 @@ export default function OcrUploadPage() {
               <CardContent className="space-y-4">
                 <Progress value={uploadProgress} />
                 <p className="text-sm text-muted-foreground text-center">
-                  {uploadState === 'uploading'
+                  {uploadState === 'uploading' 
                     ? `${uploadProgress}% - ファイルをアップロード中`
                     : 'OCR処理タスクを作成中...'}
                 </p>

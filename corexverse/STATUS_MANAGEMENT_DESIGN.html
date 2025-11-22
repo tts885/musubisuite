@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CoreXverse - 全体ステータス管理設計</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: #f5f5f5;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            color: #2563eb;
+            margin-bottom: 20px;
+            border-bottom: 3px solid #2563eb;
+            padding-bottom: 10px;
+        }
+        
+        h2 {
+            color: #1e40af;
+            margin-top: 30px;
+            margin-bottom: 15px;
+            padding-left: 10px;
+            border-left: 4px solid #3b82f6;
+        }
+        
+        h3 {
+            color: #374151;
+            margin-top: 20px;
+            margin-bottom: 10px;
+        }
+        
+        .problem {
+            background: #fef2f2;
+            border-left: 4px solid #ef4444;
+            padding: 15px;
+            margin: 15px 0;
+        }
+        
+        .solution {
+            background: #f0fdf4;
+            border-left: 4px solid #22c55e;
+            padding: 15px;
+            margin: 15px 0;
+        }
+        
+        .architecture {
+            background: #eff6ff;
+            border-left: 4px solid #3b82f6;
+            padding: 15px;
+            margin: 15px 0;
+        }
+        
+        .code-block {
+            background: #1e293b;
+            color: #e2e8f0;
+            padding: 15px;
+            border-radius: 6px;
+            overflow-x: auto;
+            margin: 15px 0;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+        }
+        
+        .flow-diagram {
+            background: #fafafa;
+            border: 2px solid #e5e7eb;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 6px;
+        }
+        
+        .flow-step {
+            background: white;
+            border: 2px solid #3b82f6;
+            border-radius: 6px;
+            padding: 12px 16px;
+            margin: 10px 0;
+            position: relative;
+        }
+        
+        .flow-step::before {
+            content: "→";
+            position: absolute;
+            left: -30px;
+            color: #3b82f6;
+            font-size: 20px;
+        }
+        
+        .flow-step:first-child::before {
+            content: "▶";
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        
+        th, td {
+            border: 1px solid #e5e7eb;
+            padding: 12px;
+            text-align: left;
+        }
+        
+        th {
+            background: #f3f4f6;
+            font-weight: 600;
+            color: #1f2937;
+        }
+        
+        tr:hover {
+            background: #f9fafb;
+        }
+        
+        .status-ok {
+            color: #22c55e;
+            font-weight: bold;
+        }
+        
+        .status-ng {
+            color: #ef4444;
+            font-weight: bold;
+        }
+        
+        .tag {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-right: 8px;
+        }
+        
+        .tag-store {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+        
+        .tag-router {
+            background: #fef3c7;
+            color: #92400e;
+        }
+        
+        .tag-component {
+            background: #e0e7ff;
+            color: #4338ca;
+        }
+        
+        ul, ol {
+            margin-left: 25px;
+            margin-bottom: 15px;
+        }
+        
+        li {
+            margin-bottom: 8px;
+        }
+        
+        .highlight {
+            background: #fef08a;
+            padding: 2px 6px;
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔄 CoreXverse - 全体ステータス管理設計書</h1>
+        
+        <div class="problem">
+            <h2>❌ 現在の問題</h2>
+            <h3>1. F5リロード時の動作不良</h3>
+            <ul>
+                <li><strong>症状:</strong> どの画面でF5を押してもホーム画面(ランディングページ)に遷移してしまう</li>
+                <li><strong>原因:</strong> Power Apps環境では、F5リロード時にブラウザが常に<code>BASENAME</code>(=<code>/</code>)にアクセスする</li>
+                <li><strong>保存されたルート情報:</strong> localStorageに<code>lastRoute</code>は保存されているが、それを使って復元する処理が不完全</li>
+            </ul>
+            
+            <h3>2. ランディングページのロジック問題</h3>
+            <ul>
+                <li><code>landing.tsx</code>が<strong>Power Apps環境でのみ</strong>リダイレクト処理を実行</li>
+                <li>通常のF5リロード(Power Apps以外)では、保存されたルートへの復元が行われない</li>
+                <li>結果: F5後、常にランディングページが表示される</li>
+            </ul>
+        </div>
+        
+        <div class="solution">
+            <h2>✅ 解決方針</h2>
+            
+            <h3>アプローチ1: ランディングページを初回専用にする (推奨)</h3>
+            <div class="architecture">
+                <strong>コンセプト:</strong> ランディングページは「初めてアプリにアクセスした時」または「明示的にホームに戻った時」のみ表示
+                
+                <h4>実装ポイント</h4>
+                <ol>
+                    <li><span class="highlight">初回アクセス判定</span>: localStorageに<code>hasVisited</code>フラグを保存</li>
+                    <li><span class="highlight">自動リダイレクト</span>: 
+                        <ul>
+                            <li>初回アクセス以外の場合、保存された<code>lastRoute</code>にリダイレクト</li>
+                            <li><code>lastRoute</code>がない場合は、デフォルトで<code>/dashboard</code>にリダイレクト</li>
+                        </ul>
+                    </li>
+                    <li><span class="highlight">Power Apps対応</span>: Power Apps環境判定を継続</li>
+                </ol>
+            </div>
+            
+            <h3>アプローチ2: React RouterのLoaderを使用</h3>
+            <div class="architecture">
+                <strong>コンセプト:</strong> React Router v6.4+の<code>loader</code>機能を使って、ルートレベルでリダイレクト処理
+                
+                <h4>実装ポイント</h4>
+                <ol>
+                    <li>ルート定義に<code>loader</code>を追加</li>
+                    <li>loader内でlocalStorageから<code>lastRoute</code>を読み込み</li>
+                    <li>条件に応じて<code>redirect()</code>を返す</li>
+                </ol>
+            </div>
+        </div>
+        
+        <h2>📐 設計詳細 (アプローチ1: 推奨)</h2>
+        
+        <h3>1. ステータス管理の構造</h3>
+        
+        <table>
+            <thead>
+                <tr>
+                    <th>ストアキー</th>
+                    <th>データ型</th>
+                    <th>用途</th>
+                    <th>保存場所</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><code>route-state-storage</code></td>
+                    <td>{ lastRoute: string | null }</td>
+                    <td>最後に訪問したルートパス</td>
+                    <td>localStorage (Zustand persist)</td>
+                </tr>
+                <tr>
+                    <td><code>ocr-state-storage</code></td>
+                    <td>{ expandedFolders, selectedFolderId, ... }</td>
+                    <td>OCRメニューの展開状態</td>
+                    <td>localStorage (Zustand persist)</td>
+                </tr>
+                <tr>
+                    <td><code>app-has-visited</code></td>
+                    <td>boolean</td>
+                    <td>初回アクセス判定フラグ</td>
+                    <td>localStorage (直接保存)</td>
+                </tr>
+            </tbody>
+        </table>
+        
+        <h3>2. リダイレクトフロー</h3>
+        
+        <div class="flow-diagram">
+            <div class="flow-step">
+                <strong>STEP 1:</strong> ユーザーがアプリにアクセス (URL: <code>/</code>)
+            </div>
+            <div class="flow-step">
+                <strong>STEP 2:</strong> <code>LandingPage</code>コンポーネントがマウント
+            </div>
+            <div class="flow-step">
+                <strong>STEP 3:</strong> <code>useEffect</code>内で判定処理
+                <ul style="margin-top: 10px;">
+                    <li><strong>条件A:</strong> <code>app-has-visited === false</code> → ランディングページを表示 (初回)</li>
+                    <li><strong>条件B:</strong> <code>app-has-visited === true && lastRoute存在</code> → <code>lastRoute</code>にリダイレクト</li>
+                    <li><strong>条件C:</strong> <code>app-has-visited === true && lastRoute無し</code> → <code>/dashboard</code>にリダイレクト</li>
+                </ul>
+            </div>
+            <div class="flow-step">
+                <strong>STEP 4:</strong> リダイレクト先のレイアウトがマウント
+            </div>
+            <div class="flow-step">
+                <strong>STEP 5:</strong> <code>RouteTracker</code>が現在のルートを<code>lastRoute</code>に保存
+            </div>
+        </div>
+        
+        <h3>3. 各画面の状態保持</h3>
+        
+        <table>
+            <thead>
+                <tr>
+                    <th>画面</th>
+                    <th>状態保持方法</th>
+                    <th>F5リロード後の動作</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><strong>ランディングページ</strong></td>
+                    <td>初回フラグ (<code>app-has-visited</code>)</td>
+                    <td>初回以外は自動リダイレクト</td>
+                </tr>
+                <tr>
+                    <td><strong>ダッシュボード</strong></td>
+                    <td>RouteTracker (<code>lastRoute</code>)</td>
+                    <td class="status-ok">✓ ダッシュボードのまま</td>
+                </tr>
+                <tr>
+                    <td><strong>OCR画面</strong></td>
+                    <td>RouteTracker + OCR専用ストア</td>
+                    <td class="status-ok">✓ OCR画面のまま + フォルダ選択状態保持</td>
+                </tr>
+                <tr>
+                    <td><strong>プロジェクト管理</strong></td>
+                    <td>RouteTracker (<code>lastRoute</code>)</td>
+                    <td class="status-ok">✓ プロジェクト管理画面のまま</td>
+                </tr>
+                <tr>
+                    <td><strong>ツールPortal</strong></td>
+                    <td>RouteTracker (<code>lastRoute</code>)</td>
+                    <td class="status-ok">✓ ツールPortal画面のまま</td>
+                </tr>
+            </tbody>
+        </table>
+        
+        <h3>4. 実装コード構成</h3>
+        
+        <h4>4.1 routeStateStore.ts (既存)</h4>
+        <div class="code-block">
+<pre>export const useRouteStateStore = create&lt;RouteStateStore&gt;()(
+  persist(
+    (set) => ({
+      lastRoute: null,
+      setLastRoute: (route: string) => set({ lastRoute: route }),
+      clearLastRoute: () => set({ lastRoute: null }),
+    }),
+    {
+      name: 'route-state-storage',
+    }
+  )
+)</pre>
+        </div>
+        
+        <h4>4.2 RouteTracker.tsx (既存)</h4>
+        <div class="code-block">
+<pre>export default function RouteTracker() {
+  const location = useLocation()
+  const { setLastRoute } = useRouteStateStore()
+  
+  useEffect(() => {
+    // ランディングページ以外のルートを保存
+    if (location.pathname !== '/') {
+      const fullPath = location.pathname + location.search
+      setLastRoute(fullPath)
+    }
+  }, [location, setLastRoute])
+  
+  return null
+}</pre>
+        </div>
+        
+        <h4>4.3 landing.tsx (修正後)</h4>
+        <div class="code-block">
+<pre>export default function LandingPage() {
+  const navigate = useNavigate()
+  const { lastRoute } = useRouteStateStore()
+
+  useEffect(() => {
+    // 初回アクセス判定
+    const hasVisited = localStorage.getItem('app-has-visited')
+    
+    if (hasVisited === 'true') {
+      // 2回目以降のアクセス: 保存されたルートまたはダッシュボードにリダイレクト
+      const targetRoute = lastRoute && lastRoute !== '/' 
+        ? lastRoute 
+        : '/dashboard'
+      
+      navigate(targetRoute, { replace: true })
+    } else {
+      // 初回アクセス: ランディングページを表示
+      localStorage.setItem('app-has-visited', 'true')
+    }
+  }, [navigate, lastRoute])
+
+  return (
+    &lt;!-- ランディングページの内容 --&gt;
+  )
+}</pre>
+        </div>
+        
+        <h3>5. データフロー図</h3>
+        
+        <div class="flow-diagram">
+            <h4>ユーザー操作フロー</h4>
+            
+            <div style="margin: 20px 0;">
+                <strong>シナリオ1: 初回アクセス</strong>
+                <div class="flow-step">URL: <code>/</code> → LandingPage表示 → <code>app-has-visited = true</code>を保存</div>
+                <div class="flow-step">ユーザーが「ダッシュボード」をクリック → <code>/dashboard</code>に遷移</div>
+                <div class="flow-step">RouteTracker が <code>lastRoute = '/dashboard'</code>を保存</div>
+            </div>
+            
+            <div style="margin: 20px 0;">
+                <strong>シナリオ2: ダッシュボードでF5リロード</strong>
+                <div class="flow-step">F5押下 → ブラウザが<code>/</code>にアクセス</div>
+                <div class="flow-step">LandingPage: <code>hasVisited = true</code> かつ <code>lastRoute = '/dashboard'</code></div>
+                <div class="flow-step">自動的に<code>/dashboard</code>にリダイレクト ✓</div>
+            </div>
+            
+            <div style="margin: 20px 0;">
+                <strong>シナリオ3: OCR画面でF5リロード</strong>
+                <div class="flow-step">F5押下 → ブラウザが<code>/</code>にアクセス</div>
+                <div class="flow-step">LandingPage: <code>hasVisited = true</code> かつ <code>lastRoute = '/ocr/documents?folder=xxx'</code></div>
+                <div class="flow-step">自動的に<code>/ocr/documents?folder=xxx</code>にリダイレクト ✓</div>
+                <div class="flow-step">OcrLayout: OCRストアから<code>expandedFolders</code>と<code>selectedFolderId</code>を復元 ✓</div>
+            </div>
+        </div>
+        
+        <h2>🎯 実装チェックリスト</h2>
+        
+        <table>
+            <thead>
+                <tr>
+                    <th style="width: 5%">状態</th>
+                    <th style="width: 40%">タスク</th>
+                    <th style="width: 55%">詳細</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>✅</td>
+                    <td><code>routeStateStore.ts</code>作成</td>
+                    <td>ZustandストアでlastRouteを管理 (完了)</td>
+                </tr>
+                <tr>
+                    <td>✅</td>
+                    <td><code>RouteTracker.tsx</code>作成</td>
+                    <td>ルート変更を監視して保存 (完了)</td>
+                </tr>
+                <tr>
+                    <td>✅</td>
+                    <td>各レイアウトに<code>RouteTracker</code>追加</td>
+                    <td>OCR, Dashboard, ProjectMgmt, ToolPortal (完了)</td>
+                </tr>
+                <tr>
+                    <td>❌</td>
+                    <td><code>landing.tsx</code>の修正</td>
+                    <td><strong>初回アクセス判定ロジックを追加</strong> (未実装)</td>
+                </tr>
+                <tr>
+                    <td>❌</td>
+                    <td><code>app-has-visited</code>フラグ実装</td>
+                    <td>localStorageで初回判定 (未実装)</td>
+                </tr>
+                <tr>
+                    <td>✅</td>
+                    <td>OCR専用ストア実装</td>
+                    <td><code>ocrStateStore.ts</code>で展開状態管理 (完了)</td>
+                </tr>
+            </tbody>
+        </table>
+        
+        <h2>🚀 次のステップ</h2>
+        
+        <div class="solution">
+            <h3>実装優先順位</h3>
+            <ol>
+                <li><strong>HIGH:</strong> <code>landing.tsx</code>の修正 (初回アクセス判定追加)</li>
+                <li><strong>HIGH:</strong> Power Apps環境でのテスト確認</li>
+                <li><strong>MEDIUM:</strong> デバッグログの削除</li>
+                <li><strong>LOW:</strong> エラーハンドリングの強化</li>
+            </ol>
+            
+            <h3>テストシナリオ</h3>
+            <ul>
+                <li>✓ 初回アクセス時にランディングページが表示されるか</li>
+                <li>✓ ダッシュボードからF5でダッシュボードに戻るか</li>
+                <li>✓ OCR画面からF5でOCR画面に戻るか(フォルダ選択状態含む)</li>
+                <li>✓ プロジェクト管理画面からF5でプロジェクト管理画面に戻るか</li>
+                <li>✓ 明示的にホームボタンをクリックした時にランディングページが表示されるか</li>
+            </ul>
+        </div>
+        
+        <h2>📝 補足事項</h2>
+        
+        <div class="architecture">
+            <h3>Power Apps環境の特殊性</h3>
+            <ul>
+                <li><strong>BASENAME:</strong> Power Apps環境では独自のBASENAMEが設定される</li>
+                <li><strong>F5リロード:</strong> 常にBASENAMEルート(<code>/</code>)にリセットされる</li>
+                <li><strong>URLパラメータ:</strong> <code>_localAppUrl</code>や<code>_localConnectionUrl</code>が含まれる</li>
+            </ul>
+            
+            <h3>ブラウザ直接アクセスとの違い</h3>
+            <ul>
+                <li><strong>ブラウザ直接アクセス:</strong> <code>http://localhost:3000/dashboard</code>に直接アクセス可能</li>
+                <li><strong>Power Apps経由:</strong> 常に<code>/</code>を経由してからリダイレクト</li>
+            </ul>
+        </div>
+        
+        <div style="margin-top: 40px; padding-top: 20px; border-top: 2px solid #e5e7eb; text-align: center; color: #6b7280;">
+            <p><strong>CoreXverse v1.0</strong> - ステータス管理設計書</p>
+            <p>作成日: 2025年11月22日 | 設計者: GitHub Copilot</p>
+        </div>
+    </div>
+</body>
+</html>

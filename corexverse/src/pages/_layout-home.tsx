@@ -1,11 +1,14 @@
 import { Outlet } from "react-router-dom"
 import AppSwitcher from "@/components/AppSwitcher"
+import { useRouteTracker } from "@/hooks/use-route-tracker"
 
 /**
  * ホーム画面用レイアウトコンポーネント
  * AppSwitcherのみでサイドバーなしのシンプルなレイアウト
  */
 export default function HomeLayout() {
+  // ルート追跡フック
+  useRouteTracker()
 
   return (
     <div className="flex h-screen bg-background">

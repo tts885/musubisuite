@@ -27,6 +27,8 @@ import {
 import { cn } from "@/lib/utils"
 import AppSwitcher from "@/components/AppSwitcher"
 import { Button } from "@/components/ui/button"
+import { useRouteTracker } from "@/hooks/use-route-tracker"
+import { useSettingsStateStore } from "@/stores/settingsStateStore"
 
 /**
  * ナビゲーション項目の型定義
@@ -174,16 +176,18 @@ const navigationSections: NavSection[] = [
 export default function SettingsPage() {
   const location = useLocation()
   
-  // サイドバーの折りたたみ状態を管理（全アプリで共通のlocalStorageキーを使用）
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
-    const saved = localStorage.getItem('app-sidebar-collapsed')
-    return saved ? JSON.parse(saved) : false
-  })
-
-  // サイドバーの状態が変更されたらlocalStorageに保存
+  // ルート追跡フック
+  useRouteTracker()
+  
+  // 設定画面の状態管理
+  const { sidebarCollapsed, setSidebarCollapsed, setLastSelectedTab } = useSettingsStateStore()
+  
+  // 現在のタブを保存
   useEffect(() => {
-    localStorage.setItem('app-sidebar-collapsed', JSON.stringify(sidebarCollapsed))
-  }, [sidebarCollapsed])
+    if (location.pathname.startsWith('/settings/')) {
+      setLastSelectedTab(location.pathname)
+    }
+  }, [location.pathname, setLastSelectedTab])
   
   // 現在のパスがナビゲーション項目と一致するか判定
   const isActive = (href: string) => {
