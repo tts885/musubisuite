@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>最適化アーキテクチャ提案書 - Corexverse</title>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+    <style>
+        :root {
+            --primary-color: #2563eb;
+            --secondary-color: #1e40af;
+            --bg-color: #f8fafc;
+            --text-color: #1e293b;
+            --card-bg: #ffffff;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+        }
+
+        body {
+            font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', Meiryo, sans-serif;
+            line-height: 1.6;
+            color: var(--text-color);
+            background-color: var(--bg-color);
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+
+        header {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            padding: 60px 0;
+            margin-bottom: 40px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        .header-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            margin: 0 0 10px 0;
+            font-weight: 700;
+        }
+
+        .subtitle {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+
+        .section {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            transition: transform 0.2s;
+        }
+
+        .section:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        h2 {
+            color: var(--secondary-color);
+            border-bottom: 2px solid #e2e8f0;
+            padding-bottom: 10px;
+            margin-top: 0;
+        }
+
+        h3 {
+            color: var(--primary-color);
+            margin-top: 25px;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .card {
+            background: #f1f5f9;
+            padding: 20px;
+            border-radius: 8px;
+            border-left: 4px solid var(--primary-color);
+        }
+
+        .tag {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin-right: 5px;
+            margin-bottom: 5px;
+        }
+
+        .tag.react {
+            background: #e0f2fe;
+            color: #0369a1;
+        }
+
+        .tag.django {
+            background: #dcfce7;
+            color: #15803d;
+        }
+
+        .tag.infra {
+            background: #f3e8ff;
+            color: #7e22ce;
+        }
+
+        .mermaid {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            display: flex;
+            justify-content: center;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+
+        th,
+        td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        th {
+            background-color: #f8fafc;
+            font-weight: 600;
+        }
+
+        .status-good {
+            color: var(--success);
+            font-weight: bold;
+        }
+
+        .status-warn {
+            color: var(--warning);
+            font-weight: bold;
+        }
+
+        .status-bad {
+            color: var(--danger);
+            font-weight: bold;
+        }
+
+        code {
+            background: #e2e8f0;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: monospace;
+        }
+    </style>
+</head>
+
+<body>
+
+    <header>
+        <div class="header-content">
+            <h1>最適化アーキテクチャ提案書</h1>
+            <div class="subtitle">Corexverse Project - Analysis & Recommendations</div>
+        </div>
+    </header>
+
+    <div class="container">
+
+        <!-- Executive Summary -->
+        <div class="section">
+            <h2>📊 エグゼクティブサマリー</h2>
+            <p>
+                現在のワークスペース（<code>corexverse</code> および <code>corexverseAPI</code>）を分析した結果、
+                非常にモダンな技術スタック（React 19, Vite 7, Django 5）が採用されていることが確認できました。
+                しかし、開発環境の統一性（Docker化の欠如）や、ディレクトリ構造の最適化、不要ファイルの混在など、
+                スケーラビリティと保守性の観点でいくつかの改善余地があります。
+            </p>
+            <p>
+                本提案では、<strong>「コンテナ化による環境統一」</strong>と<strong>「機能ベースのディレクトリ構造」</strong>を軸に、
+                長期的な運用に耐えうる最適な構成を提示します。
+            </p>
+        </div>
+
+        <!-- Current Status -->
+        <div class="section">
+            <h2>🔍 現状分析 (As-Is)</h2>
+            <div class="grid">
+                <div class="card">
+                    <h3>Frontend (corexverse)</h3>
+                    <div><span class="tag react">React 19</span> <span class="tag react">Vite 7</span> <span
+                            class="tag react">TypeScript</span> <span class="tag react">Tailwind 4</span></div>
+                    <ul>
+                        <li>✅ 最新のReactエコシステムを採用</li>
+                        <li>✅ Radix UI + Tailwindによる堅牢なUI設計</li>
+                        <li>✅ React Queryによる適切なデータフェッチ</li>
+                        <li>⚠️ Featureベースの構造が明確でない可能性</li>
+                    </ul>
+                </div>
+                <div class="card">
+                    <h3>Backend (corexverseAPI)</h3>
+                    <div><span class="tag django">Django 5.0</span> <span class="tag django">DRF 3.14</span> <span
+                            class="tag django">Python 3.x</span></div>
+                    <ul>
+                        <li>✅ Django REST Frameworkによる標準的なAPI設計</li>
+                        <li>✅ AI SDK (OpenAI, Anthropic) の統合</li>
+                        <li>⚠️ <code>package.json</code> が誤って含まれている</li>
+                        <li>⚠️ Docker設定が存在しない</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Proposed Architecture -->
+        <div class="section">
+            <h2>🚀 推奨アーキテクチャ (To-Be)</h2>
+            <p>以下に、推奨するシステム構成図を示します。Docker Composeを中心とし、Frontend/Backend/DBを統合管理します。</p>
+
+            <h3>System Overview (Backend & Infrastructure Focus)</h3>
+            <div class="mermaid">
+                graph TD
+                subgraph "Client Side"
+                User["User / Browser"]
+                PA["PowerApps Integration"]
+                end
+
+                subgraph "Docker Container Host"
+                direction TB
+
+                subgraph "Frontend Container"
+                Vite["Vite Dev Server / Nginx"]
+                React["React 19 App"]
+                end
+
+                subgraph "Backend Container"
+                Gunicorn["Gunicorn / WSGI"]
+                Django["Django REST Framework"]
+                Celery["Celery Worker (Optional)"]
+                end
+
+                subgraph "Data Persistence"
+                Postgres[("PostgreSQL")]
+                Redis[("Redis - Cache/Queue")]
+                end
+                end
+
+                subgraph "External Services"
+                OpenAI["OpenAI API"]
+                Anthropic["Anthropic API"]
+                Dataverse["MS Dataverse"]
+                end
+
+                User -->|"HTTPS"| Vite
+                PA -->|"Embed/Iframe"| Vite
+                React -->|"REST API / Axios"| Gunicorn
+                Django -->|"SQL"| Postgres
+                Django -->|"Cache"| Redis
+                Django -->|"API Call"| OpenAI
+                Django -->|"API Call"| Anthropic
+                Django -->|"Sync"| Dataverse
+            </div>
+
+            <h3>Frontend Architecture Detail</h3>
+            <p>フロントエンド内部のデータフローとコンポーネント構成の詳細図です。</p>
+
+            <div class="mermaid">
+                graph TD
+                subgraph "User Interaction"
+                User["User"]
+                Browser["Browser / PowerApps Control"]
+                end
+
+                subgraph "Frontend Architecture (React 19 + Vite)"
+                direction TB
+
+                subgraph "Presentation Layer"
+                Pages["Pages / Routes"]
+                Components["UI Components (Radix UI)"]
+                end
+
+                subgraph "State & Logic Layer"
+                Hooks["Custom Hooks"]
+                ReactQuery["TanStack Query (Server State)"]
+                FormState["React Hook Form + Zod"]
+                end
+
+                subgraph "Infrastructure Layer"
+                Axios["Axios Client (Interceptors)"]
+                Auth["Auth Provider"]
+                end
+                end
+
+                subgraph "Backend Services"
+                API["Django REST API"]
+                end
+
+                User -->|"Click/Input"| Browser
+                Browser -->|"Render"| Pages
+                Pages -->|"Compose"| Components
+                Components -->|"Use"| Hooks
+                Hooks -->|"Manage"| ReactQuery
+                Hooks -->|"Validate"| FormState
+                ReactQuery -->|"Fetch/Mutate"| Axios
+                Axios -->|"Request (JWT)"| API
+                Auth -->|"Inject Token"| Axios
+            </div>
+        </div>
+
+        <!-- Directory Structure Proposal -->
+        <div class="section">
+            <h2>📂 推奨ディレクトリ構成</h2>
+            <p>スケーラビリティを高めるための、最適なディレクトリ構造案です。</p>
+
+            <div class="grid">
+                <div>
+                    <h3>Frontend Structure (Feature-based)</h3>
+                    <pre><code>
+corexverse/
+├── src/
+│   ├── features/        <-- 機能ごとに集約
+│   │   ├── auth/
+│   │   ├── projects/
+│   │   │   ├── components/
+│   │   │   ├── hooks/
+│   │   │   └── api/
+│   │   └── ai-chat/
+│   ├── components/      <-- 共通UIパーツ
+│   │   ├── ui/          (Buttons, Inputs)
+│   │   └── layout/
+│   ├── lib/             <-- 設定・ユーティリティ
+│   │   ├── axios.ts
+│   │   └── utils.ts
+│   └── App.tsx
+                    </code></pre>
+                </div>
+                <div>
+                    <h3>Backend Structure (Service Layer)</h3>
+                    <pre><code>
+corexverseAPI/
+├── config/              <-- 設定関連
+│   ├── settings/
+│   │   ├── base.py
+│   │   ├── dev.py
+│   │   └── prod.py
+├── apps/                <-- アプリケーション
+│   ├── core/
+│   ├── projects/
+│   └── ai_services/
+├── services/            <-- ビジネスロジック層
+│   ├── openai_service.py
+│   └── dataverse_sync.py
+├── Dockerfile
+└── manage.py
+                    </code></pre>
+                </div>
+            </div>
+        </div>
+
+        <!-- Action Plan -->
+        <div class="section">
+            <h2>🛠️ 具体的な改善アクションプラン</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>優先度</th>
+                        <th>カテゴリ</th>
+                        <th>アクション内容</th>
+                        <th>期待効果</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td class="status-bad">High</td>
+                        <td>Infrastructure</td>
+                        <td>ルートディレクトリに <code>docker-compose.yml</code> を作成し、PostgreSQLを含む開発環境を定義する。</td>
+                        <td>環境構築の自動化、本番環境との差異解消。</td>
+                    </tr>
+                    <tr>
+                        <td class="status-bad">High</td>
+                        <td>Cleanup</td>
+                        <td><code>corexverseAPI/package.json</code> および <code>node_modules</code> を削除する。</td>
+                        <td>バックエンドディレクトリの混乱を防ぐ。</td>
+                    </tr>
+                    <tr>
+                        <td class="status-warn">Medium</td>
+                        <td>Backend</td>
+                        <td>AIロジックやDataverse連携ロジックを <code>views.py</code> から <code>services/</code> ディレクトリへ分離する。</td>
+                        <td>コードの再利用性向上、テスト容易性の確保。</td>
+                    </tr>
+                    <tr>
+                        <td class="status-warn">Medium</td>
+                        <td>Frontend</td>
+                        <td><code>src/features</code> ディレクトリを作成し、機能単位でファイルを再配置する。</td>
+                        <td>コードベースが肥大化した際のメンテナンス性向上。</td>
+                    </tr>
+                    <tr>
+                        <td class="status-good">Low</td>
+                        <td>CI/CD</td>
+                        <td>GitHub Actions (.github/workflows) を設定し、Lint/Testを自動化する。</td>
+                        <td>品質担保の自動化。</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+    </div>
+
+    <script>
+        mermaid.initialize({ startOnLoad: true, theme: 'neutral' });
+    </script>
+</body>
+
+</html>

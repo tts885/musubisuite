@@ -18,19 +18,19 @@ import type { OcrDocument } from '@/types'
 export default function OcrDocumentDetailPage() {
   const { documentId } = useParams<{ documentId: string }>()
   const navigate = useNavigate()
-  
+
   const [document, setDocument] = useState<OcrDocument | null>(null)
   const [selectedFieldId, setSelectedFieldId] = useState<string | null>(null)
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
   const [fileName, setFileName] = useState('')
   const [isEditingFileName, setIsEditingFileName] = useState(false)
-  const [loading, setLoading] = useState(false)
+  // const [loading, setLoading] = useState(false) // Unused
 
   // ドキュメントデータの読み込み
   useEffect(() => {
     const fetchDocument = async () => {
       if (documentId) {
-        setLoading(true)
+        // setLoading(true)
         try {
           const docs = await ocrDataverseService.getDocuments(documentId)
           if (docs.length > 0) {
@@ -44,7 +44,7 @@ export default function OcrDocumentDetailPage() {
           console.error('ドキュメント取得エラー:', error)
           toast.error('ドキュメントの読み込みに失敗しました')
         } finally {
-          setLoading(false)
+          // setLoading(false)
         }
       }
     }
@@ -56,9 +56,9 @@ export default function OcrDocumentDetailPage() {
     setFileName(newFileName)
     setHasUnsavedChanges(true)
   }
-  
+
   // フィールド更新（今後実装予定 - OCR処理後）
-  const handleFieldUpdate = (fieldId: string, newValue: string) => {
+  const handleFieldUpdate = (_fieldId: string, _newValue: string) => {
     // TODO: OCR結果が実装されたら対応
     setHasUnsavedChanges(true)
   }
@@ -74,16 +74,16 @@ export default function OcrDocumentDetailPage() {
       //   fileName: fileName,
       // }
       // await ocrService.updateDocument(document.id, updatedDoc)
-      
+
       console.log('保存するデータ:', {
         documentId: document.id,
         fileName: fileName,
         fields: document.ocrResult?.fields,
       })
-      
+
       // ローカル状態を更新
       setDocument(prev => prev ? { ...prev, fileName } : null)
-      
+
       toast.success('変更を保存しました')
       setHasUnsavedChanges(false)
       setIsEditingFileName(false)
@@ -100,7 +100,7 @@ export default function OcrDocumentDetailPage() {
     try {
       // TODO: API呼び出し
       // await ocrService.reprocessDocument(document.id)
-      
+
       toast.success('再処理を開始しました')
       navigate('/ocr')
     } catch (error) {
@@ -135,8 +135,8 @@ export default function OcrDocumentDetailPage() {
       <div className="border-b border-border bg-card p-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <Button 
-              variant="ghost" 
+            <Button
+              variant="ghost"
               size="sm"
               onClick={() => navigate('/ocr')}
             >
@@ -163,7 +163,7 @@ export default function OcrDocumentDetailPage() {
                     autoFocus
                   />
                 ) : (
-                  <h1 
+                  <h1
                     className="text-xl font-bold text-foreground cursor-pointer hover:text-primary transition-colors"
                     onClick={() => setIsEditingFileName(true)}
                     title="クリックして編集"
@@ -173,22 +173,22 @@ export default function OcrDocumentDetailPage() {
                 )}
               </div>
               <p className="text-sm text-muted-foreground">
-                信頼度: {(document.ocrResult.overallConfidence * 100).toFixed(1)}% | 
+                信頼度: {(document.ocrResult.overallConfidence * 100).toFixed(1)}% |
                 フィールド数: {document.ocrResult.fields.length}
               </p>
             </div>
           </div>
-          
+
           <div className="flex gap-2">
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               size="sm"
               onClick={handleReprocess}
             >
               <RotateCw className="w-4 h-4 mr-2" />
               再処理
             </Button>
-            <Button 
+            <Button
               size="sm"
               onClick={handleSaveAll}
               disabled={!hasUnsavedChanges}

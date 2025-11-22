@@ -245,9 +245,9 @@ export function useOcrDocuments(folderId?: string) {
     fetchDocuments();
   }, [fetchDocuments]);
 
-  const createDocument = useCallback(async (document: Partial<OcrDocument>) => {
+  const createDocument = useCallback(async (document: Partial<OcrDocument>, file: File) => {
     try {
-      const created = await ocrDataverseService.createDocument(document);
+      const created = await ocrDataverseService.createDocument(document, file);
       setDocuments(prev => [...prev, created]);
       return created;
     } catch (err) {
@@ -294,7 +294,7 @@ export function useFolderTree(folders: OcrFolder[]) {
           children: buildTree(folder.id),
         }));
     };
-    
+
     return buildTree();
   })[0];
 }
@@ -327,13 +327,13 @@ export function useFolderStats(folderId: string) {
       try {
         setLoading(true);
         const documents = await ocrDataverseService.getDocuments(folderId);
-        
+
         const total = documents.length;
         const completed = documents.filter(d => d.ocrResult?.status === 'completed').length;
         const pending = documents.filter(d => d.ocrResult === null).length;
         const processing = documents.filter(d => d.ocrResult?.status === 'processing').length;
         const failed = documents.filter(d => d.ocrResult?.status === 'failed').length;
-        
+
         setStats({ total, completed, pending, processing, failed });
       } catch (error) {
         console.error('統計取得エラー:', error);

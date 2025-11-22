@@ -73,7 +73,7 @@ class OcrService {
 
       // モック実装
       await new Promise(resolve => setTimeout(resolve, 1000))
-      
+
       const taskName = formData.get('taskName') as string || 'OCRタスク'
       return {
         id: `task_${Date.now()}`,
@@ -144,7 +144,7 @@ class OcrService {
 
       // モック実装
       await new Promise(resolve => setTimeout(resolve, 500))
-      
+
       return {
         id: taskId,
         name: 'サンプルタスク',
@@ -193,7 +193,7 @@ class OcrService {
 
       // モック実装
       await new Promise(resolve => setTimeout(resolve, 500))
-      
+
       console.log('Updating task document:', { taskId, documentId, updates })
       return {
         id: `result_${documentId}`,
@@ -226,7 +226,7 @@ class OcrService {
 
       // モック実装
       await new Promise(resolve => setTimeout(resolve, 500))
-      
+
       console.log('Updating OCR result:', resultId, updates)
       return {
         id: resultId,
@@ -258,7 +258,7 @@ class OcrService {
     try {
       // TODO: Backend実装後にコメントを解除
       // await apiClient.post(`/api/ocr/tasks/${taskId}/save/`)
-      
+
       await new Promise(resolve => setTimeout(resolve, 500))
       console.log('Saving task changes:', taskId)
     } catch (error) {
@@ -282,7 +282,7 @@ class OcrService {
     try {
       // TODO: Backend実装後にコメントを解除
       // await apiClient.delete(`/api/ocr/tasks/${taskId}/`)
-      
+
       await new Promise(resolve => setTimeout(resolve, 500))
       console.log('Deleting task:', taskId)
     } catch (error) {
@@ -306,7 +306,7 @@ class OcrService {
     try {
       // TODO: Backend実装後にコメントを解除
       // await apiClient.post(`/api/ocr/tasks/${taskId}/reprocess/`)
-      
+
       await new Promise(resolve => setTimeout(resolve, 500))
       console.log('Reprocessing task:', taskId)
     } catch (error) {
@@ -330,7 +330,7 @@ class OcrService {
     try {
       // TODO: Backend実装後にコメントを解除
       // await apiClient.post(`/api/ocr/tasks/${taskId}/cancel/`)
-      
+
       await new Promise(resolve => setTimeout(resolve, 500))
       console.log('Cancelling task:', taskId)
     } catch (error) {
@@ -350,13 +350,17 @@ class OcrService {
     await new Promise(resolve => setTimeout(resolve, 500))
     return {
       id: `doc_${Date.now()}`,
+      name: 'sample.pdf',
       fileName: 'sample.pdf',
       fileType: 'application/pdf',
       fileUrl: '/mock/sample.pdf',
       fileSize: 1024000,
+      folderId: 'root',
+      status: 'uploaded',
       ocrResult: null,
       uploadedBy: 'current-user',
-      uploadedAt: new Date(),
+      uploadedDate: new Date(),
+      createdAt: new Date(),
       updatedAt: new Date(),
       tags: [],
     }

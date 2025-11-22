@@ -30,7 +30,7 @@ export class OcrDataverseService {
       const result = await Cx_ocrmenusectionsesService.getAll({
         orderBy: ['cx_displayorder asc'],
       });
-      
+
       if (result.success === false) {
         console.warn('⚠️ メニューセクション取得失敗、モックデータを返します');
         return [
@@ -46,7 +46,7 @@ export class OcrDataverseService {
           }
         ];
       }
-      
+
       const data = result.data || (result as any);
       const records = Array.isArray(data) ? data : [];
       return records.map((record: Cx_ocrmenusectionses) => ({
@@ -86,7 +86,7 @@ export class OcrDataverseService {
         const allSections = await this.getMenuSections();
         section.displayOrder = allSections.length + 1;
       }
-      
+
       const record: Omit<Cx_ocrmenusectionses, 'cx_ocrmenusectionsid'> = {
         cx_name: section.name,
         cx_description: section.description,
@@ -94,19 +94,19 @@ export class OcrDataverseService {
         cx_isdefault: section.isDefault === true ? true : false, // Boolean型
         cx_color: section.color || '#3b82f6',
       } as any;
-      
+
       const result = await Cx_ocrmenusectionsesService.create(record);
-      
+
       if (result.success === false) {
         const errorMsg = result.error?.message || 'メニューセクションの作成に失敗しました';
-        console.error('❌ Create failed:', { 
-          success: result.success, 
+        console.error('❌ Create failed:', {
+          success: result.success,
           error: result.error,
-          sentData: record 
+          sentData: record
         });
         throw new Error(errorMsg);
       }
-      
+
       const data = result.data || (result as any);
       return {
         id: data.cx_ocrmenusectionsid || '',
@@ -135,13 +135,13 @@ export class OcrDataverseService {
       if (updates.displayOrder !== undefined) record.cx_displayorder = updates.displayOrder.toString();
       if (updates.isDefault !== undefined) record.cx_isdefault = (updates.isDefault === true ? true : false) as any; // Boolean型
       if (updates.color !== undefined) record.cx_color = updates.color;
-      
+
       const result = await Cx_ocrmenusectionsesService.update(id, record as any);
-      
+
       if (result.success === false) {
         throw new Error('メニューセクションの更新に失敗しました');
       }
-      
+
       const data = result.data || (result as any);
       return {
         id: data.cx_ocrmenusectionsid || id,
@@ -179,18 +179,18 @@ export class OcrDataverseService {
       const options: any = {
         orderBy: ['cx_name asc']
       };
-      
+
       if (menuSectionId) {
         options.filter = `cx_menusectionid eq '${menuSectionId}'`;
       }
-      
+
       const result = await Cx_ocrfoldersService.getAll(options);
-      
+
       if (result.success === false) {
         console.warn('⚠️ フォルダ取得失敗、空配列を返します');
         return [];
       }
-      
+
       const data = result.data || (result as any);
       const records = Array.isArray(data) ? data : [];
       return records.map(this.mapFolder);
@@ -213,29 +213,29 @@ export class OcrDataverseService {
         cx_documentcount: '0',
         cx_foldercount: '0',
       };
-      
+
       // 親フォルダIDがある場合
       if (folder.parentId) {
         record['cx_parentfolderid@odata.bind'] = `/cx_ocrfolders(${folder.parentId})`;
       }
-      
+
       // メニューセクションIDがある場合（Lookup形式で設定）
       if (folder.menuSection) {
         record['cx_menusectionid@odata.bind'] = `/cx_ocrmenusectionses(${folder.menuSection})`;
       }
-      
+
       const result = await Cx_ocrfoldersService.create(record);
-      
+
       if (result.success === false) {
         const errorMsg = result.error?.message || 'フォルダの作成に失敗しました';
-        console.error('❌ Folder create failed:', { 
-          success: result.success, 
+        console.error('❌ Folder create failed:', {
+          success: result.success,
           error: result.error,
-          sentData: record 
+          sentData: record
         });
         throw new Error(errorMsg);
       }
-      
+
       const data = result.data || (result as any);
       return this.mapFolder(data);
     } catch (error) {
@@ -253,7 +253,7 @@ export class OcrDataverseService {
       if (updates.name !== undefined) record.cx_name = updates.name;
       if (updates.description !== undefined) record.cx_description = updates.description;
       if (updates.path !== undefined) record.cx_path = updates.path;
-      
+
       // 親フォルダIDの更新（Lookup形式）
       if (updates.parentId !== undefined) {
         if (updates.parentId === null) {
@@ -262,7 +262,7 @@ export class OcrDataverseService {
           record['cx_parentfolderid@odata.bind'] = `/cx_ocrfolders(${updates.parentId})`;
         }
       }
-      
+
       // メニューセクションIDの更新（Lookup形式）
       if (updates.menuSection !== undefined) {
         if (updates.menuSection === null || updates.menuSection === '') {
@@ -271,13 +271,13 @@ export class OcrDataverseService {
           record['cx_menusectionid@odata.bind'] = `/cx_ocrmenusectionses(${updates.menuSection})`;
         }
       }
-      
+
       const result = await Cx_ocrfoldersService.update(folderId, record);
-      
+
       if (result.success === false) {
         throw new Error('フォルダの更新に失敗しました');
       }
-      
+
       const data = result.data || (result as any);
       return this.mapFolder(data);
     } catch (error) {
@@ -306,18 +306,18 @@ export class OcrDataverseService {
       const options: any = {
         orderBy: ['createdon desc']
       };
-      
+
       if (folderId) {
         options.filter = `_cx_folderid_value eq '${folderId}'`;
       }
-      
+
       const result = await Cx_ocrdocumentsesService.getAll(options);
-      
+
       if (result.success === false) {
         console.warn('⚠️ ドキュメント取得失敗、空配列を返します');
         return [];
       }
-      
+
       const data = result.data || (result as any);
       const records = Array.isArray(data) ? data : [];
       return records.map(this.mapDocument);
@@ -340,34 +340,34 @@ export class OcrDataverseService {
         cx_filesize: file.size.toString(), // 文字列に変換
         cx_status: 0, // アップロード済み
       };
-      
+
       if (document.description) {
         record.cx_description = document.description;
       }
-      
+
       if (document.tags && document.tags.length > 0) {
         record.cx_tags = document.tags.join(',');
       }
-      
+
       // フォルダIDをLookup形式で設定
       if (document.folderId) {
         record['cx_folderid@odata.bind'] = `/cx_ocrfolders(${document.folderId})`;
       }
-      
+
       // レコードを作成
       const result = await Cx_ocrdocumentsesService.create(record);
-      
+
       if (result.success === false) {
         const errorMsg = result.error?.message || 'ドキュメントのアップロードに失敗しました';
         throw new Error(errorMsg);
       }
-      
+
       const data = result.data || (result as any);
       const documentId = data.cx_ocrdocumentsid;
-      
+
       // ファイルを別途アップロード（PATCH リクエスト）
       await this.uploadFileData(documentId, file);
-      
+
       return this.mapDocument(data);
     } catch (error) {
       console.error('❌ ドキュメントアップロードエラー:', error);
@@ -381,12 +381,12 @@ export class OcrDataverseService {
   private async uploadFileData(documentId: string, file: File): Promise<void> {
     try {
       const fileBase64 = await this.fileToBase64(file);
-      
+
       // Dataverse File列の形式
       const fileData = {
         cx_filedata: fileBase64
       };
-      
+
       await Cx_ocrdocumentsesService.update(documentId, fileData);
     } catch (error) {
       console.error('❌ ファイルデータアップロードエラー:', error);
@@ -431,7 +431,7 @@ export class OcrDataverseService {
     const recordAny = record as any;
     const menuSectionId = recordAny['_cx_menusectionid_value'] || '';
     const parentFolderId = recordAny['_cx_parentfolderid_value'] || null;
-    
+
     return {
       id: record.cx_ocrfolderid || '',
       name: record.cx_name || '',
@@ -448,6 +448,27 @@ export class OcrDataverseService {
     };
   }
 
+
+  /**
+   * 複数のドキュメントを一括削除
+   */
+  async deleteDocuments(documentIds: string[]): Promise<{ success: number; failed: number }> {
+    let success = 0;
+    let failed = 0;
+
+    for (const id of documentIds) {
+      try {
+        await this.deleteDocument(id);
+        success++;
+      } catch (error) {
+        console.error(`❌ ドキュメント削除失敗 (ID: ${id}):`, error);
+        failed++;
+      }
+    }
+
+    return { success, failed };
+  }
+
   /**
    * DataverseレコードをOcrDocument型に変換
    */
@@ -455,7 +476,7 @@ export class OcrDataverseService {
     // Lookupフィールドは _fieldname_value 形式で取得
     const recordAny = record as any;
     const folderId = recordAny['_cx_folderid_value'] || '';
-    
+
     // ステータスを文字列に変換
     const statusMap: Record<number, OcrDocument['status']> = {
       0: 'uploaded',
@@ -465,7 +486,7 @@ export class OcrDataverseService {
       4: 'error'
     };
     const status = statusMap[record.cx_status as number] || 'uploaded';
-    
+
     return {
       id: record.cx_ocrdocumentsid || '',
       name: record.cx_name || '',

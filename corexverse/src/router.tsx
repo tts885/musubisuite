@@ -23,20 +23,20 @@ import ToolPortalLayout from "@/pages/_layout-tool-portal"
 import OcrLayout from "@/pages/_layout-ocr"
 import HomeLayout from "@/pages/_layout-home"
 import LandingPage from "@/pages/landing"
-import DashboardPage from "@/pages/dashboard"
-import ProjectsPage from "@/pages/projects"
-import ProjectDetailPage from "@/pages/project-detail"
+import DashboardPage from "@/features/dashboard/pages/dashboard"
+import ProjectsPage from "@/features/projects/pages/projects"
+import ProjectDetailPage from "@/features/projects/pages/project-detail"
 import ProjectManagementPage from "@/pages/project-management"
 import ToolPortalPage from "@/pages/tool-portal"
-import OcrDocumentListPage from "@/pages/ocr-document-list"
-import OcrUploadPage from "@/pages/ocr-upload"
-import OcrDocumentDetailPage from "@/pages/ocr-document-detail"
-import DataverseSettings from "./pages/dataverse-settings"
-import SettingsPage from "@/pages/settings"
-import UsersSettingsPage from "@/pages/settings/users"
-import ClientsSettingsPage from "@/pages/settings/clients"
-import AISettingsPage from "@/pages/settings/ai-settings"
-import CodeMastersPage from "@/pages/settings/codemasters"
+import OcrDocumentListPage from "@/features/ocr/pages/ocr-document-list"
+import OcrUploadPage from "@/features/ocr/pages/ocr-upload"
+import OcrDocumentDetailPage from "@/features/ocr/pages/ocr-document-detail"
+import DataverseSettings from "@/features/tool-portal/pages/dataverse-settings"
+import SettingsPage from "@/features/settings/pages/settings"
+import UsersSettingsPage from "@/features/settings/pages/users"
+import ClientsSettingsPage from "@/features/settings/pages/clients"
+import AISettingsPage from "@/features/settings/pages/ai-settings"
+import CodeMastersPage from "@/features/settings/pages/codemasters"
 import NotFoundPage from "@/pages/not-found"
 import UnderConstructionPage from "@/pages/under-construction"
 
@@ -125,6 +125,6 @@ export const router = createBrowserRouter([
       { path: "about", element: <UnderConstructionPage /> },
     ],
   },
-], { 
+], {
   basename: BASENAME // IMPORTANT: Set basename for proper routing when hosted in Power Apps
 })

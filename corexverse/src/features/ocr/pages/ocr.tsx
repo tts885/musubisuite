@@ -65,16 +65,16 @@ export default function OcrPage() {
    */
   const handleFileUpload = async (file: File) => {
     setIsProcessing(true)
-    
+
     try {
       // TODO: バックエンドAPIにファイルをアップロード
       // const formData = new FormData()
       // formData.append('file', file)
       // const response = await ocrService.uploadDocument(formData)
-      
+
       // モックデータで処理をシミュレート
       await new Promise(resolve => setTimeout(resolve, 2000))
-      
+
       // モックドキュメントを作成
       const mockDocument: OcrDocument = {
         id: Date.now().toString(),
@@ -83,7 +83,11 @@ export default function OcrPage() {
         fileSize: file.size,
         fileUrl: URL.createObjectURL(file),
         uploadedBy: 'current-user',
-        uploadedAt: new Date(),
+        name: file.name,
+        folderId: 'default-folder',
+        status: 'completed',
+        createdAt: new Date(),
+        uploadedDate: new Date(),
         updatedAt: new Date(),
         tags: [],
         ocrResult: {
@@ -133,7 +137,7 @@ export default function OcrPage() {
           ],
         },
       }
-      
+
       setCurrentDocument(mockDocument)
       toast.success('OCR処理が完了しました')
     } catch (error) {
@@ -194,10 +198,10 @@ export default function OcrPage() {
     try {
       // TODO: バックエンドAPIにOCRデータを保存
       // await ocrService.updateOcrResult(currentDocument.ocrResult.id, currentDocument.ocrResult)
-      
+
       // モックで保存をシミュレート
       await new Promise(resolve => setTimeout(resolve, 1000))
-      
+
       setHasUnsavedChanges(false)
       toast.success('OCRデータを保存しました')
     } catch (error) {
@@ -219,7 +223,7 @@ export default function OcrPage() {
     try {
       // TODO: バックエンドAPIでOCRを再処理
       // await ocrService.reprocessDocument(currentDocument.id)
-      
+
       await new Promise(resolve => setTimeout(resolve, 2000))
       toast.success('OCR再処理が完了しました')
     } catch (error) {
@@ -241,7 +245,7 @@ export default function OcrPage() {
               帳票をアップロードしてOCR処理を行います
             </p>
           </div>
-          
+
           {currentDocument && (
             <div className="flex items-center gap-2">
               <Button
@@ -286,7 +290,7 @@ export default function OcrPage() {
                   onFilesSelect={(files) => files.length > 0 && handleFileUpload(files[0])}
                   maxFiles={1}
                 />
-                
+
                 {isProcessing && (
                   <Alert className="mt-4">
                     <RefreshCw className="h-4 w-4 animate-spin" />
@@ -313,7 +317,7 @@ export default function OcrPage() {
             {/* 右側: OCR結果編集 */}
             <div className="w-96 overflow-auto">
               <OcrResultEditor
-                ocrResult={currentDocument.ocrResult}
+                ocrResult={currentDocument.ocrResult || null}
                 selectedFieldId={selectedFieldId}
                 onFieldChange={handleFieldChange}
                 onFieldSelect={handleFieldSelect}

@@ -66,12 +66,12 @@ export default function AISettingsPage() {
     confidence_threshold: 70,
     auto_save_on_high_confidence: false,
   });
-  
+
   const [loading, setLoading] = useState(false);
-  const [testingConnection, setTestingConnection] = useState<number | null>(null);
+  const [testingConnection] = useState<number | null>(null);
   const [editingProvider, setEditingProvider] = useState<AIProvider | null>(null);
   const [editingSearchEngine, setEditingSearchEngine] = useState<SearchEngineConfig | null>(null);
-  
+
   // AI接続テスト用のstate
   const [testDialogOpen, setTestDialogOpen] = useState(false);
   const [testingProvider, setTestingProvider] = useState<AIProvider | null>(null);
@@ -226,10 +226,10 @@ export default function AISettingsPage() {
 
     setTestLoading(true);
     setTestResponse('');
-    
+
     try {
       const { aiStreamService } = await import('@/services/aiStreamService');
-      
+
       await aiStreamService.streamPrompt(
         `http://127.0.0.1:8000/api/ai-providers/${testingProvider.id}/test_prompt/`,
         { prompt: testPrompt },
@@ -608,10 +608,10 @@ export default function AISettingsPage() {
                       }
                       placeholder={
                         editingProvider.provider_type === 'azure_openai' ? 'gpt-4o' :
-                        editingProvider.provider_type === 'openai' ? 'gpt-4o' :
-                        editingProvider.provider_type === 'anthropic' ? 'claude-3-5-sonnet-20241022' :
-                        editingProvider.provider_type === 'google' ? 'gemini-2.0-flash-exp' :
-                        'model-name'
+                          editingProvider.provider_type === 'openai' ? 'gpt-4o' :
+                            editingProvider.provider_type === 'anthropic' ? 'claude-3-5-sonnet-20241022' :
+                              editingProvider.provider_type === 'google' ? 'gemini-2.0-flash-exp' :
+                                'model-name'
                       }
                       required
                     />

@@ -2,19 +2,32 @@ import { useState, useEffect } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { format } from 'date-fns'
 import { ja } from 'date-fns/locale'
-import { 
-  Search, 
-  Filter, 
-  CheckCircle, 
-  Clock, 
+import {
+  Search,
+  Filter,
+  CheckCircle,
+  Clock,
   FileText,
   ChevronLeft,
   ChevronRight,
+  Trash2,
 } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
+import { Checkbox } from '@/components/ui/checkbox'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
+import { toast } from 'sonner'
 import {
   Select,
   SelectContent,
@@ -53,29 +66,28 @@ export default function OcrDocumentListPage() {
   const [folderFilter, setFolderFilter] = useState<string>('all')
   const [currentPage, setCurrentPage] = useState(1)
   const itemsPerPage = 20
-  
+  const [selectedDocuments, setSelectedDocuments] = useState<string[]>([])
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
+
   // Dataverseからデータ取得
   const { folders } = useOcrFolders()
   const { sections: menuSections } = useMenuSections()
   const [documents, setDocuments] = useState<OcrDocument[]>([])
-  const [loading, setLoading] = useState(false)
 
   // ドキュメント取得
   useEffect(() => {
     const fetchDocuments = async () => {
-      setLoading(true)
       try {
         const docs = await ocrDataverseService.getDocuments()
         setDocuments(docs)
       } catch (error) {
         console.error('ドキュメント取得エラー:', error)
-      } finally {
-        setLoading(false)
       }
     }
     fetchDocuments()
   }, [])
-  
+
   // フォルダツリーを構築
   const buildFolderTree = (parentId: string | null = null): FolderTreeNode[] => {
     return folders
@@ -88,40 +100,40 @@ export default function OcrDocumentListPage() {
 
   const folderTree = buildFolderTree()
   const currentFolder = folderFilter !== 'all' ? folders.find(f => f.id === folderFilter) : null
-  
+
   // パンくずリストを生成（M001>F003/F003形式）
   const getBreadcrumbPath = () => {
     if (!currentFolder) return null
-    
+
     // メニューセクション名を取得
     const menuSection = menuSections.find(m => m.id === currentFolder.menuSection)
     const menuName = menuSection ? menuSection.name : 'すべてのドキュメント'
-    
+
     // フォルダの階層パスを構築
     const buildFolderPath = (folderId: string): string[] => {
       const folder = folders.find(f => f.id === folderId)
       if (!folder) return []
-      
+
       const path: string[] = [folder.name]
       if (folder.parentId) {
         path.unshift(...buildFolderPath(folder.parentId))
       }
       return path
     }
-    
+
     const folderPath = buildFolderPath(currentFolder.id)
-    
+
     return {
       menuName,
       folderPath
     }
   }
-  
+
   const breadcrumb = getBreadcrumbPath()
-  
+
   // フォルダツリーを平坦化して選択肖を生成
-  const flattenFolderTree = (nodes: FolderTreeNode[], depth: number = 0): Array<{node: FolderTreeNode, depth: number}> => {
-    const result: Array<{node: FolderTreeNode, depth: number}> = []
+  const flattenFolderTree = (nodes: FolderTreeNode[], depth: number = 0): Array<{ node: FolderTreeNode, depth: number }> => {
+    const result: Array<{ node: FolderTreeNode, depth: number }> = []
     nodes.forEach(node => {
       result.push({ node, depth })
       if (node.children && node.children.length > 0) {
@@ -130,7 +142,7 @@ export default function OcrDocumentListPage() {
     })
     return result
   }
-  
+
   const flatFolders = flattenFolderTree(folderTree)
 
   // URLパラメータからフォルダフィルターを取得
@@ -160,7 +172,7 @@ export default function OcrDocumentListPage() {
     // 検索フィルター
     if (searchKeyword.trim()) {
       const lowerKeyword = searchKeyword.toLowerCase()
-      filtered = filtered.filter(doc => 
+      filtered = filtered.filter(doc =>
         doc.fileName.toLowerCase().includes(lowerKeyword) ||
         (doc.tags && doc.tags.some(tag => tag.toLowerCase().includes(lowerKeyword)))
       )
@@ -170,7 +182,7 @@ export default function OcrDocumentListPage() {
   }
 
   const filteredDocuments = getFilteredDocuments()
-  
+
   // ページネーション
   const totalPages = Math.ceil(filteredDocuments.length / itemsPerPage)
   const startIndex = (currentPage - 1) * itemsPerPage
@@ -206,9 +218,57 @@ export default function OcrDocumentListPage() {
   }
 
   // 行クリック時の処理
-  const handleRowClick = (doc: OcrDocument) => {
+  const handleRowClick = (doc: OcrDocument, e: React.MouseEvent) => {
+    // チェックボックスクリック時は行クリックを無視
+    if ((e.target as HTMLElement).closest('[data-checkbox]')) {
+      return
+    }
     if (doc.ocrResult) {
       navigate(`/ocr/documents/${doc.id}`)
+    }
+  }
+
+  // 全選択/全解除
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      setSelectedDocuments(currentDocuments.map(doc => doc.id))
+    } else {
+      setSelectedDocuments([])
+    }
+  }
+
+  // 個別選択
+  const handleSelectDocument = (documentId: string, checked: boolean) => {
+    if (checked) {
+      setSelectedDocuments(prev => [...prev, documentId])
+    } else {
+      setSelectedDocuments(prev => prev.filter(id => id !== documentId))
+    }
+  }
+
+  // 削除処理
+  const handleDelete = async () => {
+    setIsDeleting(true)
+    try {
+      const result = await ocrDataverseService.deleteDocuments(selectedDocuments)
+
+      if (result.success > 0) {
+        toast.success(`${result.success}件のドキュメントを削除しました`)
+        // ドキュメントリストを再取得
+        const docs = await ocrDataverseService.getDocuments()
+        setDocuments(docs)
+        setSelectedDocuments([])
+      }
+
+      if (result.failed > 0) {
+        toast.error(`${result.failed}件のドキュメントの削除に失敗しました`)
+      }
+    } catch (error) {
+      console.error('削除エラー:', error)
+      toast.error('ドキュメントの削除に失敗しました')
+    } finally {
+      setIsDeleting(false)
+      setDeleteDialogOpen(false)
     }
   }
 
@@ -251,16 +311,28 @@ export default function OcrDocumentListPage() {
               全 <span className="text-foreground font-semibold">{filteredStats.total}</span> 件 | 完了 <span className="text-foreground font-semibold">{filteredStats.completed}</span> 件 | 処理待ち <span className="text-foreground font-semibold">{filteredStats.pending}</span> 件
             </p>
           </div>
-          <Button onClick={() => {
-            // 現在のフォルダフィルターがあれば、そのフォルダIDを渡す
-            const uploadPath = folderFilter !== 'all'
-              ? `/ocr/upload?folder=${folderFilter}`
-              : '/ocr/upload'
-            navigate(uploadPath)
-          }}>
-            <FileText className="w-4 h-4 mr-2" />
-            新規アップロード
-          </Button>
+          <div className="flex gap-2">
+            {selectedDocuments.length > 0 && (
+              <Button
+                variant="destructive"
+                onClick={() => setDeleteDialogOpen(true)}
+                disabled={isDeleting}
+              >
+                <Trash2 className="w-4 h-4 mr-2" />
+                削除 ({selectedDocuments.length})
+              </Button>
+            )}
+            <Button onClick={() => {
+              // 現在のフォルダフィルターがあれば、そのフォルダIDを渡す
+              const uploadPath = folderFilter !== 'all'
+                ? `/ocr/upload?folder=${folderFilter}`
+                : '/ocr/upload'
+              navigate(uploadPath)
+            }}>
+              <FileText className="w-4 h-4 mr-2" />
+              新規アップロード
+            </Button>
+          </div>
         </div>
 
         {/* 検索・フィルター */}
@@ -277,7 +349,7 @@ export default function OcrDocumentListPage() {
               className="pl-10"
             />
           </div>
-          
+
           <Select value={folderFilter} onValueChange={(value) => {
             setFolderFilter(value)
             setCurrentPage(1)
@@ -294,8 +366,8 @@ export default function OcrDocumentListPage() {
                     <span style={{ marginLeft: `${depth * 16}px` }}>
                       {depth > 0 && '└ '}
                     </span>
-                    <div 
-                      className="w-3 h-3 rounded-sm" 
+                    <div
+                      className="w-3 h-3 rounded-sm"
                       style={{ backgroundColor: node.folder.color }}
                     />
                     <span>{node.folder.name}</span>
@@ -304,7 +376,7 @@ export default function OcrDocumentListPage() {
               ))}
             </SelectContent>
           </Select>
-          
+
           <Select value={statusFilter} onValueChange={(value) => {
             setStatusFilter(value)
             setCurrentPage(1)
@@ -330,29 +402,43 @@ export default function OcrDocumentListPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="w-[8%]">No.</TableHead>
-                <TableHead className="w-[32%]">ファイル名</TableHead>
+                <TableHead className="w-[5%]">
+                  <Checkbox
+                    data-checkbox
+                    checked={currentDocuments.length > 0 && selectedDocuments.length === currentDocuments.length}
+                    onCheckedChange={handleSelectAll}
+                  />
+                </TableHead>
+                <TableHead className="w-[6%]">No.</TableHead>
+                <TableHead className="w-[30%]">ファイル名</TableHead>
                 <TableHead className="w-[12%]">ステータス</TableHead>
                 <TableHead className="w-[10%]">信頼度</TableHead>
                 <TableHead className="w-[10%]">サイズ</TableHead>
                 <TableHead className="w-[15%]">アップロード日時</TableHead>
-                <TableHead className="w-[13%]">タグ</TableHead>
+                <TableHead className="w-[12%]">タグ</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {currentDocuments.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center py-12 text-muted-foreground">
+                  <TableCell colSpan={8} className="text-center py-12 text-muted-foreground">
                     該当するドキュメントが見つかりません
                   </TableCell>
                 </TableRow>
               ) : (
                 currentDocuments.map((doc, index) => (
-                  <TableRow 
+                  <TableRow
                     key={doc.id}
                     className="cursor-pointer hover:bg-muted/50"
-                    onClick={() => handleRowClick(doc)}
+                    onClick={(e) => handleRowClick(doc, e)}
                   >
+                    <TableCell onClick={(e) => e.stopPropagation()}>
+                      <Checkbox
+                        data-checkbox
+                        checked={selectedDocuments.includes(doc.id)}
+                        onCheckedChange={(checked) => handleSelectDocument(doc.id, checked as boolean)}
+                      />
+                    </TableCell>
                     <TableCell className="text-sm text-muted-foreground">
                       {startIndex + index + 1}
                     </TableCell>
@@ -435,6 +521,29 @@ export default function OcrDocumentListPage() {
           </div>
         )}
       </div>
+
+      {/* 削除確認ダイアログ */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>ドキュメントを削除しますか?</AlertDialogTitle>
+            <AlertDialogDescription>
+              選択した{selectedDocuments.length}件のドキュメントを削除します。
+              この操作は取り消せません。
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>キャンセル</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDelete}
+              disabled={isDeleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {isDeleting ? '削除中...' : '削除'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

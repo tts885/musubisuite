@@ -153,8 +153,9 @@ class ProjectViewSet(viewsets.ModelViewSet):
         Note:
             添付ファイルはアップロード日時の降順でソートされます
         """
+        from services.project_service import ProjectService
         project = self.get_object()
-        attachments = project.attachments.all()
+        attachments = ProjectService.get_project_attachments(project)
         serializer = AttachmentSerializer(attachments, many=True)
         return Response(serializer.data)
     
@@ -187,8 +188,9 @@ class ProjectViewSet(viewsets.ModelViewSet):
         Note:
             コメントは作成日時の昇順でソートされます(古い順)
         """
+        from services.project_service import ProjectService
         project = self.get_object()
-        comments = project.comments.all()
+        comments = ProjectService.get_project_comments(project)
         serializer = CommentSerializer(comments, many=True)
         return Response(serializer.data)
     
@@ -225,18 +227,9 @@ class ProjectViewSet(viewsets.ModelViewSet):
             - この統計はキャッシュされる可能性があります
             - 大規模データの場合はパフォーマンスに注意が必要です
         """
-        # 全プロジェクト数を取得
-        total = self.queryset.count()
-        
-        # ステータス別の集計
-        active = self.queryset.filter(status='active').count()
-        completed = self.queryset.filter(status='completed').count()
-        
-        return Response({
-            'total_projects': total,
-            'active_projects': active,
-            'completed_projects': completed,
-        })
+        from services.project_service import ProjectService
+        stats = ProjectService.get_project_stats()
+        return Response(stats)
 
 
 class AttachmentViewSet(viewsets.ModelViewSet):

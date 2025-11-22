@@ -2,7 +2,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { CheckCircle2, XCircle, Circle, Play, Trash2, Settings } from 'lucide-react';
-import type { DataverseConnection } from '@/types/dataverse';
+import type { DataverseConnection } from '@/types/powerplatform';
 
 interface ConnectionCardProps {
   connection: DataverseConnection;
@@ -50,7 +50,7 @@ export function ConnectionCard({
 
   const formatDate = (dateString?: string) => {
     if (!dateString) return '-';
-    
+
     try {
       const date = new Date(dateString);
       return new Intl.DateTimeFormat('ja-JP', {

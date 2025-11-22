@@ -109,8 +109,7 @@ class AIProviderViewSet(viewsets.ModelViewSet):
     def test_prompt(self, request, pk=None):
         """プロンプトを送信してAIの応答をテスト（ストリーミング対応）"""
         from django.http import StreamingHttpResponse, JsonResponse
-        from ai_services import AIClient
-        import json
+        from services.ai_service import AIService
         
         provider = self.get_object()
         prompt = request.data.get('prompt', '')
@@ -130,28 +129,9 @@ class AIProviderViewSet(viewsets.ModelViewSet):
         try:
             logger.info(f"Testing AI provider: {provider.provider_type} - {provider.name}")
             
-            def stream_response():
-                """AIレスポンスをストリーミング（最適化版）"""
-                try:
-                    client = AIClient(provider=provider)
-                    
-                    # チャンク単位で直接送信
-                    for chunk in client.generate_stream(prompt):
-                        if chunk:
-                            yield f"data: {json.dumps({'content': chunk}, ensure_ascii=False)}\n\n"
-                    
-                    # 完了シグナル
-                    yield f"data: {json.dumps({'done': True})}\n\n"
-                    logger.info("Stream completed successfully")
-                    
-                except Exception as e:
-                    error_msg = f"{type(e).__name__}: {str(e)}"
-                    logger.error(f"Streaming error: {error_msg}", exc_info=True)
-                    yield f"data: {json.dumps({'error': error_msg})}\n\n"
-            
             # StreamingHttpResponseを直接返す
             response = StreamingHttpResponse(
-                stream_response(),
+                AIService.stream_ai_response(provider, prompt),
                 content_type='text/event-stream'
             )
             response['Cache-Control'] = 'no-cache'

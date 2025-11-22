@@ -22,11 +22,17 @@ import { ConnectionLogTable } from "@/components/powerplatform/ConnectionLogTabl
 import { ErrorAlert, getErrorType } from "@/components/powerplatform/ErrorAlert";
 import { toast } from "sonner";
 import { testFetchMdiProjects, testCreateMdiProject } from "@/services/testMdiProjectList";
-import { 
-  createEnvironmentSettingsTable, 
+import {
+  createEnvironmentSettingsTable,
   getTableCreationCommands,
-  copyTableCreationCommandsToClipboard 
+  copyTableCreationCommandsToClipboard
 } from "@/services/tableCreationService";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 export default function DataverseSettingsPage() {
   const [connections, setConnections] = useState<DataverseConnection[]>([]);
@@ -37,6 +43,7 @@ export default function DataverseSettingsPage() {
   const [isFetchingProjects, setIsFetchingProjects] = useState(false);
   const [isCreatingTable, setIsCreatingTable] = useState(false);
   const [isCreatingTestData, setIsCreatingTestData] = useState(false);
+  const [activeConnectionId, setActiveConnectionId] = useState<string | null>(null);
 
   useEffect(() => {
     loadConnections();
@@ -46,6 +53,7 @@ export default function DataverseSettingsPage() {
     try {
       const storedConnections = dataverseStore.getConnections();
       setConnections(storedConnections);
+      setActiveConnectionId(dataverseStore.getActiveConnectionId());
       setError(null);
     } catch (err: any) {
       setError({
@@ -56,17 +64,19 @@ export default function DataverseSettingsPage() {
     }
   };
 
-  const handleCreateConnection = (connection: Omit<DataverseConnection, "id" | "createdAt" | "updatedAt">) => {
+  const handleCreateConnection = (data: { displayName: string; environmentId: string; environmentUrl: string; apiVersion?: string; description?: string }) => {
     try {
       const newConn: DataverseConnection = {
-        ...connection,
+        ...data,
+        name: data.displayName,
+        apiVersion: data.apiVersion || '9.2',
         id: crypto.randomUUID(),
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       };
 
       dataverseStore.saveConnection(newConn);
-      
+
       // 最初の接続は自動的にアクティブに
       if (connections.length === 0) {
         dataverseStore.setActiveConnection(newConn.id);
@@ -85,18 +95,22 @@ export default function DataverseSettingsPage() {
     }
   };
 
-  const handleUpdateConnection = (connection: DataverseConnection) => {
+  const handleUpdateConnection = (data: { displayName: string; environmentId: string; environmentUrl: string; apiVersion?: string; description?: string }) => {
+    if (!editingConnection) return;
     try {
-      const updatedConn = {
-        ...connection,
+      const updatedConn: DataverseConnection = {
+        ...editingConnection,
+        ...data,
+        name: data.displayName,
+        apiVersion: data.apiVersion || '9.2',
         updatedAt: new Date().toISOString(),
       };
-      
+
       dataverseStore.updateConnection(updatedConn);
       loadConnections();
       setEditingConnection(null);
       setIsFormOpen(false);
-      toast.success(`接続 "${connection.name}" を更新しました`);
+      toast.success(`接続 "${updatedConn.name}" を更新しました`);
     } catch (err: any) {
       toast.error("接続の更新に失敗しました");
       setError({
@@ -155,9 +169,9 @@ export default function DataverseSettingsPage() {
       console.log("\n" + "=".repeat(80));
       console.log("🚀 MDI Project List データ取得を開始します");
       console.log("=".repeat(80));
-      
+
       const projects = await testFetchMdiProjects();
-      
+
       toast.success(`${projects?.length || 0}件のレコードを取得しました。コンソールを確認してください。`);
       console.log("\n💡 ヒント: ブラウザの開発者ツール(F12)のコンソールタブで詳細を確認できます");
     } catch (err: any) {
@@ -180,9 +194,9 @@ export default function DataverseSettingsPage() {
       console.log("\n" + "=".repeat(80));
       console.log("✨ MDI Project List テストデータ作成を開始します");
       console.log("=".repeat(80));
-      
+
       const createdProject = await testCreateMdiProject();
-      
+
       if (createdProject) {
         toast.success(
           `テストデータを作成しました\n名前: ${createdProject.mdi_name}`,
@@ -192,7 +206,7 @@ export default function DataverseSettingsPage() {
       } else {
         toast.error("テストデータの作成に失敗しました");
       }
-      
+
     } catch (err: any) {
       toast.error("テストデータ作成に失敗しました");
       console.error("\n❌ エラー:", err);
@@ -213,18 +227,18 @@ export default function DataverseSettingsPage() {
       console.log("\n" + "=".repeat(80));
       console.log("🏗️  環境設定テーブル作成処理を開始します");
       console.log("=".repeat(80));
-      
+
       const result = await createEnvironmentSettingsTable();
-      
+
       if (!result.success) {
         // PAC CLIコマンドをコンソールに表示
         console.log("\n📋 テーブル作成手順:");
         const commands = getTableCreationCommands();
         commands.forEach(cmd => console.log(cmd));
-        
+
         // クリップボードにコピー
         const copied = await copyTableCreationCommandsToClipboard();
-        
+
         if (copied) {
           toast.info(
             "PAC CLIコマンドをクリップボードにコピーしました。\nターミナルで実行してください。",
@@ -237,7 +251,7 @@ export default function DataverseSettingsPage() {
             { duration: 5000 }
           );
         }
-        
+
         console.log("\n💡 ヒント:");
         console.log("  1. 上記のコマンドをコピーしてターミナルで実行");
         console.log("  2. テーブル作成後、データソースとして追加");
@@ -245,7 +259,7 @@ export default function DataverseSettingsPage() {
       } else {
         toast.success("環境設定テーブルを作成しました");
       }
-      
+
     } catch (err: any) {
       toast.error("テーブル作成処理に失敗しました");
       console.error("\n❌ エラー:", err);
@@ -278,8 +292,8 @@ export default function DataverseSettingsPage() {
               <Plus className="mr-2 h-4 w-4" />
               新しい接続
             </Button>
-            <Button 
-              onClick={handleFetchMdiProjects} 
+            <Button
+              onClick={handleFetchMdiProjects}
               disabled={isFetchingProjects}
               variant="outline"
             >
@@ -292,8 +306,8 @@ export default function DataverseSettingsPage() {
                 </>
               )}
             </Button>
-            <Button 
-              onClick={handleCreateTestData} 
+            <Button
+              onClick={handleCreateTestData}
               disabled={isCreatingTestData}
               variant="outline"
             >
@@ -306,8 +320,8 @@ export default function DataverseSettingsPage() {
                 </>
               )}
             </Button>
-            <Button 
-              onClick={handleCreateEnvironmentSettingsTable} 
+            <Button
+              onClick={handleCreateEnvironmentSettingsTable}
               disabled={isCreatingTable}
               variant="secondary"
             >
@@ -379,10 +393,11 @@ export default function DataverseSettingsPage() {
                 <ConnectionCard
                   key={connection.id}
                   connection={connection}
+                  isActive={connection.id === activeConnectionId}
                   onEdit={handleEditConnection}
                   onDelete={handleDeleteConnection}
                   onTest={handleTestConnection}
-                  onSetActive={handleSetActiveConnection}
+                  onActivate={handleSetActiveConnection}
                 />
               ))}
             </div>
@@ -396,20 +411,26 @@ export default function DataverseSettingsPage() {
 
         {/* 接続ログタブ */}
         <TabsContent value="logs">
-          <ConnectionLogTable 
-            connections={connections} 
-            logs={dataverseStore.getConnectionLogs()} 
+          <ConnectionLogTable
+            connections={connections}
+            logs={dataverseStore.getConnectionLogs()}
           />
         </TabsContent>
       </Tabs>
 
       {/* 接続作成/編集ダイアログ */}
-      <ConnectionForm
-        open={isFormOpen}
-        onOpenChange={setIsFormOpen}
-        connection={editingConnection || undefined}
-        onSubmit={editingConnection ? handleUpdateConnection : handleCreateConnection}
-      />
+      <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
+        <DialogContent className="sm:max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle>{editingConnection ? '接続を編集' : '新しい接続'}</DialogTitle>
+          </DialogHeader>
+          <ConnectionForm
+            connection={editingConnection || undefined}
+            onSubmit={editingConnection ? handleUpdateConnection : handleCreateConnection}
+            onCancel={() => setIsFormOpen(false)}
+          />
+        </DialogContent>
+      </Dialog>
 
       {/* 接続テストダイアログ */}
       {testingConnection && (

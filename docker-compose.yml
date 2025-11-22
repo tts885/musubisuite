@@ -1,0 +1,49 @@
+services:
+  db:
+    image: postgres:15
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_DB=corexverse
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    ports:
+      - "5432:5432"
+
+  backend:
+    build: ./corexverseAPI
+    command: python manage.py runserver 0.0.0.0:8000
+    volumes:
+      - ./corexverseAPI:/app
+    ports:
+      - "8000:8000"
+    environment:
+      - DEBUG=1
+      - SECRET_KEY=dev_secret_key
+      - ALLOWED_HOSTS=localhost,127.0.0.1,backend
+      - DB_ENGINE=django.db.backends.postgresql
+      - DB_NAME=corexverse
+      - DB_USER=postgres
+      - DB_PASSWORD=postgres
+      - DB_HOST=db
+      - DB_PORT=5432
+    depends_on:
+      - db
+
+  frontend:
+    build:
+      context: ./corexverse
+      dockerfile: Dockerfile
+    # For development, we might want to use vite dev server instead of nginx build
+    # But for architecture proposal "To-Be", we stick to the build or dev override.
+    # Here we use a dev setup for hot-reload if we mount volumes, but the Dockerfile is multi-stage build.
+    # To support dev mode in docker, we would need a different Dockerfile or command override.
+    # For now, let's assume production-like build for stability or dev mode if user wants.
+    # Let's use the build for now as per "To-Be" architecture diagram which implies Nginx.
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:

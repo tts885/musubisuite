@@ -1,10 +1,9 @@
 import { ListChecks, Upload, ChevronDown, ChevronRight, Menu, FileText, Folder, FolderOpen, Plus, Edit2, Trash2, MoreVertical } from 'lucide-react'
 import { useNavigate, useLocation, useSearchParams } from 'react-router-dom'
-import { useState, useMemo, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
 import {
   Dialog,
   DialogContent,
@@ -13,7 +12,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import { 
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -35,13 +34,6 @@ interface OcrSidebarProps {
   setSidebarOpen: (open: boolean) => void
 }
 
-interface MenuSection {
-  id: string
-  name: string
-  icon?: string
-  createdAt: string
-}
-
 /**
  * OCRアプリケーションのサイドバー
  * 現代的なサイドバーデザイン
@@ -51,33 +43,30 @@ export default function OcrSidebar({ sidebarCollapsed, setSidebarCollapsed, side
   const location = useLocation()
   const [searchParams] = useSearchParams()
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set(['all-docs']))
-  
+
   // Dataverseからメニューセクションとフォルダを取得
-  const { sections: menuSectionsData, loading: menuLoading, createSection, updateSection, deleteSection, refresh: refreshMenu } = useMenuSections()
-  const { folders: foldersData, loading: foldersLoading, createFolder, updateFolder, deleteFolder, refresh: refreshFolders } = useOcrFolders()
-  
+  const { sections: menuSectionsData, createSection, updateSection, deleteSection } = useMenuSections()
+  const { folders: foldersData, createFolder, updateFolder, deleteFolder } = useOcrFolders()
+
   // メニューセクション管理
   const [isAddMenuOpen, setIsAddMenuOpen] = useState(false)
   const [isEditMenuOpen, setIsEditMenuOpen] = useState(false)
   const [editingMenuId, setEditingMenuId] = useState<string | null>(null)
   const [menuName, setMenuName] = useState('')
-  
+
   // メニューセクションは既にMenuSection型なのでそのまま使用
   const menuSections = menuSectionsData
-  
+
   // フォルダリスト
   const folders = foldersData
-  
-  // フォルダ追加・更新・削除のラッパー関数
 
-  
   // ダイアログの状態管理
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
   const [currentParentId, setCurrentParentId] = useState<string | undefined>(undefined)
   const [currentMenuSection, setCurrentMenuSection] = useState<string>('all-docs')
   const [editingFolder, setEditingFolder] = useState<FolderTreeNode | null>(null)
-  
+
   // フォーム入力の状態
   const [folderName, setFolderName] = useState('')
   const [folderDescription, setFolderDescription] = useState('')
@@ -105,13 +94,13 @@ export default function OcrSidebar({ sidebarCollapsed, setSidebarCollapsed, side
     try {
       const docs = await ocrDataverseService.getDocuments()
       const counts: Record<string, number> = {}
-      
+
       docs.forEach(doc => {
         if (doc.folderId) {
           counts[doc.folderId] = (counts[doc.folderId] || 0) + 1
         }
       })
-      
+
       setDocumentCounts(counts)
     } catch (error) {
       console.error('ドキュメント数取得エラー:', error)
@@ -128,7 +117,7 @@ export default function OcrSidebar({ sidebarCollapsed, setSidebarCollapsed, side
     const interval = setInterval(() => {
       fetchDocumentCounts()
     }, 30000)
-    
+
     return () => clearInterval(interval)
   }, [fetchDocumentCounts])
 
@@ -137,9 +126,9 @@ export default function OcrSidebar({ sidebarCollapsed, setSidebarCollapsed, side
     const handleDocumentsUpdated = () => {
       fetchDocumentCounts()
     }
-    
+
     window.addEventListener('documentsUpdated', handleDocumentsUpdated)
-    
+
     return () => {
       window.removeEventListener('documentsUpdated', handleDocumentsUpdated)
     }
@@ -184,7 +173,7 @@ export default function OcrSidebar({ sidebarCollapsed, setSidebarCollapsed, side
           className={`
             flex items-center gap-2 px-3 py-1.5 rounded-md text-sm transition-colors group
             ${isSelected
-              ? 'bg-sidebar-accent text-sidebar-accent-foreground' 
+              ? 'bg-sidebar-accent text-sidebar-accent-foreground'
               : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
             }
           `}
@@ -251,7 +240,7 @@ export default function OcrSidebar({ sidebarCollapsed, setSidebarCollapsed, side
                 <Edit2 className="w-4 h-4 mr-2" />
                 編集
               </DropdownMenuItem>
-              <DropdownMenuItem 
+              <DropdownMenuItem
                 onClick={() => handleDeleteFolder(node.folder.id)}
                 className="text-destructive"
               >
@@ -277,20 +266,20 @@ export default function OcrSidebar({ sidebarCollapsed, setSidebarCollapsed, side
     setMenuName('')
     setIsAddMenuOpen(true)
   }
-  
+
   const executeAddMenu = async () => {
     if (!menuName.trim()) {
       alert('メニュー名を入力してください')
       return
     }
-    
+
     const trimmedName = menuName.trim()
     const existingMenu = menuSections.find(m => m.name === trimmedName)
     if (existingMenu) {
       alert('同じ名前のメニューが既に存在します')
       return
     }
-    
+
     try {
       const created = await createSection({
         name: trimmedName,
@@ -299,7 +288,7 @@ export default function OcrSidebar({ sidebarCollapsed, setSidebarCollapsed, side
         isDefault: false,
         color: '#3b82f6',
       })
-      
+
       setExpandedFolders(prev => new Set([...prev, created.id]))
       setIsAddMenuOpen(false)
       setMenuName('')
@@ -308,7 +297,7 @@ export default function OcrSidebar({ sidebarCollapsed, setSidebarCollapsed, side
       alert('メニューの追加に失敗しました')
     }
   }
-  
+
   // メニューセクション編集
   const handleEditMenu = (menuId: string) => {
     const menu = menuSections.find(m => m.id === menuId)
@@ -318,27 +307,27 @@ export default function OcrSidebar({ sidebarCollapsed, setSidebarCollapsed, side
       setIsEditMenuOpen(true)
     }
   }
-  
+
   const executeEditMenu = async () => {
     if (!menuName.trim()) {
       alert('メニュー名を入力してください')
       return
     }
-    
+
     const trimmedName = menuName.trim()
     const existingMenu = menuSections.find(m => m.name === trimmedName && m.id !== editingMenuId)
     if (existingMenu) {
       alert('同じ名前のメニューが既に存在します')
       return
     }
-    
+
     if (!editingMenuId) return
-    
+
     try {
       await updateSection(editingMenuId, {
         name: trimmedName,
       })
-      
+
       setIsEditMenuOpen(false)
       setEditingMenuId(null)
       setMenuName('')
@@ -347,27 +336,27 @@ export default function OcrSidebar({ sidebarCollapsed, setSidebarCollapsed, side
       alert('メニューの更新に失敗しました')
     }
   }
-  
+
   // メニューセクション削除
   const handleDeleteMenu = async (menuId: string) => {
     const menu = menuSections.find(m => m.id === menuId)
     if (!menu) return
-    
+
     const foldersInSection = folders.filter(f => f.menuSection === menuId)
     const message = foldersInSection.length > 0
       ? `メニュー「${menu.name}」と配下のフォルダをすべて削除してもよろしいですか?\n(ドキュメントは削除されません)`
       : `メニュー「${menu.name}」を削除してもよろしいですか?`
-    
+
     if (confirm(message)) {
       try {
         // 配下のフォルダを削除
         for (const folder of foldersInSection) {
           await deleteFolder(folder.id)
         }
-        
+
         // メニューセクションを削除
         await deleteSection(menuId)
-        
+
         setExpandedFolders(prev => {
           const newSet = new Set(prev)
           newSet.delete(menuId)
@@ -379,7 +368,7 @@ export default function OcrSidebar({ sidebarCollapsed, setSidebarCollapsed, side
       }
     }
   }
-  
+
   // フォルダ追加ハンドラー
   const handleAddFolder = (parentId?: string, menuSection?: string) => {
     // 階層制限チェック: 2階層まで(親→子て2階層)
@@ -390,7 +379,7 @@ export default function OcrSidebar({ sidebarCollapsed, setSidebarCollapsed, side
         return
       }
     }
-    
+
     setCurrentParentId(parentId)
     setCurrentMenuSection(menuSection || 'all-docs')
     setFolderName('')
@@ -398,14 +387,14 @@ export default function OcrSidebar({ sidebarCollapsed, setSidebarCollapsed, side
     setFolderColor('#3b82f6')
     setIsAddDialogOpen(true)
   }
-  
+
   // フォルダ追加実行
   const executeAddFolder = async () => {
     if (!folderName.trim()) {
       alert('フォルダ名を入力してください')
       return
     }
-    
+
     // 重複チェック
     const trimmedName = folderName.trim()
     if (currentParentId) {
@@ -427,11 +416,11 @@ export default function OcrSidebar({ sidebarCollapsed, setSidebarCollapsed, side
         return
       }
     }
-    
+
     try {
       const parentFolder = currentParentId ? folders.find(f => f.id === currentParentId) : null
       const path = parentFolder ? `${parentFolder.path}/${trimmedName}` : `/${trimmedName}`
-      
+
       // メニューセクションのGUIDを取得
       // 'all-docs'の場合はnullまたはデフォルトメニューセクションを使用
       let menuSectionId: string | undefined = undefined
@@ -443,13 +432,13 @@ export default function OcrSidebar({ sidebarCollapsed, setSidebarCollapsed, side
         const defaultSection = menuSections.find(m => m.isDefault)
         menuSectionId = defaultSection?.id
       }
-      
+
       if (!menuSectionId) {
         alert('メニューセクションが見つかりません。先にメニューセクションを作成してください。')
         return
       }
-      
-      const created = await createFolder({
+
+      await createFolder({
         name: trimmedName,
         description: folderDescription,
         color: folderColor,
@@ -457,12 +446,12 @@ export default function OcrSidebar({ sidebarCollapsed, setSidebarCollapsed, side
         path: path,
         menuSection: menuSectionId,
       })
-      
+
       // 親フォルダを展開
       if (currentParentId) {
         setExpandedFolders(prev => new Set([...prev, currentParentId]))
       }
-      
+
       setIsAddDialogOpen(false)
     } catch (error) {
       console.error('フォルダ追加エラー:', error)
@@ -473,29 +462,29 @@ export default function OcrSidebar({ sidebarCollapsed, setSidebarCollapsed, side
   // フォルダ編集ハンドラー
   const handleEditFolder = (folder: FolderTreeNode) => {
     setEditingFolder(folder)
-    setFolderName(folder.name)
-    setFolderDescription(folder.description || '')
-    setFolderColor(folder.color || '#3b82f6')
+    setFolderName(folder.folder.name)
+    setFolderDescription(folder.folder.description || '')
+    setFolderColor(folder.folder.color || '#3b82f6')
     setIsEditDialogOpen(true)
   }
-  
+
   // フォルダ編集実行
   const executeEditFolder = async () => {
     if (!editingFolder || !folderName.trim()) {
       alert('フォルダ名を入力してください')
       return
     }
-    
+
     // 重複チェック(自分自身は除外)
     const trimmedName = folderName.trim()
-    const currentFolder = folders.find(f => f.id === editingFolder.id)
+    const currentFolder = folders.find(f => f.id === editingFolder.folder.id)
     if (currentFolder) {
       if (currentFolder.parentId) {
         // サブフォルダの場合: 同じ親内で重複チェック
         const siblingsWithSameName = folders.filter(
-          f => f.parentId === currentFolder.parentId && 
-               f.name === trimmedName && 
-               f.id !== editingFolder.id
+          f => f.parentId === currentFolder.parentId &&
+            f.name === trimmedName &&
+            f.id !== editingFolder.folder.id
         )
         if (siblingsWithSameName.length > 0) {
           alert('同じ親フォルダ内に同じ名前のフォルダが既に存在します')
@@ -504,9 +493,9 @@ export default function OcrSidebar({ sidebarCollapsed, setSidebarCollapsed, side
       } else {
         // ルートフォルダの場合: ルートレベルで重複チェック
         const rootFoldersWithSameName = folders.filter(
-          f => f.parentId === null && 
-               f.name === trimmedName && 
-               f.id !== editingFolder.id
+          f => f.parentId === null &&
+            f.name === trimmedName &&
+            f.id !== editingFolder.folder.id
         )
         if (rootFoldersWithSameName.length > 0) {
           alert('同じ階層に同じ名前のフォルダが既に存在します')
@@ -514,21 +503,21 @@ export default function OcrSidebar({ sidebarCollapsed, setSidebarCollapsed, side
         }
       }
     }
-    
+
     try {
-      const oldPath = editingFolder.path
+      const oldPath = editingFolder.folder.path
       const parentPath = oldPath.split('/').slice(0, -1).join('/')
       const newPath = parentPath ? `${parentPath}/${trimmedName}` : `/${trimmedName}`
-      
-      await updateFolder(editingFolder.id, {
+
+      await updateFolder(editingFolder.folder.id, {
         name: trimmedName,
         description: folderDescription,
         color: folderColor,
         path: newPath,
       })
-      
+
       setIsEditDialogOpen(false)
-      console.log('フォルダを編集:', { id: editingFolder.id, name: folderName })
+      console.log('フォルダを編集:', { id: editingFolder.folder.id, name: folderName })
     } catch (error) {
       console.error('フォルダ更新エラー:', error)
       alert('フォルダの更新に失敗しました')
@@ -539,12 +528,12 @@ export default function OcrSidebar({ sidebarCollapsed, setSidebarCollapsed, side
   const handleDeleteFolder = async (folderId: string) => {
     const folder = folders.find(f => f.id === folderId)
     if (!folder) return
-    
+
     const hasChildren = folders.some(f => f.parentId === folderId)
     const message = hasChildren
       ? `フォルダ「${folder.name}」とその配下のサブフォルダをすべて削除してもよろしいですか?\n(ドキュメントは削除されません)`
       : `フォルダ「${folder.name}」を削除してもよろしいですか?\n(ドキュメントは削除されません)`
-    
+
     if (confirm(message)) {
       try {
         // 削除対象のフォルダID一覧を取得(再帰的に)
@@ -552,19 +541,19 @@ export default function OcrSidebar({ sidebarCollapsed, setSidebarCollapsed, side
           const childIds = folders.filter(f => f.parentId === id).map(f => f.id)
           return [id, ...childIds.flatMap(getFolderIdsToDelete)]
         }
-        
+
         const idsToDelete = getFolderIdsToDelete(folderId)
-        
+
         // 子フォルダから順に削除
         for (const id of idsToDelete.reverse()) {
           await deleteFolder(id)
         }
-        
+
         // 選択中のフォルダが削除された場合、トップページに戻る
         if (idsToDelete.includes(selectedFolderId || '')) {
           navigate('/ocr')
         }
-        
+
         console.log('フォルダを削除:', idsToDelete)
       } catch (error) {
         console.error('フォルダ削除エラー:', error)
@@ -576,7 +565,7 @@ export default function OcrSidebar({ sidebarCollapsed, setSidebarCollapsed, side
 
 
   return (
-    <aside 
+    <aside
       className={`
         bg-sidebar border-r border-sidebar-border
         transition-all duration-300 ease-in-out
@@ -613,7 +602,7 @@ export default function OcrSidebar({ sidebarCollapsed, setSidebarCollapsed, side
           <button
             onClick={() => {
               // 選択中のフォルダがあれば、そのフォルダIDを渡す
-              const uploadPath = selectedFolderId 
+              const uploadPath = selectedFolderId
                 ? `/ocr/upload?folder=${selectedFolderId}`
                 : '/ocr/upload'
               navigate(uploadPath)
@@ -624,7 +613,7 @@ export default function OcrSidebar({ sidebarCollapsed, setSidebarCollapsed, side
               flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors w-full
               ${sidebarCollapsed ? 'justify-center' : ''}
               ${isActive('/ocr/upload')
-                ? 'bg-sidebar-accent text-sidebar-accent-foreground shadow-sm' 
+                ? 'bg-sidebar-accent text-sidebar-accent-foreground shadow-sm'
                 : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
               }
             `}
@@ -645,7 +634,7 @@ export default function OcrSidebar({ sidebarCollapsed, setSidebarCollapsed, side
               sectionFolders = folders.filter(f => f.menuSection === section.id)
             }
             const folderTree = buildFolderTree(null, sectionFolders)
-            
+
             return (
               <div key={section.id}>
                 <div className="flex items-center gap-2 group w-full">
@@ -664,7 +653,7 @@ export default function OcrSidebar({ sidebarCollapsed, setSidebarCollapsed, side
                         flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors flex-1 min-w-0
                         ${sidebarCollapsed ? 'justify-center' : ''}
                         ${(isActive('/ocr') || isActive('/ocr/documents')) && !selectedFolderId
-                          ? 'bg-sidebar-accent text-sidebar-accent-foreground shadow-sm' 
+                          ? 'bg-sidebar-accent text-sidebar-accent-foreground shadow-sm'
                           : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
                         }
                       `}
@@ -706,7 +695,7 @@ export default function OcrSidebar({ sidebarCollapsed, setSidebarCollapsed, side
                           <Edit2 className="w-3 h-3 mr-2" />
                           名前を変更
                         </DropdownMenuItem>
-                        <DropdownMenuItem 
+                        <DropdownMenuItem
                           onClick={() => handleDeleteMenu(section.id)}
                           className="text-destructive"
                         >
@@ -727,7 +716,7 @@ export default function OcrSidebar({ sidebarCollapsed, setSidebarCollapsed, side
               </div>
             )
           })}
-          
+
           {/* 新しいメニュー追加ボタン */}
           {!sidebarCollapsed && (
             <button
@@ -782,7 +771,7 @@ export default function OcrSidebar({ sidebarCollapsed, setSidebarCollapsed, side
           </DialogFooter>
         </DialogContent>
       </Dialog>
-      
+
       {/* メニューセクション編集ダイアログ */}
       <Dialog open={isEditMenuOpen} onOpenChange={setIsEditMenuOpen}>
         <DialogContent>
@@ -813,64 +802,63 @@ export default function OcrSidebar({ sidebarCollapsed, setSidebarCollapsed, side
           </DialogFooter>
         </DialogContent>
       </Dialog>
-      
+
       {/* フォルダ追加ダイアログ */}
       <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-        <DialogContent className="sm:max-w-[500px]">
+        <DialogContent>
           <DialogHeader>
-            <DialogTitle>フォルダを追加</DialogTitle>
+            <DialogTitle>新しいフォルダを作成</DialogTitle>
             <DialogDescription>
-              {currentParentId 
-                ? `「${folders.find(f => f.id === currentParentId)?.name}」配下に新しいフォルダを作成します`
-                : '新しいルートフォルダを作成します'
-              }
+              {currentParentId
+                ? 'サブフォルダを作成します'
+                : '新しいルートフォルダを作成します'}
             </DialogDescription>
           </DialogHeader>
-          
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="folder-name">フォルダ名 <span className="text-destructive">*</span></Label>
+              <Label htmlFor="folder-name">フォルダ名</Label>
               <Input
                 id="folder-name"
                 placeholder="例: 請求書"
                 value={folderName}
                 onChange={(e) => setFolderName(e.target.value)}
-                autoFocus
+                onKeyDown={(e) => e.key === 'Enter' && executeAddFolder()}
               />
             </div>
-            
             <div className="space-y-2">
-              <Label htmlFor="folder-description">説明</Label>
-              <Textarea
-                id="folder-description"
-                placeholder="フォルダの説明を入力..."
+              <Label htmlFor="folder-desc">説明 (任意)</Label>
+              <Input
+                id="folder-desc"
+                placeholder="フォルダの説明"
                 value={folderDescription}
                 onChange={(e) => setFolderDescription(e.target.value)}
-                rows={3}
               />
             </div>
-            
             <div className="space-y-2">
               <Label htmlFor="folder-color">カラー</Label>
-              <div className="flex gap-2 items-center">
+              <div className="flex gap-2">
                 <Input
                   id="folder-color"
                   type="color"
                   value={folderColor}
                   onChange={(e) => setFolderColor(e.target.value)}
-                  className="w-20 h-10 cursor-pointer"
+                  className="w-12 h-10 p-1 cursor-pointer"
                 />
-                <span className="text-sm text-muted-foreground">{folderColor}</span>
+                <Input
+                  value={folderColor}
+                  onChange={(e) => setFolderColor(e.target.value)}
+                  placeholder="#000000"
+                  className="flex-1"
+                />
               </div>
             </div>
           </div>
-          
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>
               キャンセル
             </Button>
             <Button onClick={executeAddFolder}>
-              追加
+              作成
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -878,52 +866,50 @@ export default function OcrSidebar({ sidebarCollapsed, setSidebarCollapsed, side
 
       {/* フォルダ編集ダイアログ */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="sm:max-w-[500px]">
+        <DialogContent>
           <DialogHeader>
             <DialogTitle>フォルダを編集</DialogTitle>
             <DialogDescription>
-              フォルダ「{editingFolder?.name}」の情報を編集します
+              フォルダの設定を変更します
             </DialogDescription>
           </DialogHeader>
-          
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="edit-folder-name">フォルダ名 <span className="text-destructive">*</span></Label>
+              <Label htmlFor="edit-folder-name">フォルダ名</Label>
               <Input
                 id="edit-folder-name"
-                placeholder="例: 請求書"
                 value={folderName}
                 onChange={(e) => setFolderName(e.target.value)}
-                autoFocus
+                onKeyDown={(e) => e.key === 'Enter' && executeEditFolder()}
               />
             </div>
-            
             <div className="space-y-2">
-              <Label htmlFor="edit-folder-description">説明</Label>
-              <Textarea
-                id="edit-folder-description"
-                placeholder="フォルダの説明を入力..."
+              <Label htmlFor="edit-folder-desc">説明 (任意)</Label>
+              <Input
+                id="edit-folder-desc"
                 value={folderDescription}
                 onChange={(e) => setFolderDescription(e.target.value)}
-                rows={3}
               />
             </div>
-            
             <div className="space-y-2">
               <Label htmlFor="edit-folder-color">カラー</Label>
-              <div className="flex gap-2 items-center">
+              <div className="flex gap-2">
                 <Input
                   id="edit-folder-color"
                   type="color"
                   value={folderColor}
                   onChange={(e) => setFolderColor(e.target.value)}
-                  className="w-20 h-10 cursor-pointer"
+                  className="w-12 h-10 p-1 cursor-pointer"
                 />
-                <span className="text-sm text-muted-foreground">{folderColor}</span>
+                <Input
+                  value={folderColor}
+                  onChange={(e) => setFolderColor(e.target.value)}
+                  placeholder="#000000"
+                  className="flex-1"
+                />
               </div>
             </div>
           </div>
-          
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
               キャンセル
