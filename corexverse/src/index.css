@@ -131,4 +131,24 @@
   body {
     @apply bg-background text-foreground;
   }
+  
+  /* 画像表示品質の最適化 - 最高品質レンダリング */
+  img {
+    image-rendering: -webkit-optimize-contrast; /* Safari/Chrome: コントラスト最適化 */
+    image-rendering: pixelated; /* ピクセル単位で鮮明に表示 */
+    image-rendering: crisp-edges; /* エッジを鮮明に */
+  }
+  
+  /* OCRドキュメントプレビュー用の超高品質画像レンダリング */
+  img[alt*="OCR"],
+  img[alt*="document"],
+  img[alt*="ドキュメント"] {
+    image-rendering: pixelated !important; /* ピクセル単位で鮮明に */
+    image-rendering: -webkit-optimize-contrast !important; /* WebKitで最適化 */
+    image-rendering: crisp-edges !important; /* エッジを最も鮮明に */
+    -ms-interpolation-mode: bicubic !important; /* IE/Edgeで高品質補間 */
+    transform-origin: center center;
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+  }
 }

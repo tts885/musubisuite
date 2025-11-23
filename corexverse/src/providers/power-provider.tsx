@@ -9,6 +9,7 @@
 
 import { useEffect, type ReactNode } from "react";
 import { initialize } from "@microsoft/power-apps/app";
+import { logger } from "@/lib/logger";
 
 /**
  * SDK初期化状態フラグ
@@ -59,7 +60,7 @@ export function PowerProvider({ children }: PowerProviderProps) {
       try {
         await initialize();
       } catch (error) {
-        console.error('Power Apps SDK initialize failed: ', error);
+        logger.error('Power Apps SDK initialize failed: ', error);
       }
     };
     initApp();

@@ -19,8 +19,9 @@ const LAST_PATH_KEY = "app-last-path"
 /**
  * LocalStorageキー: ホーム画面への明示的な遷移フラグ
  * @constant
+ * @internal exportしてlanding.tsxで使用
  */
-const EXPLICIT_HOME_KEY = "app-explicit-home"
+export const EXPLICIT_HOME_KEY = "app-explicit-home"
 
 /**
  * ルート追跡フック
@@ -49,8 +50,8 @@ export function useRouteTracker() {
 
   useEffect(() => {
     if (location.pathname === "/") {
-      // ルートパスの場合、明示的フラグをクリア
-      localStorage.removeItem(EXPLICIT_HOME_KEY)
+      // ルートパスの場合は何もしない（明示的フラグは保持）
+      return
     } else {
       // ルートパス以外を記録
       localStorage.setItem(LAST_PATH_KEY, location.pathname)
@@ -114,6 +115,22 @@ export function setExplicitHomeNavigation(): void {
  */
 export function isExplicitHomeNavigation(): boolean {
   return localStorage.getItem(EXPLICIT_HOME_KEY) === "true"
+}
+
+/**
+ * 明示的なホーム遷移フラグをクリア
+ * 
+ * landing.tsxでランディングページを表示した後に呼び出す。
+ * 
+ * @returns {void}
+ * 
+ * @example
+ * ```tsx
+ * clearExplicitHomeNavigation();
+ * ```
+ */
+export function clearExplicitHomeNavigation(): void {
+  localStorage.removeItem(EXPLICIT_HOME_KEY)
 }
 
 /**

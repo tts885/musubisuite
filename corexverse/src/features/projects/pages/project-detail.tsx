@@ -61,7 +61,7 @@ import {
   getStatusLabel,
   getPriorityLabel,
 } from "@/data/mockData"
-import type { Project, Client, ProjectStatus, ProjectPriority } from "@/types"
+import type { Project, Client, ProjectStatus, ProjectPriority, Member } from "@/types"
 import { djangoAPI } from "@/services/djangoAPI"
 import { toast } from "sonner"
 import { CodeMasterSelect } from "@/components/shared/CodeMasterSelect"
@@ -141,7 +141,7 @@ export default function ProjectDetailPage() {
           budget: projectData.budget,
           progress: projectData.progress,
           ownerId: projectData.owner?.id ? String(projectData.owner.id) : '',
-          memberIds: projectData.members?.map((m: any) => String(m.id)) || [],
+          memberIds: projectData.members?.map((m: Member) => String(m.id)) || [],
           tags: projectData.tags || [],
           createdAt: new Date(projectData.created_at),
           updatedAt: new Date(projectData.updated_at),

@@ -24,6 +24,16 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
+import {
   Table,
   TableBody,
   TableCell,
@@ -34,6 +44,9 @@ import {
 import type { OcrDocument } from '@/types'
 import ocrDataverseService from '@/services/ocrDataverseService'
 import { useOcrStateStore } from '@/stores/ocrStateStore'
+import { logger } from '@/lib/logger'
+import { PAGINATION } from '@/config/constants'
+import { useMemo, useCallback } from 'react'
 
 /**
  * OCRドキュメント一覧ページ
@@ -44,7 +57,12 @@ export default function OcrDocumentListPage() {
   const [searchParams] = useSearchParams()
   
   // Zustandストアから状態を取得・復元
-  const { setSelectedFolderId: setSelectedFolderIdInStore } = useOcrStateStore()
+  const { 
+    setSelectedFolderId: setSelectedFolderIdInStore,
+    getCachedDocuments,
+    setCachedDocuments,
+    // clearDocumentCache - 削除時は自動的にキャッシュ更新されるため直接使用しない
+  } = useOcrStateStore()
   
   // URLパラメータからフォルダIDを取得
   const urlFolderId = searchParams.get('folder')
@@ -52,11 +70,21 @@ export default function OcrDocumentListPage() {
   const [searchKeyword, setSearchKeyword] = useState('')
   const [folderFilter, setFolderFilter] = useState<string>(urlFolderId || 'all')
   const [currentPage, setCurrentPage] = useState(1)
-  const itemsPerPage = 20
+  const itemsPerPage = PAGINATION.ITEMS_PER_PAGE
   
   // Dataverseからデータ取得
   const [documents, setDocuments] = useState<OcrDocument[]>([])
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+  const [isLoading, setIsLoading] = useState(true)
+  
+  // 削除ダイアログ用state
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [documentToDelete, setDocumentToDelete] = useState<OcrDocument | null>(null)
+  const [isDeleting, setIsDeleting] = useState(false)
+  
+  // 一括削除ダイアログ用state
+  const [bulkDeleteDialogOpen, setBulkDeleteDialogOpen] = useState(false)
+  const [documentsToDelete, setDocumentsToDelete] = useState<OcrDocument[]>([])
   
   // URLパラメータが変更されたらフォルダフィルターを更新し、ストアに保存
   useEffect(() => {
@@ -69,18 +97,41 @@ export default function OcrDocumentListPage() {
     }
   }, [urlFolderId, setSelectedFolderIdInStore])
 
-  // ドキュメント取得
+  // ドキュメント取得（キャッシュ対応）
   useEffect(() => {
     const fetchDocuments = async () => {
+      // キャッシュをチェック
+      const cached = getCachedDocuments()
+      if (cached) {
+        logger.info('キャッシュからドキュメントを復元', { count: cached.length })
+        setDocuments(cached)
+        setIsLoading(false)
+        return
+      }
+
+      // キャッシュがない場合はDBから取得
+      setIsLoading(true)
       try {
         const docs = await ocrDataverseService.getDocuments()
         setDocuments(docs)
+        // キャッシュに保存
+        setCachedDocuments(docs)
+        logger.info('DBからドキュメントを取得してキャッシュに保存', { count: docs.length })
       } catch (error) {
-        console.error('ドキュメント取得エラー:', error)
+        logger.error('ドキュメント取得エラー', error)
+      } finally {
+        setIsLoading(false)
       }
     }
     fetchDocuments()
-  }, [])
+  }, [getCachedDocuments, setCachedDocuments])
+  
+  // ドキュメント変更時にキャッシュを更新
+  useEffect(() => {
+    if (documents.length > 0 && !isLoading) {
+      setCachedDocuments(documents)
+    }
+  }, [documents, isLoading, setCachedDocuments])
   
   // パンくずリストを生成（M001>F003/F003形式）
 
@@ -95,8 +146,8 @@ export default function OcrDocumentListPage() {
     }
   }, [searchParams])
 
-  // フィルタリング
-  const getFilteredDocuments = (): OcrDocument[] => {
+  // フィルタリング（useMemoで最適化）
+  const filteredDocuments = useMemo((): OcrDocument[] => {
     let filtered = documents
 
     // フォルダフィルター
@@ -114,9 +165,7 @@ export default function OcrDocumentListPage() {
     }
 
     return filtered
-  }
-
-  const filteredDocuments = getFilteredDocuments()
+  }, [documents, folderFilter, searchKeyword])
   
   // ページネーション
   const totalPages = Math.ceil(filteredDocuments.length / itemsPerPage)
@@ -148,38 +197,96 @@ export default function OcrDocumentListPage() {
     setSelectedIds(newSelected)
   }
 
+  // 削除ダイアログを開く
+  const openDeleteDialog = (doc: OcrDocument, e: React.MouseEvent) => {
+    e.stopPropagation()
+    setDocumentToDelete(doc)
+    setDeleteDialogOpen(true)
+  }
+
   // 削除処理
-  const handleDelete = (id: string) => {
-    if (confirm('このドキュメントを削除してもよろしいですか?')) {
-      // TODO: 実際の削除APIを呼び出す
-      console.log('Delete document:', id)
+  const handleDelete = async () => {
+    if (!documentToDelete) return
+    
+    setIsDeleting(true)
+    try {
+      await ocrDataverseService.deleteDocument(documentToDelete.id)
+      
+      // ローカルstateから削除（これが自動的にキャッシュも更新）
+      setDocuments(prev => prev.filter(d => d.id !== documentToDelete.id))
+      
+      // メニューの件数を更新するイベントを発火
+      window.dispatchEvent(new CustomEvent('documentsUpdated'))
+      
+      // ダイアログを閉じる
+      setDeleteDialogOpen(false)
+      setDocumentToDelete(null)
+    } catch (error) {
+      logger.error('削除エラー', error)
+      alert('ドキュメントの削除に失敗しました')
+    } finally {
+      setIsDeleting(false)
     }
   }
 
-  const handleBulkDelete = () => {
+  // 一括削除ダイアログを開く
+  const openBulkDeleteDialog = () => {
     if (selectedIds.size === 0) return
-    if (confirm(`選択した${selectedIds.size}件のドキュメントを削除してもよろしいですか?`)) {
-      // TODO: 実際の一括削除APIを呼び出す
-      console.log('Bulk delete:', Array.from(selectedIds))
+    
+    // 選択されたドキュメントを取得
+    const docsToDelete = documents.filter(doc => selectedIds.has(doc.id))
+    setDocumentsToDelete(docsToDelete)
+    setBulkDeleteDialogOpen(true)
+  }
+
+  // 一括削除処理
+  const handleBulkDelete = async () => {
+    if (documentsToDelete.length === 0) return
+    
+    setIsDeleting(true)
+    try {
+      // すべてのドキュメントを削除
+      await Promise.all(
+        documentsToDelete.map(doc => ocrDataverseService.deleteDocument(doc.id))
+      )
+      
+      // ローカルstateから削除
+      const deletedIds = new Set(documentsToDelete.map(d => d.id))
+      setDocuments(prev => prev.filter(d => !deletedIds.has(d.id)))
+      
+      // 選択をクリア
       setSelectedIds(new Set())
+      
+      // メニューの件数を更新するイベントを発火
+      window.dispatchEvent(new CustomEvent('documentsUpdated'))
+      
+      // ダイアログを閉じる
+      setBulkDeleteDialogOpen(false)
+      setDocumentsToDelete([])
+    } catch (error) {
+      logger.error('一括削除エラー', error)
+      alert('ドキュメントの削除に失敗しました')
+    } finally {
+      setIsDeleting(false)
     }
   }
 
-  const handleBulkDownload = () => {
+  const handleBulkDownload = useCallback(() => {
     if (selectedIds.size === 0) return
-    console.log('Bulk download:', Array.from(selectedIds))
-  }
+    logger.debug('Bulk download:', Array.from(selectedIds))
+    // TODO: 実際のダウンロード処理を実装
+  }, [selectedIds])
 
-  const handleBulkArchive = () => {
+  const handleBulkArchive = useCallback(() => {
     if (selectedIds.size === 0) return
-    console.log('Bulk archive:', Array.from(selectedIds))
-  }
+    logger.debug('Bulk archive:', Array.from(selectedIds))
+    // TODO: 実際のアーカイブ処理を実装
+  }, [selectedIds])
 
   // 行クリック時の処理
   const handleRowClick = (doc: OcrDocument) => {
-    if (doc.ocrResult) {
-      navigate(`/ocr/documents/${doc.id}`)
-    }
+    // OCR実施前でも詳細画面に遷移（画像表示のため）
+    navigate(`/ocr/documents/${doc.id}`)
   }
 
   return (
@@ -238,71 +345,29 @@ export default function OcrDocumentListPage() {
         </div>
       </div>
 
-      {/* 一括操作バー（選択時のみ表示） */}
-      {selectedIds.size > 0 && (
-        <div className="mx-8 mb-4 bg-indigo-50 border border-indigo-100 rounded-lg p-3 flex items-center justify-between transition-all duration-300">
-          <div className="flex items-center gap-4">
-            <span className="bg-indigo-100 text-indigo-700 px-3 py-1 rounded-md text-sm font-medium">
-              {selectedIds.size}件選択
-            </span>
-            <div className="h-4 w-px bg-indigo-200"></div>
-            <button 
-              onClick={() => setSelectedIds(new Set())}
-              className="text-sm text-gray-600 hover:text-indigo-600 font-medium transition-colors"
-            >
-              すべて選択解除
-            </button>
-          </div>
-          <div className="flex items-center gap-2">
-            <button 
-              onClick={handleBulkDownload}
-              className="p-2 text-gray-500 hover:text-indigo-600 hover:bg-indigo-100 rounded-md transition-colors" 
-              title="ダウンロード"
-            >
-              <Download className="w-5 h-5" />
-            </button>
-            <button 
-              onClick={handleBulkArchive}
-              className="p-2 text-gray-500 hover:text-indigo-600 hover:bg-indigo-100 rounded-md transition-colors" 
-              title="アーカイブ"
-            >
-              <Archive className="w-5 h-5" />
-            </button>
-            <button 
-              onClick={handleBulkDelete}
-              className="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors" 
-              title="削除"
-            >
-              <Trash2 className="w-5 h-5" />
-            </button>
-          </div>
-        </div>
-      )}
-
       {/* テーブル */}
-      <div className="flex-1 overflow-auto px-8 pb-6">
+      <div className={`flex-1 overflow-auto px-8 ${selectedIds.size > 0 ? 'pb-4' : 'pb-6'}`}>
         <div className="bg-white border border-gray-200 shadow-sm rounded-lg">
           <Table>
             <TableHeader>
               <TableRow className="bg-gray-50 border-b border-gray-200">
-                <TableHead className="w-[4%] p-4">
+                <TableHead className="w-[50px] px-4 py-2">
                   <Checkbox 
                     checked={currentDocuments.length > 0 && currentDocuments.every(d => selectedIds.has(d.id))}
                     onCheckedChange={toggleAllSelection}
-                    className="text-indigo-600"
+                    className="w-5 h-5 border-2 border-gray-400 data-[state=checked]:bg-indigo-600 data-[state=checked]:border-indigo-600"
                   />
                 </TableHead>
-                <TableHead className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">名前</TableHead>
-                <TableHead className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">ステータス</TableHead>
-                <TableHead className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">作成者</TableHead>
-                <TableHead className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">更新日時</TableHead>
-                <TableHead className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider text-right"></TableHead>
+                <TableHead className="w-[40%] px-6 py-2 text-xs font-medium text-gray-500 uppercase tracking-wider">名前</TableHead>
+                <TableHead className="w-[15%] px-6 py-2 text-xs font-medium text-gray-500 uppercase tracking-wider">ステータス</TableHead>
+                <TableHead className="w-[25%] px-6 py-2 text-xs font-medium text-gray-500 uppercase tracking-wider">更新日時</TableHead>
+                <TableHead className="w-[100px] px-6 py-2 text-xs font-medium text-gray-500 uppercase tracking-wider text-right">操作</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody className="divide-y divide-gray-100 bg-white">
               {currentDocuments.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center py-12 text-gray-500">
+                  <TableCell colSpan={5} className="text-center py-12 text-gray-500">
                     該当するドキュメントが見つかりません
                   </TableCell>
                 </TableRow>
@@ -319,48 +384,40 @@ export default function OcrDocumentListPage() {
                         handleRowClick(doc)
                       }}
                     >
-                      <TableCell className="p-4">
+                      <TableCell className="px-4 py-2">
                         <Checkbox 
                           checked={isSelected}
                           onCheckedChange={() => toggleSelection(doc.id)}
                           onClick={(e) => e.stopPropagation()}
-                          className="text-indigo-600"
+                          className="w-5 h-5 border-2 border-gray-400 data-[state=checked]:bg-indigo-600 data-[state=checked]:border-indigo-600"
                         />
                       </TableCell>
-                      <TableCell className="px-6 py-4">
+                      <TableCell className="px-6 py-2">
                         <div className="flex items-center gap-3">
                           <FileText className="w-5 h-5 text-gray-400 flex-shrink-0" />
-                          <span className="font-medium text-gray-900">{doc.fileName}</span>
+                          <span className="font-medium text-gray-900 truncate">{doc.fileName}</span>
                         </div>
                       </TableCell>
-                      <TableCell className="px-6 py-4">
+                      <TableCell className="px-6 py-2">
                         <div className="flex items-center gap-2">
-                          <div className={`h-2 w-2 rounded-full ${
+                          <div className={`h-2 w-2 rounded-full flex-shrink-0 ${
                             doc.status === 'completed' ? 'bg-green-500' : 
                             doc.status === 'processing' ? 'bg-yellow-500' : 
                             'bg-gray-400'
                           }`}></div>
-                          <span className="text-sm text-gray-600">
+                          <span className="text-sm text-gray-600 whitespace-nowrap">
                             {doc.status === 'completed' ? '完了' : 
                              doc.status === 'processing' ? '処理中' : 
                              doc.status === 'pending' ? '処理待ち' : 'アップロード済み'}
                           </span>
                         </div>
                       </TableCell>
-                      <TableCell className="px-6 py-4">
-                        <div className="flex items-center gap-2">
-                          <div className="w-6 h-6 rounded-full bg-gray-200 flex items-center justify-center text-xs font-medium text-gray-600 flex-shrink-0">
-                            {doc.fileName.substring(0, 1).toUpperCase()}
-                          </div>
-                          <span className="text-sm text-gray-600">ユーザー</span>
-                        </div>
-                      </TableCell>
-                      <TableCell className="px-6 py-4">
-                        <span className="text-sm text-gray-500">
+                      <TableCell className="px-6 py-2">
+                        <span className="text-sm text-gray-500 whitespace-nowrap">
                           {doc.uploadedDate ? format(new Date(doc.uploadedDate), 'yyyy/MM/dd', { locale: ja }) : '-'}
                         </span>
                       </TableCell>
-                      <TableCell className="px-6 py-4 text-right">
+                      <TableCell className="px-6 py-2 text-right">
                         {/* インラインアクション（ホバー時表示） */}
                         <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                           <button 
@@ -375,10 +432,7 @@ export default function OcrDocumentListPage() {
                           </button>
                           <button 
                             className="p-1 text-gray-400 hover:text-red-600 rounded"
-                            onClick={(e) => { 
-                              e.stopPropagation()
-                              handleDelete(doc.id)
-                            }}
+                            onClick={(e) => openDeleteDialog(doc, e)}
                             title="削除"
                           >
                             <Trash2 className="w-4 h-4" />
@@ -435,6 +489,123 @@ export default function OcrDocumentListPage() {
           </div>
         )}
       </div>
+
+      {/* 一括操作フッター（選択時のみ表示） */}
+      {selectedIds.size > 0 && (
+        <div className="border-t border-gray-200 bg-white p-4 shadow-lg flex-shrink-0">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <span className="bg-indigo-100 text-indigo-700 px-3 py-1.5 rounded-md text-sm font-medium">
+                {selectedIds.size}件選択
+              </span>
+              <div className="h-4 w-px bg-gray-300"></div>
+              <button 
+                onClick={() => setSelectedIds(new Set())}
+                className="text-sm text-gray-600 hover:text-indigo-600 font-medium transition-colors"
+              >
+                すべて選択解除
+              </button>
+            </div>
+            <div className="flex items-center gap-2">
+              <button 
+                onClick={handleBulkDownload}
+                className="p-2 text-gray-500 hover:text-indigo-600 hover:bg-indigo-100 rounded-md transition-colors" 
+                title="ダウンロード"
+              >
+                <Download className="w-5 h-5" />
+              </button>
+              <button 
+                onClick={handleBulkArchive}
+                className="p-2 text-gray-500 hover:text-indigo-600 hover:bg-indigo-100 rounded-md transition-colors" 
+                title="アーカイブ"
+              >
+                <Archive className="w-5 h-5" />
+              </button>
+              <button 
+                onClick={openBulkDeleteDialog}
+                className="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors" 
+                title="削除"
+              >
+                <Trash2 className="w-5 h-5" />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 単一削除確認ダイアログ */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>ドキュメントを削除しますか?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {documentToDelete && (
+                <>
+                  <span className="font-medium text-gray-900">{documentToDelete.fileName}</span>
+                  <br />
+                  この操作は取り消せません。本当に削除してもよろしいですか?
+                </>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>キャンセル</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDelete}
+              disabled={isDeleting}
+              className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
+            >
+              {isDeleting ? '削除中...' : '削除'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* 一括削除確認ダイアログ */}
+      <AlertDialog open={bulkDeleteDialogOpen} onOpenChange={setBulkDeleteDialogOpen}>
+        <AlertDialogContent className="max-w-2xl">
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {documentsToDelete.length}件のドキュメントを削除しますか?
+            </AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-3">
+                <p className="text-sm text-muted-foreground">
+                  この操作は取り消せません。以下のドキュメントが削除されます:
+                </p>
+                <div className="max-h-60 overflow-y-auto bg-muted/50 rounded-lg p-3 space-y-2">
+                  {documentsToDelete.map((doc, index) => (
+                    <div key={doc.id} className="flex items-start gap-2 text-sm">
+                      <span className="text-muted-foreground font-mono min-w-[2rem]">
+                        {index + 1}.
+                      </span>
+                      <div className="flex items-center gap-2 flex-1 min-w-0">
+                        <FileText className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                        <span className="font-medium text-foreground truncate">
+                          {doc.fileName}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <p className="text-sm text-red-600 font-medium">
+                  本当に削除してもよろしいですか?
+                </p>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>キャンセル</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleBulkDelete}
+              disabled={isDeleting}
+              className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
+            >
+              {isDeleting ? `削除中... (${documentsToDelete.length}件)` : `${documentsToDelete.length}件を削除`}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

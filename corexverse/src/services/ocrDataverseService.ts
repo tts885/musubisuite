@@ -14,6 +14,7 @@ import type { Cx_ocrmenusectionses } from '@/generated/models/Cx_ocrmenusections
 import type { Cx_ocrfolders } from '@/generated/models/Cx_ocrfoldersModel';
 import type { Cx_ocrdocumentses } from '@/generated/models/Cx_ocrdocumentsesModel';
 import type { MenuSection, OcrFolder, OcrDocument } from '@/types';
+import { logger } from '@/lib/logger';
 
 /**
  * OCR管理Dataverseサービス
@@ -32,7 +33,7 @@ export class OcrDataverseService {
       });
 
       if (result.success === false) {
-        console.warn('⚠️ メニューセクション取得失敗、モックデータを返します');
+        logger.warn('メニューセクション取得失敗、モックデータを返します', result.error);
         return [
           {
             id: 'all-docs',
@@ -60,7 +61,7 @@ export class OcrDataverseService {
         updatedAt: record.modifiedon ? new Date(record.modifiedon) : new Date(),
       }));
     } catch (error) {
-      console.error('❌ メニューセクション取得エラー:', error);
+      logger.error('メニューセクション取得エラー', error);
       return [
         {
           id: 'all-docs',
@@ -99,11 +100,7 @@ export class OcrDataverseService {
 
       if (result.success === false) {
         const errorMsg = result.error?.message || 'メニューセクションの作成に失敗しました';
-        console.error('❌ Create failed:', {
-          success: result.success,
-          error: result.error,
-          sentData: record
-        });
+        logger.error('メニューセクション作成失敗', result.error, { sentData: record });
         throw new Error(errorMsg);
       }
 
@@ -119,7 +116,7 @@ export class OcrDataverseService {
         updatedAt: data.modifiedon ? new Date(data.modifiedon) : new Date(),
       };
     } catch (error) {
-      console.error('❌ メニューセクション追加エラー:', error);
+      logger.error('メニューセクション追加エラー', error);
       throw error;
     }
   }
@@ -154,7 +151,7 @@ export class OcrDataverseService {
         updatedAt: data.modifiedon ? new Date(data.modifiedon) : new Date(),
       };
     } catch (error) {
-      console.error('❌ メニューセクション更新エラー:', error);
+      logger.error('メニューセクション更新エラー', error);
       throw error;
     }
   }
@@ -166,7 +163,7 @@ export class OcrDataverseService {
     try {
       await Cx_ocrmenusectionsesService.delete(id);
     } catch (error) {
-      console.error('❌ メニューセクション削除エラー:', error);
+      logger.error('メニューセクション削除エラー', error);
       throw error;
     }
   }
@@ -187,7 +184,7 @@ export class OcrDataverseService {
       const result = await Cx_ocrfoldersService.getAll(options);
 
       if (result.success === false) {
-        console.warn('⚠️ フォルダ取得失敗、空配列を返します');
+        logger.warn('フォルダ取得失敗、空配列を返します', result.error);
         return [];
       }
 
@@ -195,7 +192,7 @@ export class OcrDataverseService {
       const records = Array.isArray(data) ? data : [];
       return records.map(this.mapFolder);
     } catch (error) {
-      console.error('❌ フォルダ取得エラー:', error);
+      logger.error('フォルダ取得エラー', error);
       return [];
     }
   }
@@ -228,18 +225,14 @@ export class OcrDataverseService {
 
       if (result.success === false) {
         const errorMsg = result.error?.message || 'フォルダの作成に失敗しました';
-        console.error('❌ Folder create failed:', {
-          success: result.success,
-          error: result.error,
-          sentData: record
-        });
+        logger.error('フォルダ作成失敗', result.error, { sentData: record });
         throw new Error(errorMsg);
       }
 
       const data = result.data || (result as any);
       return this.mapFolder(data);
     } catch (error) {
-      console.error('❌ フォルダ追加エラー:', error);
+      logger.error('フォルダ追加エラー', error);
       throw error;
     }
   }
@@ -281,7 +274,7 @@ export class OcrDataverseService {
       const data = result.data || (result as any);
       return this.mapFolder(data);
     } catch (error) {
-      console.error('❌ フォルダ更新エラー:', error);
+      logger.error('フォルダ更新エラー', error);
       throw error;
     }
   }
@@ -293,7 +286,7 @@ export class OcrDataverseService {
     try {
       await Cx_ocrfoldersService.delete(folderId);
     } catch (error) {
-      console.error('❌ フォルダ削除エラー:', error);
+      logger.error('フォルダ削除エラー', error);
       throw error;
     }
   }
@@ -305,6 +298,8 @@ export class OcrDataverseService {
     try {
       const options: any = {
         orderBy: ['createdon desc']
+        // 注意: cx_filedata_fullqualityはカスタム列のため、自動的に含まれる
+        // select オプションで明示的に指定するとエラーになる
       };
 
       if (folderId) {
@@ -314,7 +309,7 @@ export class OcrDataverseService {
       const result = await Cx_ocrdocumentsesService.getAll(options);
 
       if (result.success === false) {
-        console.warn('⚠️ ドキュメント取得失敗、空配列を返します');
+        logger.warn('ドキュメント取得失敗、空配列を返します', result.error);
         return [];
       }
 
@@ -322,8 +317,177 @@ export class OcrDataverseService {
       const records = Array.isArray(data) ? data : [];
       return records.map(this.mapDocument);
     } catch (error) {
-      console.error('❌ ドキュメント取得エラー:', error);
+      logger.error('ドキュメント取得エラー', error);
       return [];
+    }
+  }
+
+  /**
+   * 特定のドキュメントを取得
+   */
+  async getDocumentById(documentId: string): Promise<OcrDocument | null> {
+    try {
+      // getメソッドで単一レコードを取得
+      // 注意: cx_filedata_fullqualityはカスタム列のため、デフォルトで含まれる
+      const result = await Cx_ocrdocumentsesService.get(documentId);
+
+      if (result.success === false) {
+        logger.warn('ドキュメント取得失敗', result.error);
+        return null;
+      }
+
+      const record = result.data || (result as any);
+      
+      if (!record) {
+        logger.warn('ドキュメントが見つかりません', { documentId });
+        return null;
+      }
+
+      logger.info('[Dataverse取得] ドキュメントレコード取得', {
+        id: record.cx_ocrdocumentsid,
+        fileName: record.cx_filename,
+        hasFileData: !!record.cx_filedata,
+        fileDataLength: record.cx_filedata ? record.cx_filedata.length : 0,
+        fileType: record.cx_filetype,
+        fileUrl: record.cx_fileurl
+      });
+
+      const document = this.mapDocument(record);
+
+      // ファイルデータがある場合、Blob URLを生成
+      const base64Data = record.cx_filedata;
+      
+      if (base64Data) {
+        try {
+          logger.info('[データ取得確認]', {
+            fileName: record.cx_filename,
+            hasImageData: !!base64Data,
+            imageDataLength: base64Data?.length || 0
+          });
+          
+          const dataSource = 'cx_filedata (画像列)';
+          
+          logger.info('[Base64→Blob変換] 開始', { 
+            fileName: record.cx_filename,
+            fileType: record.cx_filetype,
+            base64Length: base64Data.length,
+            estimatedSizeMB: (base64Data.length * 0.75 / 1024 / 1024).toFixed(2),
+            dataSource: dataSource,
+            base64Preview: base64Data.substring(0, 50) + '...' // Base64の最初の50文字を確認
+          });
+          
+          // 正しいMIMEタイプを使用して高品質な画像を保持
+          const mimeType = record.cx_filetype || 'image/jpeg';
+          const blob = this.base64ToBlob(base64Data, mimeType);
+          
+          // Blobから実際の画像サイズを確認
+          const blobUrl = URL.createObjectURL(blob);
+          const img = new Image();
+          img.onload = () => {
+            logger.info('[画像サイズ検証] Dataverseから取得した画像の実際のサイズ', {
+              fileName: record.cx_filename,
+              width: img.width,
+              height: img.height,
+              blobSize: blob.size,
+              blobSizeMB: (blob.size / 1024 / 1024).toFixed(2),
+              mimeType: blob.type,
+              expectedSize: record.cx_filesize
+            });
+            
+            // サイズが小さすぎる場合は警告
+            if (img.width < 200 || img.height < 200) {
+              logger.error('[画像品質問題] Dataverseに保存された画像が低解像度です!', {
+                fileName: record.cx_filename,
+                width: img.width,
+                height: img.height,
+                message: 'アップロード時に画像が圧縮またはリサイズされている可能性があります'
+              });
+            }
+          };
+          img.src = blobUrl;
+          
+          logger.info('[Blob URL生成] 成功', { 
+            fileName: record.cx_filename,
+            blobSize: blob.size,
+            blobSizeMB: (blob.size / 1024 / 1024).toFixed(2),
+            mimeType: blob.type
+          });
+          
+          document.fileUrl = blobUrl;
+        } catch (error) {
+          logger.error('[Base64→Blob変換] エラー', error);
+        }
+      } else {
+        logger.warn('cx_filedata フィールドが空です');
+        // Dataverseのファイル列は特別なダウンロードURLを使用する必要がある
+        // ファイルダウンロード用のURLを構築
+        try {
+          const fileDownloadUrl = await this.getFileDownloadUrl(documentId, 'cx_filedata');
+          if (fileDownloadUrl) {
+            document.fileUrl = fileDownloadUrl;
+            logger.debug('ファイルダウンロードURLを使用', { fileUrl: document.fileUrl });
+          }
+        } catch (error) {
+          logger.error('ファイルダウンロードURL取得エラー', error);
+        }
+      }
+
+      return document;
+    } catch (error) {
+      logger.error('ドキュメント取得エラー', error);
+      return null;
+    }
+  }
+
+  /**
+   * Dataverseファイル列のダウンロードURLを取得
+   * 
+   * 注意: Power Apps内では直接Web APIを呼び出すことができないため、
+   * ファイルデータはレコード作成時にBase64として保存し、
+   * cx_fileurlフィールドに保存されたBlobURLを使用する必要があります。
+   */
+  private async getFileDownloadUrl(_recordId: string, _fileColumnName: string): Promise<string | null> {
+    logger.warn('ファイル列の直接ダウンロードはPower Apps環境では制限されています。');
+    logger.info('ヒント: アップロード時にcx_fileurlフィールドにBlobURLを保存してください。');
+    return null;
+  }
+
+  /**
+   * Base64文字列をBlobに変換
+   * 
+   * @param base64 - Base64エンコードされた文字列（プレフィックス付きでも可）
+   * @param contentType - MIMEタイプ（例: image/jpeg, image/png）
+   * @returns Blobオブジェクト
+   */
+  private base64ToBlob(base64: string, contentType: string): Blob {
+    try {
+      // Data URLプレフィックス（data:image/jpeg;base64,）を除去
+      let base64Data = base64;
+      if (base64.includes(',')) {
+        base64Data = base64.split(',')[1];
+      }
+      
+      // Base64デコード
+      const byteCharacters = atob(base64Data);
+      const byteArrays: Uint8Array[] = [];
+      
+      // 大きなファイルのため、チャンク単位で処理
+      const sliceSize = 8192;
+      for (let offset = 0; offset < byteCharacters.length; offset += sliceSize) {
+        const slice = byteCharacters.slice(offset, offset + sliceSize);
+        const byteNumbers = new Array(slice.length);
+        
+        for (let i = 0; i < slice.length; i++) {
+          byteNumbers[i] = slice.charCodeAt(i);
+        }
+        
+        byteArrays.push(new Uint8Array(byteNumbers));
+      }
+      
+      return new Blob(byteArrays, { type: contentType });
+    } catch (error) {
+      logger.error('Base64→Blob変換エラー', error);
+      throw new Error('画像データの変換に失敗しました');
     }
   }
 
@@ -332,12 +496,28 @@ export class OcrDataverseService {
    */
   async createDocument(document: Partial<OcrDocument>, file: File): Promise<OcrDocument> {
     try {
+      // サポートされている画像形式を検証
+      const supportedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/bmp', 'image/webp'];
+      if (!supportedTypes.includes(file.type)) {
+        throw new Error(`サポートされていないファイル形式です: ${file.type}`);
+      }
+      
+      logger.debug('ファイルアップロード開始', {
+        name: file.name,
+        type: file.type,
+        size: file.size
+      });
+      
+      // ファイルからBlobURLを生成
+      const blobUrl = URL.createObjectURL(file);
+      
       // まず基本レコードを作成（ファイル列なし）
       const record: any = {
         cx_name: document.name || file.name,
         cx_filename: file.name,
         cx_filetype: file.type,
         cx_filesize: file.size.toString(), // 文字列に変換
+        cx_fileurl: blobUrl, // BlobURLを保存（フォールバック用）
         cx_status: 0, // アップロード済み
       };
 
@@ -368,45 +548,106 @@ export class OcrDataverseService {
       // ファイルを別途アップロード（PATCH リクエスト）
       await this.uploadFileData(documentId, file);
 
-      return this.mapDocument(data);
+      // レコードを再取得してfileUrlを含めて返す
+      const uploadedDoc = await this.getDocumentById(documentId);
+      return uploadedDoc || this.mapDocument(data);
     } catch (error) {
-      console.error('❌ ドキュメントアップロードエラー:', error);
+      logger.error('ドキュメントアップロードエラー', error);
       throw error;
     }
   }
 
   /**
    * ファイルデータをアップロード（PATCH）
+   * 
+   * Dataverseの画像列(cx_filedata)に画像をアップロード
    */
   private async uploadFileData(documentId: string, file: File): Promise<void> {
     try {
+      logger.debug('ファイルデータアップロード開始', {
+        documentId,
+        fileName: file.name,
+        fileType: file.type,
+        fileSize: file.size
+      });
+      
       const fileBase64 = await this.fileToBase64(file);
+      
+      logger.info('[Base64変換] 完了', {
+        fileName: file.name,
+        base64Length: fileBase64.length,
+        estimatedSizeMB: (fileBase64.length * 0.75 / 1024 / 1024).toFixed(2),
+        originalSizeMB: (file.size / 1024 / 1024).toFixed(2)
+      });
 
-      // Dataverse File列の形式
+      // cx_filedata（画像列）にBase64データを保存
+      // 注意: Dataverseの画像列は自動的にリサイズされる可能性があります
       const fileData = {
         cx_filedata: fileBase64
       };
 
       await Cx_ocrdocumentsesService.update(documentId, fileData);
+      
+      logger.info('[Dataverse保存] ファイルデータアップロード成功', { 
+        documentId,
+        fileName: file.name,
+        base64Length: fileBase64.length,
+        savedTo: 'cx_filedata (画像列)'
+      });
     } catch (error) {
-      console.error('❌ ファイルデータアップロードエラー:', error);
-      throw error;
+      logger.error('ファイルデータアップロードエラー', { 
+        documentId, 
+        fileName: file.name,
+        error 
+      });
+      throw new Error(`画像のアップロードに失敗しました: ${error instanceof Error ? error.message : '不明なエラー'}`);
     }
   }
 
   /**
    * ファイルをBase64文字列に変換
+   * 
+   * @param file - 変換するファイル
+   * @returns Data URLプレフィックスを除いたBase64文字列
    */
   private fileToBase64(file: File): Promise<string> {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
+      
       reader.onload = () => {
-        const base64 = reader.result as string;
-        // data:image/jpeg;base64, の部分を除去
-        const base64Data = base64.split(',')[1];
-        resolve(base64Data);
+        try {
+          const result = reader.result as string;
+          
+          if (!result) {
+            throw new Error('ファイルの読み込みに失敗しました');
+          }
+          
+          // Data URLプレフィックス（data:image/jpeg;base64,）を除去
+          const base64Data = result.includes(',') ? result.split(',')[1] : result;
+          
+          if (!base64Data || base64Data.length === 0) {
+            throw new Error('Base64データが空です');
+          }
+          
+          logger.debug('ファイル→Base64変換成功', {
+            fileName: file.name,
+            fileType: file.type,
+            originalSize: file.size,
+            base64Length: base64Data.length
+          });
+          
+          resolve(base64Data);
+        } catch (error) {
+          reject(error);
+        }
       };
-      reader.onerror = reject;
+      
+      reader.onerror = (error) => {
+        logger.error('FileReader エラー', error);
+        reject(new Error('ファイルの読み込み中にエラーが発生しました'));
+      };
+      
+      // 画像ファイルをData URLとして読み込み（品質を保持）
       reader.readAsDataURL(file);
     });
   }
@@ -418,7 +659,7 @@ export class OcrDataverseService {
     try {
       await Cx_ocrdocumentsesService.delete(documentId);
     } catch (error) {
-      console.error('❌ ドキュメント削除エラー:', error);
+      logger.error('ドキュメント削除エラー', error);
       throw error;
     }
   }
@@ -461,7 +702,7 @@ export class OcrDataverseService {
         await this.deleteDocument(id);
         success++;
       } catch (error) {
-        console.error(`❌ ドキュメント削除失敗 (ID: ${id}):`, error);
+        logger.error(`ドキュメント削除失敗 (ID: ${id})`, error);
         failed++;
       }
     }

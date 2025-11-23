@@ -4,6 +4,8 @@
  * AIを活用してカテゴリに適した色とアイコンを自動生成するサービス
  */
 
+import { logger } from '@/lib/logger';
+
 export interface AIGenerateRequest {
   category_name: string;
   category_description?: string;
@@ -133,7 +135,7 @@ class AICodeMasterService {
               callbacks?.onChunk?.(data.content);
             }
           } catch (e) {
-            console.warn('JSON parse error:', line);
+            logger.warn('JSON parse error:', line);
           }
         }
       }
@@ -171,7 +173,7 @@ class AICodeMasterService {
         reasoning: content,
       };
     } catch (error) {
-      console.error('Failed to parse AI response:', error);
+      logger.error('Failed to parse AI response:', error);
       return {
         color: '#3b82f6',
         icon: 'Folder',

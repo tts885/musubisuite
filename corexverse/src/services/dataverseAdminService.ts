@@ -28,6 +28,7 @@
 
 import type { DataverseConnection } from '@/types/dataverse';
 import { testDataverseConnection, getPowerAppsContext } from './dataverseService';
+import { logger } from '@/lib/logger';
 
 export class DataverseAdminService {
   private environmentUrl: string;
@@ -72,7 +73,7 @@ export class DataverseAdminService {
    */
   async testConnection(): Promise<{ success: boolean; error?: string; details?: any }> {
     try {
-      console.log('🧪 Dataverse接続テストを開始:', this.environmentUrl);
+      logger.debug('🧪 Dataverse接続テストを開始:', this.environmentUrl);
       
       // Power Apps コンテキストを取得
       const contextResult = await getPowerAppsContext();
@@ -85,14 +86,14 @@ export class DataverseAdminService {
         };
       }
       
-      console.log('🧪 Power Appsコンテキスト:', contextResult);
+      logger.debug('🧪 Power Appsコンテキスト:', contextResult);
       
       // 接続テストを実行
       const result = await testDataverseConnection({
         environmentUrl: this.environmentUrl
       });
       
-      console.log('🧪 接続テスト結果:', result);
+      logger.debug('🧪 接続テスト結果:', result);
       
       return {
         success: result.success,
@@ -132,7 +133,7 @@ export class DataverseAdminService {
    * ```
    */
   async getTables(): Promise<any[]> {
-    console.warn('⚠️ getTables: この機能を使用するには、pac code add-data-sourceでテーブルを追加してください');
+    logger.warn('⚠️ getTables: この機能を使用するには、pac code add-data-sourceでテーブルを追加してください');
     return [];
   }
 
@@ -147,7 +148,7 @@ export class DataverseAdminService {
    * モデルファイル(`/generated/models/`)から取得できます。
    */
   async getTableSchema(logicalName: string): Promise<any> {
-    console.warn(`⚠️ getTableSchema(${logicalName}): この機能を使用するには、pac code add-data-sourceでテーブルを追加してください`);
+    logger.warn(`⚠️ getTableSchema(${logicalName}): この機能を使用するには、pac code add-data-sourceでテーブルを追加してください`);
     return null;
   }
 
@@ -175,7 +176,7 @@ export class DataverseAdminService {
    * ```
    */
   async getRecords(entitySetName: string, _options?: any): Promise<any[]> {
-    console.warn(`⚠️ getRecords(${entitySetName}): この機能を使用するには、pac code add-data-sourceでテーブルを追加し、生成されたサービスを使用してください`);
+    logger.warn(`⚠️ getRecords(${entitySetName}): この機能を使用するには、pac code add-data-sourceでテーブルを追加し、生成されたサービスを使用してください`);
     return [];
   }
 }

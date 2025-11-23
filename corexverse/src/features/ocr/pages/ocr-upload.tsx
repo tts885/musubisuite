@@ -45,6 +45,7 @@ import { useMenuSections, useOcrFolders } from "@/hooks/useOcrDataverse"
 import ocrDataverseService from "@/services/ocrDataverseService"
 import { useOcrStateStore } from "@/stores/ocrStateStore"
 import type { OcrFolder, OcrDocument } from "@/types"
+import { logger } from "@/lib/logger"
 
 /**
  * アップロード状態
@@ -69,7 +70,12 @@ export default function OcrUploadPage() {
   const location = useLocation()
   
   // Zustandストアから状態を取得・復元
-  const { selectedFolderId: storedFolderId, setSelectedFolderId: setSelectedFolderIdInStore, setLastOcrPath } = useOcrStateStore()
+  const { 
+    selectedFolderId: storedFolderId, 
+    setSelectedFolderId: setSelectedFolderIdInStore, 
+    setLastOcrPath,
+    clearDocumentCache 
+  } = useOcrStateStore()
   
   // 選択されたフォルダーIDの状態管理
   const [selectedFolderId, setSelectedFolderId] = useState<string>('')
@@ -230,6 +236,29 @@ export default function OcrUploadPage() {
       // 各ファイルを順次アップロード
       for (const file of selectedFiles) {
         try {
+          // 画像の場合、元のサイズを取得してログ出力
+          if (file.type.startsWith('image/')) {
+            try {
+              const img = new Image()
+              const objectUrl = URL.createObjectURL(file)
+              await new Promise((resolve, reject) => {
+                img.onload = () => {
+                  logger.info(`[アップロード] 元画像サイズ: ${file.name} - ${img.naturalWidth}x${img.naturalHeight}px, ファイルサイズ: ${file.size} bytes`)
+                  URL.revokeObjectURL(objectUrl)
+                  resolve(true)
+                }
+                img.onerror = () => {
+                  logger.error(`[アップロード] 画像読み込み失敗: ${file.name}`)
+                  URL.revokeObjectURL(objectUrl)
+                  reject(new Error('画像読み込み失敗'))
+                }
+                img.src = objectUrl
+              })
+            } catch (imgError) {
+              logger.warn(`[アップロード] 画像サイズ取得失敗: ${file.name}`, imgError)
+            }
+          }
+
           const document: Partial<OcrDocument> = {
             name: file.name,
             folderId: selectedFolderId,
@@ -244,13 +273,17 @@ export default function OcrUploadPage() {
 
           toast.success(`${file.name} をアップロードしました`)
         } catch (error) {
-          console.error(`ファイルアップロードエラー: ${file.name}`, error)
-          toast.error(`${file.name} のアップロードに失敗しました`)
+          logger.error(`ファイルアップロードエラー: ${file.name}`, error)
+          const errorMessage = error instanceof Error ? error.message : '不明なエラー';
+          toast.error(`${file.name}: ${errorMessage}`)
         }
       }
 
       setUploadState('completed')
       toast.success(`${uploadedCount}件のファイルをアップロードしました`)
+
+      // キャッシュをクリア（新しいドキュメントが追加されたため）
+      clearDocumentCache()
 
       // カスタムイベントを発火してドキュメント数を更新
       window.dispatchEvent(new CustomEvent('documentsUpdated'))
@@ -260,9 +293,10 @@ export default function OcrUploadPage() {
         navigate(`/ocr?folder=${selectedFolderId}`)
       }, 1000)
     } catch (error) {
-      console.error('Upload error:', error)
+      logger.error('Upload error:', error)
       setUploadState('error')
-      toast.error('アップロードに失敗しました')
+      const errorMessage = error instanceof Error ? error.message : '不明なエラー';
+      toast.error(`アップロードに失敗しました: ${errorMessage}`)
     }
   }
 

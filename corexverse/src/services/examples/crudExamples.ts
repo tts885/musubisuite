@@ -9,6 +9,7 @@
 import { DataverseCrudService, createCrudHelper } from '@/services/dataverseCrudService';
 import type { Mdi_project_lists } from '@/generated/models/Mdi_project_listsModel';
 import React from 'react';
+import { logger } from '@/lib/logger';
 
 // ============================================================================
 // パターン1: 汎用サービスを直接使用 (すべてのテーブルに対応)
@@ -27,10 +28,10 @@ export async function example1_CreateRecord() {
   });
 
   if (result.success) {
-    console.log('✅ 作成成功:', result.data);
-    console.log('メッセージ:', result.message);
+    logger.info('✅ 作成成功:', result.data);
+    logger.info('メッセージ:', result.message);
   } else {
-    console.error('❌ 作成失敗:', result.error);
+    logger.error('❌ 作成失敗:', result.error);
   }
 
   return result;
@@ -45,9 +46,9 @@ export async function example2_GetRecord(recordId: string) {
   });
 
   if (result.success) {
-    console.log('✅ 取得成功:', result.data);
+    logger.info('✅ 取得成功:', result.data);
   } else {
-    console.error('❌ 取得失敗:', result.error);
+    logger.error('❌ 取得失敗:', result.error);
   }
 
   return result;
@@ -65,12 +66,12 @@ export async function example3_GetAllRecords() {
   });
 
   if (result.success) {
-    console.log(`✅ 取得成功: ${result.data?.length}件`);
-    result.data?.forEach((record: any) => {
-      console.log(`  - ${record.mdi_name} (ID: ${record.mdi_id})`);
+    logger.info(`✅ 取得成功: ${result.data?.length}件`);
+    result.data?.forEach(record => {
+      logger.info(`  - ${record.mdi_name} (ID: ${record.mdi_id})`);
     });
   } else {
-    console.error('❌ 取得失敗:', result.error);
+    logger.error('❌ 取得失敗:', result.error);
   }
 
   return result;
@@ -86,9 +87,9 @@ export async function example4_UpdateRecord(recordId: string) {
   });
 
   if (result.success) {
-    console.log('✅ 更新成功:', result.data);
+    logger.info('✅ 更新成功:', result.data);
   } else {
-    console.error('❌ 更新失敗:', result.error);
+    logger.error('❌ 更新失敗:', result.error);
   }
 
   return result;
@@ -101,9 +102,9 @@ export async function example5_DeleteRecord(recordId: string) {
   const result = await DataverseCrudService.delete('mdi_project_lists', recordId);
 
   if (result.success) {
-    console.log('✅ 削除成功');
+    logger.info('✅ 削除成功');
   } else {
-    console.error('❌ 削除失敗:', result.error);
+    logger.error('❌ 削除失敗:', result.error);
   }
 
   return result;
@@ -119,9 +120,9 @@ export async function example6_CountRecords() {
   );
 
   if (result.success) {
-    console.log(`✅ レコード数: ${result.data}件`);
+    logger.info(`✅ レコード数: ${result.data}件`);
   } else {
-    console.error('❌ カウント失敗:', result.error);
+    logger.error('❌ カウント失敗:', result.error);
   }
 
   return result;

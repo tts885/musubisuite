@@ -1,4 +1,4 @@
-import { useEffect } from "react"
+import { useEffect, useRef } from "react"
 import { Link, useNavigate } from "react-router-dom"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -14,7 +14,8 @@ import {
   BarChart3,
   Clock
 } from "lucide-react"
-import { getLastVisitedPath, isExplicitHomeNavigation } from "@/hooks/use-route-tracker"
+import { getLastVisitedPath, isExplicitHomeNavigation, clearExplicitHomeNavigation } from "@/hooks/use-route-tracker"
+import { logger } from "@/lib/logger"
 
 /**
  * ランディングページコンポーネント
@@ -46,10 +47,26 @@ import { getLastVisitedPath, isExplicitHomeNavigation } from "@/hooks/use-route-
  */
 export default function LandingPage() {
   const navigate = useNavigate()
+  const hasProcessedRef = useRef(false)
 
   useEffect(() => {
+    // React Strict Modeの重複実行を防ぐ
+    if (hasProcessedRef.current) {
+      logger.debug('[LandingPage] Already processed, skipping...')
+      return
+    }
+    
+    logger.debug('[LandingPage] Checking navigation...', {
+      isExplicit: isExplicitHomeNavigation(),
+      lastPath: getLastVisitedPath()
+    })
+    
     // 明示的なホームナビゲーション(ホームボタンクリック)の場合はランディングページを表示
     if (isExplicitHomeNavigation()) {
+      logger.debug('[LandingPage] Explicit home navigation detected - showing landing page')
+      // フラグをクリアしてランディングページを表示
+      clearExplicitHomeNavigation()
+      hasProcessedRef.current = true
       return // ランディングページを表示
     }
     
@@ -59,6 +76,8 @@ export default function LandingPage() {
       ? lastPath
       : '/dashboard'
     
+    logger.debug('[LandingPage] Auto-redirecting to:', targetRoute)
+    hasProcessedRef.current = true
     navigate(targetRoute, { replace: true })
   }, [navigate])
 

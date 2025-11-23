@@ -10,6 +10,7 @@ import OcrDocumentPreview from '@/components/ocr/OcrDocumentPreview'
 import OcrResultEditor from '@/components/ocr/OcrResultEditor'
 import ocrDataverseService from '@/services/ocrDataverseService'
 import type { OcrDocument } from '@/types'
+import { logger } from '@/lib/logger'
 
 /**
  * OCRドキュメント詳細ページ
@@ -32,16 +33,86 @@ export default function OcrDocumentDetailPage() {
       if (documentId) {
         // setLoading(true)
         try {
-          const docs = await ocrDataverseService.getDocuments(documentId)
-          if (docs.length > 0) {
-            setDocument(docs[0])
-            setFileName(docs[0].fileName)
+          const doc = await ocrDataverseService.getDocumentById(documentId)
+          if (doc) {
+            // テスト用のOCRフィールドデータを追加
+            if (!doc.ocrResult || !doc.ocrResult.fields || doc.ocrResult.fields.length === 0) {
+              doc.ocrResult = {
+                id: 'ocr-result-test',
+                documentId: doc.id,
+                fileName: doc.fileName,
+                status: 'completed',
+                fields: [
+                  {
+                    id: 'field-1',
+                    label: '請求書番号',
+                    value: 'INV-123457',
+                    confidence: 0.95,
+                    boundingBox: { x: 450, y: 150, width: 150, height: 25 },
+                    isEdited: false
+                  },
+                  {
+                    id: 'field-2',
+                    label: '発行日',
+                    value: '2019年10月31日',
+                    confidence: 0.92,
+                    boundingBox: { x: 450, y: 185, width: 120, height: 20 },
+                    isEdited: false
+                  },
+                  {
+                    id: 'field-3',
+                    label: '会社名',
+                    value: '株式会社〇〇〇〇',
+                    confidence: 0.88,
+                    boundingBox: { x: 460, y: 207, width: 130, height: 30 },
+                    isEdited: false
+                  },
+                  {
+                    id: 'field-4',
+                    label: '合計金額',
+                    value: '¥ 5,520,000',
+                    confidence: 0.96,
+                    boundingBox: { x: 320, y: 510, width: 120, height: 25 },
+                    isEdited: false
+                  },
+                  {
+                    id: 'field-5',
+                    label: '小計',
+                    value: '¥ 3,700,000',
+                    confidence: 0.91,
+                    boundingBox: { x: 320, y: 535, width: 120, height: 20 },
+                    isEdited: false
+                  },
+                  {
+                    id: 'field-6',
+                    label: '消費税',
+                    value: '¥ 370,000',
+                    confidence: 0.93,
+                    boundingBox: { x: 320, y: 555, width: 100, height: 20 },
+                    isEdited: false
+                  },
+                  {
+                    id: 'field-7',
+                    label: '担当者',
+                    value: '●●●●●●',
+                    confidence: 0.85,
+                    boundingBox: { x: 250, y: 650, width: 100, height: 20 },
+                    isEdited: false
+                  }
+                ],
+                overallConfidence: 0.91,
+                processedAt: new Date()
+              }
+            }
+            
+            setDocument(doc)
+            setFileName(doc.fileName)
           } else {
             toast.error('ドキュメントが見つかりません')
             navigate('/ocr')
           }
         } catch (error) {
-          console.error('ドキュメント取得エラー:', error)
+          logger.error('ドキュメント取得エラー', error)
           toast.error('ドキュメントの読み込みに失敗しました')
         } finally {
           // setLoading(false)
@@ -50,6 +121,15 @@ export default function OcrDocumentDetailPage() {
     }
     fetchDocument()
   }, [documentId, navigate])
+
+  // 一覧に戻る（フォルダフィルター付き）
+  const handleBackToList = () => {
+    if (document?.folderId) {
+      navigate(`/ocr?folder=${document.folderId}`)
+    } else {
+      navigate('/ocr')
+    }
+  }
 
   // ファイル名変更（今後実装予定）
   const handleFileNameChange = (newFileName: string) => {
@@ -75,7 +155,7 @@ export default function OcrDocumentDetailPage() {
       // }
       // await ocrService.updateDocument(document.id, updatedDoc)
 
-      console.log('保存するデータ:', {
+      logger.debug('保存するデータ', {
         documentId: document.id,
         fileName: fileName,
         fields: document.ocrResult?.fields,
@@ -89,7 +169,7 @@ export default function OcrDocumentDetailPage() {
       setIsEditingFileName(false)
     } catch (error) {
       toast.error('保存に失敗しました')
-      console.error('Save error:', error)
+      logger.error('保存エラー', error)
     }
   }
 
@@ -105,7 +185,7 @@ export default function OcrDocumentDetailPage() {
       navigate('/ocr')
     } catch (error) {
       toast.error('再処理の開始に失敗しました')
-      console.error('Reprocess error:', error)
+      logger.error('再処理エラー', error)
     }
   }
 
@@ -117,17 +197,7 @@ export default function OcrDocumentDetailPage() {
     )
   }
 
-  if (!document.ocrResult) {
-    return (
-      <div className="flex flex-col items-center justify-center h-full gap-4">
-        <p className="text-muted-foreground">OCR処理が完了していません</p>
-        <Button onClick={() => navigate('/ocr')}>
-          <ArrowLeft className="w-4 h-4 mr-2" />
-          一覧に戻る
-        </Button>
-      </div>
-    )
-  }
+  const hasOcrResult = document.ocrResult && document.ocrResult.fields && document.ocrResult.fields.length > 0
 
   return (
     <div className="flex flex-col h-full bg-background">
@@ -138,7 +208,7 @@ export default function OcrDocumentDetailPage() {
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => navigate('/ocr')}
+              onClick={handleBackToList}
             >
               <ArrowLeft className="w-4 h-4 mr-2" />
               一覧に戻る
@@ -173,37 +243,53 @@ export default function OcrDocumentDetailPage() {
                 )}
               </div>
               <p className="text-sm text-muted-foreground">
-                信頼度: {(document.ocrResult.overallConfidence * 100).toFixed(1)}% |
-                フィールド数: {document.ocrResult.fields.length}
+                {hasOcrResult && document.ocrResult ? (
+                  <>
+                    信頼度: {((document.ocrResult.overallConfidence ?? 0) * 100).toFixed(1)}% |
+                    フィールド数: {document.ocrResult.fields?.length ?? 0}
+                  </>
+                ) : (
+                  <>
+                    ステータス: {
+                      document.status === 'uploaded' ? 'アップロード済み' :
+                      document.status === 'pending' ? '処理待ち' :
+                      document.status === 'processing' ? '処理中' : '不明'
+                    }
+                  </>
+                )}
               </p>
             </div>
           </div>
 
           <div className="flex gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleReprocess}
-            >
-              <RotateCw className="w-4 h-4 mr-2" />
-              再処理
-            </Button>
-            <Button
-              size="sm"
-              onClick={handleSaveAll}
-              disabled={!hasUnsavedChanges}
-            >
-              <Save className="w-4 h-4 mr-2" />
-              保存
-            </Button>
+            {hasOcrResult && (
+              <>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleReprocess}
+                >
+                  <RotateCw className="w-4 h-4 mr-2" />
+                  再処理
+                </Button>
+                <Button
+                  size="sm"
+                  onClick={handleSaveAll}
+                  disabled={!hasUnsavedChanges}
+                >
+                  <Save className="w-4 h-4 mr-2" />
+                  保存
+                </Button>
+              </>
+            )}
           </div>
         </div>
       </div>
 
-      {/* メインコンテンツ: プレビュー + エディター */}
+      {/* メインコンテンツ */}
       <div className="flex-1 flex overflow-hidden">
-        {/* 左: ドキュメントプレビュー */}
-        <div className="flex-1 overflow-auto border-r border-border bg-muted/30">
+        {/* 左: ドキュメントプレビュー（固定50%幅） */}
+        <div className="w-1/2 overflow-auto border-r border-border bg-muted/30">
           <OcrDocumentPreview
             document={document}
             selectedFieldId={selectedFieldId}
@@ -211,14 +297,35 @@ export default function OcrDocumentDetailPage() {
           />
         </div>
 
-        {/* 右: フィールドエディター */}
-        <div className="w-96 overflow-auto bg-card">
-          <OcrResultEditor
-            ocrResult={document.ocrResult}
-            selectedFieldId={selectedFieldId}
-            onFieldSelect={setSelectedFieldId}
-            onFieldChange={handleFieldUpdate}
-          />
+        {/* 右: フィールドエディター（OCR結果エリア - 常に表示） */}
+        <div className="w-1/2 overflow-auto bg-card">
+          {hasOcrResult ? (
+            <OcrResultEditor
+              ocrResult={document.ocrResult ?? null}
+              selectedFieldId={selectedFieldId}
+              onFieldSelect={setSelectedFieldId}
+              onFieldChange={handleFieldUpdate}
+            />
+          ) : (
+            <div className="flex items-center justify-center h-full p-8 text-center">
+              <div className="space-y-4">
+                <div className="text-muted-foreground">
+                  <p className="text-lg font-medium">OCR処理待ち</p>
+                  <p className="text-sm mt-2">
+                    このドキュメントはまだOCR処理されていません。
+                  </p>
+                </div>
+                <Button
+                  variant="outline"
+                  onClick={handleReprocess}
+                  disabled={document?.status === 'processing'}
+                >
+                  <RotateCw className="w-4 h-4 mr-2" />
+                  OCR処理を開始
+                </Button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 

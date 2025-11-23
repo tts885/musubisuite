@@ -25,6 +25,7 @@
 
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
+import type { OcrDocument } from '@/types'
 
 interface OcrStateStore {
   /**
@@ -59,6 +60,18 @@ interface OcrStateStore {
    * F5リロード時に正しい画面に戻るために使用
    */
   lastOcrPath: string | null
+  
+  /**
+   * キャッシュされたドキュメント一覧
+   * 詳細画面からの戻り時にDB再取得を避けるため
+   */
+  cachedDocuments: OcrDocument[] | null
+  
+  /**
+   * キャッシュのタイムスタンプ
+   * 古いキャッシュを無効化するため
+   */
+  cacheTimestamp: number | null
   
   /**
    * フォルダの展開/折りたたみを切り替える
@@ -122,6 +135,26 @@ interface OcrStateStore {
   setLastOcrPath: (path: string | null) => void
   
   /**
+   * ドキュメント一覧をキャッシュに保存する
+   * 
+   * @param documents - キャッシュするドキュメント配列
+   */
+  setCachedDocuments: (documents: OcrDocument[]) => void
+  
+  /**
+   * キャッシュされたドキュメント一覧を取得する
+   * 5分以上経過している場合はnullを返す
+   * 
+   * @returns キャッシュが有効な場合はドキュメント配列、それ以外はnull
+   */
+  getCachedDocuments: () => OcrDocument[] | null
+  
+  /**
+   * ドキュメントキャッシュをクリアする
+   */
+  clearDocumentCache: () => void
+  
+  /**
    * 全ての状態をリセットする
    */
   reset: () => void
@@ -142,6 +175,8 @@ export const useOcrStateStore = create<OcrStateStore>()(
       sidebarOpen: false,
       selectedFolderId: null,
       lastOcrPath: null,
+      cachedDocuments: null,
+      cacheTimestamp: null,
       
       // フォルダの展開/折りたたみ
       toggleFolder: (folderId: string) => 
@@ -183,6 +218,35 @@ export const useOcrStateStore = create<OcrStateStore>()(
       setLastOcrPath: (path: string | null) => 
         set({ lastOcrPath: path }),
       
+      // ドキュメントキャッシュ保存
+      setCachedDocuments: (documents: OcrDocument[]) =>
+        set({
+          cachedDocuments: documents,
+          cacheTimestamp: Date.now(),
+        }),
+      
+      // ドキュメントキャッシュ取得（5分以内のみ有効）
+      getCachedDocuments: () => {
+        const state = useOcrStateStore.getState()
+        const CACHE_DURATION = 5 * 60 * 1000 // 5分
+        
+        if (
+          state.cachedDocuments &&
+          state.cacheTimestamp &&
+          Date.now() - state.cacheTimestamp < CACHE_DURATION
+        ) {
+          return state.cachedDocuments
+        }
+        return null
+      },
+      
+      // ドキュメントキャッシュクリア
+      clearDocumentCache: () =>
+        set({
+          cachedDocuments: null,
+          cacheTimestamp: null,
+        }),
+      
       // 全リセット
       reset: () => 
         set({
@@ -191,6 +255,8 @@ export const useOcrStateStore = create<OcrStateStore>()(
           sidebarOpen: false,
           selectedFolderId: null,
           lastOcrPath: null,
+          cachedDocuments: null,
+          cacheTimestamp: null,
         }),
     }),
     {

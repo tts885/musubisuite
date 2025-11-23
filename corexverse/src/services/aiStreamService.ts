@@ -19,6 +19,8 @@
  * ```
  */
 
+import { logger } from '@/lib/logger';
+
 export interface StreamCallbacks {
   onChunk: (content: string) => void;
   onComplete?: () => void;
@@ -76,7 +78,7 @@ export class AIStreamService {
     } catch (error) {
       if (error instanceof Error) {
         if (error.name === 'AbortError') {
-          console.log('Stream was aborted');
+          logger.debug('Stream was aborted');
         } else {
           callbacks.onError?.(error.message);
         }
@@ -131,7 +133,7 @@ export class AIStreamService {
               callbacks.onChunk(data.content);
             }
           } catch (e) {
-            console.warn('JSON parse error:', line);
+            logger.warn('JSON parse error:', line);
           }
         }
       }

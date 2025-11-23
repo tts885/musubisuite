@@ -7,6 +7,7 @@
  */
 
 import { getContext } from '@microsoft/power-apps/app';
+import { logger } from '@/lib/logger';
 
 /**
  * Dataverse接続設定
@@ -50,7 +51,7 @@ export async function getPowerAppsContext() {
       // organizationName: context?.organization?.friendlyName,
     };
   } catch (error) {
-    console.error('Failed to get Power Apps context:', error);
+    logger.error('Failed to get Power Apps context:', error);
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error',
@@ -70,7 +71,7 @@ export async function testDataverseConnection(
   connection: DataverseConnection
 ): Promise<ConnectionTestResult> {
   try {
-    console.log('Testing Dataverse connection...', connection);
+    logger.debug('Testing Dataverse connection...', connection);
     
     // Power Apps コンテキストを取得
     const contextResult = await getPowerAppsContext();
@@ -96,7 +97,7 @@ export async function testDataverseConnection(
       },
     };
   } catch (error) {
-    console.error('Dataverse connection test failed:', error);
+    logger.error('Dataverse connection test failed:', error);
     return {
       success: false,
       message: '接続テストに失敗しました',

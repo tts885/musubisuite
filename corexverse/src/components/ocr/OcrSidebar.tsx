@@ -762,8 +762,8 @@ export default function OcrSidebar(_props: OcrSidebarProps) {
         <div className="p-4 border-t border-sidebar-border">
           {!sidebarCollapsed && (
             <div className="text-xs text-sidebar-foreground/50 space-y-1">
-              <p className="font-medium">OCR Engine: Azure AI</p>
-              <p>Document Intelligence</p>
+              <p className="font-medium">OCR Engine</p>
+              <p>Azure AI Document Intelligence</p>
             </div>
           )}
         </div>

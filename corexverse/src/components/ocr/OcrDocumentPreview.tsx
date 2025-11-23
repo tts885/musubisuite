@@ -28,10 +28,11 @@
  */
 
 import { useState, useRef, useEffect } from "react"
-import { ZoomIn, ZoomOut, RotateCw, Download } from "lucide-react"
+import { Download, Maximize, Minimize, RotateCw } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import type { OcrDocument, OcrField } from "@/types"
+import { logger } from "@/lib/logger"
 
 interface OcrDocumentPreviewProps {
   document: OcrDocument
@@ -44,8 +45,8 @@ export default function OcrDocumentPreview({
   selectedFieldId,
   onFieldSelect,
 }: OcrDocumentPreviewProps) {
-  const [zoom, setZoom] = useState(1)
   const [rotation, setRotation] = useState(0)
+  const [isFullscreen, setIsFullscreen] = useState(false)
   const imageRef = useRef<HTMLImageElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const [imageSize, setImageSize] = useState({ width: 0, height: 0 })
@@ -57,10 +58,28 @@ export default function OcrDocumentPreview({
     if (imageRef.current) {
       const updateSize = () => {
         if (imageRef.current) {
-          setImageSize({
-            width: imageRef.current.naturalWidth,
-            height: imageRef.current.naturalHeight,
+          const width = imageRef.current.naturalWidth
+          const height = imageRef.current.naturalHeight
+          
+          setImageSize({ width, height })
+          
+          logger.info('[画像表示] naturalサイズ取得完了', {
+            fileName: document.fileName,
+            naturalWidth: width,
+            naturalHeight: height,
+            displayWidth: imageRef.current.offsetWidth,
+            displayHeight: imageRef.current.offsetHeight,
+            src: imageRef.current.src?.substring(0, 100) // Blob URLの先頭部分のみ
           })
+
+          // サイズが異常に小さい場合は警告
+          if (width < 100 || height < 100) {
+            logger.warn('[画像表示] 画像サイズが異常に小さい可能性があります', {
+              fileName: document.fileName,
+              naturalWidth: width,
+              naturalHeight: height
+            })
+          }
         }
       }
 
@@ -73,21 +92,21 @@ export default function OcrDocumentPreview({
         }
       }
     }
+  }, [document.fileUrl, document.fileName])
+
+  /**
+   * Blob URLのクリーンアップ（メモリリーク防止）
+   */
+  useEffect(() => {
+    const fileUrl = document.fileUrl
+    
+    // Blob URLの場合のみクリーンアップ
+    if (fileUrl && fileUrl.startsWith('blob:')) {
+      return () => {
+        URL.revokeObjectURL(fileUrl)
+      }
+    }
   }, [document.fileUrl])
-
-  /**
-   * ズームイン
-   */
-  const handleZoomIn = () => {
-    setZoom(prev => Math.min(prev + 0.25, 3))
-  }
-
-  /**
-   * ズームアウト
-   */
-  const handleZoomOut = () => {
-    setZoom(prev => Math.max(prev - 0.25, 0.5))
-  }
 
   /**
    * 90度回転
@@ -105,6 +124,39 @@ export default function OcrDocumentPreview({
     link.download = document.fileName
     link.click()
   }
+
+  /**
+   * 全画面表示切り替え
+   */
+  const toggleFullscreen = () => {
+    if (!containerRef.current) return
+
+    if (!isFullscreen) {
+      // 全画面表示に入る
+      if (containerRef.current.requestFullscreen) {
+        containerRef.current.requestFullscreen()
+      }
+    } else {
+      // 全画面表示を終了
+      if (window.document.exitFullscreen) {
+        window.document.exitFullscreen()
+      }
+    }
+  }
+
+  /**
+   * 全画面状態の変化を監視
+   */
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!window.document.fullscreenElement)
+    }
+
+    window.document.addEventListener('fullscreenchange', handleFullscreenChange)
+    return () => {
+      window.document.removeEventListener('fullscreenchange', handleFullscreenChange)
+    }
+  }, [])
 
   /**
    * バウンディングボックスのスタイル計算
@@ -142,7 +194,10 @@ export default function OcrDocumentPreview({
   }
 
   return (
-    <div className="h-full flex flex-col bg-muted/30">
+    <div className={cn(
+      "h-full flex flex-col",
+      isFullscreen ? "bg-black" : "bg-muted/30"
+    )}>
       {/* ツールバー */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-card">
         <div className="flex items-center gap-2">
@@ -150,40 +205,20 @@ export default function OcrDocumentPreview({
           <span className="text-xs text-muted-foreground">
             {(document.fileSize / 1024).toFixed(0)} KB
           </span>
+          {imageSize.width > 0 && (
+            <span className="text-xs text-muted-foreground">
+              • {imageSize.width} × {imageSize.height}
+            </span>
+          )}
         </div>
 
         <div className="flex items-center gap-1">
           <Button
             variant="ghost"
             size="icon"
-            onClick={handleZoomOut}
-            disabled={zoom <= 0.5}
-            title="ズームアウト"
-          >
-            <ZoomOut className="h-4 w-4" />
-          </Button>
-          
-          <span className="text-xs text-muted-foreground min-w-[4ch] text-center">
-            {Math.round(zoom * 100)}%
-          </span>
-          
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={handleZoomIn}
-            disabled={zoom >= 3}
-            title="ズームイン"
-          >
-            <ZoomIn className="h-4 w-4" />
-          </Button>
-          
-          <div className="w-px h-4 bg-border mx-1" />
-          
-          <Button
-            variant="ghost"
-            size="icon"
             onClick={handleRotate}
             title="90度回転"
+            aria-label="画像を90度回転"
           >
             <RotateCw className="h-4 w-4" />
           </Button>
@@ -193,8 +228,21 @@ export default function OcrDocumentPreview({
             size="icon"
             onClick={handleDownload}
             title="ダウンロード"
+            aria-label="ドキュメントをダウンロード"
           >
             <Download className="h-4 w-4" />
+          </Button>
+          
+          <div className="w-px h-4 bg-border mx-1" />
+          
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={toggleFullscreen}
+            title={isFullscreen ? "全画面表示を終了" : "全画面表示"}
+            aria-label={isFullscreen ? "全画面表示を終了" : "全画面表示"}
+          >
+            {isFullscreen ? <Minimize className="h-4 w-4" /> : <Maximize className="h-4 w-4" />}
           </Button>
         </div>
       </div>
@@ -202,33 +250,54 @@ export default function OcrDocumentPreview({
       {/* 画像プレビューエリア */}
       <div 
         ref={containerRef}
-        className="flex-1 overflow-auto p-4"
+        className="flex-1 p-4 overflow-hidden"
       >
-        <div className="flex items-center justify-center min-h-full">
+        <div className="flex items-center justify-center h-full">
           <div 
             className="relative inline-block"
             style={{
-              transform: `scale(${zoom}) rotate(${rotation}deg)`,
+              transform: `rotate(${rotation}deg)`,
               transformOrigin: 'center',
               transition: 'transform 0.2s ease-out',
             }}
           >
             {/* 画像 */}
-            <img
-              ref={imageRef}
-              src={document.fileUrl}
-              alt={document.fileName}
-              className="max-w-full h-auto rounded-lg shadow-lg"
-            />
+            {document.fileUrl ? (
+              <img
+                ref={imageRef}
+                src={document.fileUrl}
+                alt={`OCRドキュメント: ${document.fileName}`}
+                className="rounded-lg shadow-lg"
+                style={{
+                  // 高品質画像表示設定
+                  maxWidth: '100%',
+                  maxHeight: 'calc(100vh - 280px)',
+                  objectFit: 'contain',
+                  imageRendering: 'pixelated',
+                  backfaceVisibility: 'hidden',
+                  WebkitBackfaceVisibility: 'hidden',
+                } as React.CSSProperties}
+                loading="eager"
+                decoding="sync"
+                draggable={false}
+              />
+            ) : (
+              <div className="flex items-center justify-center w-96 h-96 bg-muted rounded-lg border-2 border-dashed border-border">
+                <div className="text-center text-muted-foreground">
+                  <p className="text-sm">画像を読み込み中...</p>
+                  <p className="text-xs mt-2">ファイルデータが見つかりません</p>
+                </div>
+              </div>
+            )}
 
-            {/* バウンディングボックスオーバーレイ */}
-            {document.ocrResult && imageSize.width > 0 && (
-              <div className="absolute inset-0">
+            {/* バウンディングボックスオーバーレイ（OCR結果がある場合のみ） */}
+            {document.ocrResult && document.ocrResult.fields && document.ocrResult.fields.length > 0 && imageSize.width > 0 && (
+              <div className="absolute inset-0 pointer-events-none">
                 {document.ocrResult.fields.map(field => (
                   <div
                     key={field.id}
                     className={cn(
-                      "border-2 transition-all duration-200 cursor-pointer",
+                      "group border-2 transition-all duration-200 cursor-pointer pointer-events-auto",
                       getConfidenceColor(field.confidence),
                       selectedFieldId === field.id
                         ? "border-primary bg-primary/20 ring-2 ring-primary ring-offset-2"
@@ -238,8 +307,12 @@ export default function OcrDocumentPreview({
                     onClick={() => onFieldSelect(field.id)}
                     title={`${field.label}: ${field.value} (信頼度: ${(field.confidence * 100).toFixed(0)}%)`}
                   >
-                    {/* フィールドラベル */}
-                    <div className="absolute -top-5 left-0 text-xs font-medium bg-background px-1 py-0.5 rounded shadow-sm border whitespace-nowrap">
+                    {/* フィールドラベル（ホバー時のみ表示） */}
+                    <div className={cn(
+                      "absolute -top-5 left-0 text-xs font-medium px-1 py-0.5 rounded shadow-sm border whitespace-nowrap",
+                      "opacity-0 group-hover:opacity-100 transition-opacity duration-200",
+                      isFullscreen ? "bg-black text-white border-white" : "bg-background"
+                    )}>
                       {field.label}
                     </div>
                   </div>
@@ -251,26 +324,30 @@ export default function OcrDocumentPreview({
       </div>
 
       {/* フッター情報 */}
-      {document.ocrResult && (
-        <div className="px-4 py-2 border-t bg-card text-xs text-muted-foreground flex items-center gap-4">
-          <span>検出フィールド数: {document.ocrResult.fields.length}</span>
-          <span>全体信頼度: {(document.ocrResult.overallConfidence * 100).toFixed(0)}%</span>
-          <div className="flex items-center gap-2 ml-auto">
-            <div className="flex items-center gap-1">
-              <div className="w-2 h-2 rounded-full bg-green-500" />
-              <span>高</span>
+      <div className="px-4 py-2 border-t bg-card text-xs text-muted-foreground flex items-center gap-4">
+        {document.ocrResult && document.ocrResult.fields && document.ocrResult.fields.length > 0 ? (
+          <>
+            <span>検出フィールド数: {document.ocrResult.fields.length}</span>
+            <span>全体信頼度: {(document.ocrResult.overallConfidence * 100).toFixed(0)}%</span>
+            <div className="flex items-center gap-2 ml-auto">
+              <div className="flex items-center gap-1">
+                <div className="w-2 h-2 rounded-full bg-green-500" />
+                <span>高</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <div className="w-2 h-2 rounded-full bg-yellow-500" />
+                <span>中</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <div className="w-2 h-2 rounded-full bg-red-500" />
+                <span>低</span>
+              </div>
             </div>
-            <div className="flex items-center gap-1">
-              <div className="w-2 h-2 rounded-full bg-yellow-500" />
-              <span>中</span>
-            </div>
-            <div className="flex items-center gap-1">
-              <div className="w-2 h-2 rounded-full bg-red-500" />
-              <span>低</span>
-            </div>
-          </div>
-        </div>
-      )}
+          </>
+        ) : (
+          <span>画像: {document.fileName} ({imageSize.width} × {imageSize.height}px)</span>
+        )}
+      </div>
     </div>
   )
 }

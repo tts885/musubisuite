@@ -284,12 +284,14 @@ export function useOcrDocuments(folderId?: string) {
  * // ]
  * ```
  */
+type FolderTreeNode = OcrFolder & { children: FolderTreeNode[] };
+
 export function useFolderTree(folders: OcrFolder[]) {
   return useState(() => {
-    const buildTree = (parentId: string | null = null): (OcrFolder & { children: any[] })[] => {
+    const buildTree = (parentId: string | null = null): FolderTreeNode[] => {
       return folders
-        .filter(f => f.parentId === parentId)
-        .map(folder => ({
+        .filter((f: OcrFolder) => f.parentId === parentId)
+        .map((folder: OcrFolder) => ({
           ...folder,
           children: buildTree(folder.id),
         }));
