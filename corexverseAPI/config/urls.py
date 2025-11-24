@@ -30,6 +30,9 @@ from contracts.views import ContractViewSet
 from ai_settings.views import AIProviderViewSet, SearchEngineConfigViewSet, AISettingsViewSet
 from masters.views import CodeCategoryViewSet, CodeMasterViewSet
 
+# Import OCR Views
+from services.ocr_views import process_document_ocr, test_ocr
+
 # DRF Router
 router = routers.DefaultRouter()
 router.register(r'clients', ClientViewSet, basename='client')
@@ -57,6 +60,10 @@ urlpatterns = [
     
     # API Endpoints
     path('api/', include(router.urls)),
+    
+    # OCR API
+    path('api/ocr/process/', process_document_ocr, name='ocr-process'),
+    path('api/ocr/test/', test_ocr, name='ocr-test'),
     
     # API Documentation
     path('api/schema/', SpectacularAPIView.as_view(), name='schema'),

@@ -57,7 +57,6 @@ export function useMenuSections() {
       setSections(data);
     } catch (err) {
       setError(err as Error);
-      console.error('メニューセクション取得エラー:', err);
     } finally {
       setLoading(false);
     }
@@ -148,7 +147,6 @@ export function useOcrFolders(menuSectionId?: string) {
       setFolders(data);
     } catch (err) {
       setError(err as Error);
-      console.error('フォルダ取得エラー:', err);
     } finally {
       setLoading(false);
     }
@@ -235,7 +233,6 @@ export function useOcrDocuments(folderId?: string) {
       setDocuments(data);
     } catch (err) {
       setError(err as Error);
-      console.error('ドキュメント取得エラー:', err);
     } finally {
       setLoading(false);
     }
@@ -338,7 +335,6 @@ export function useFolderStats(folderId: string) {
 
         setStats({ total, completed, pending, processing, failed });
       } catch (error) {
-        console.error('統計取得エラー:', error);
       } finally {
         setLoading(false);
       }

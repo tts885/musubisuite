@@ -226,8 +226,8 @@ export const useOcrStateStore = create<OcrStateStore>()(
         }),
       
       // ドキュメントキャッシュ取得（5分以内のみ有効）
-      getCachedDocuments: () => {
-        const state = useOcrStateStore.getState()
+      getCachedDocuments: (): OcrDocument[] | null => {
+        const state: OcrStateStore = useOcrStateStore.getState()
         const CACHE_DURATION = 5 * 60 * 1000 // 5分
         
         if (

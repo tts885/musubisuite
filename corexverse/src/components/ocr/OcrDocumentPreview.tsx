@@ -199,7 +199,7 @@ export default function OcrDocumentPreview({
       isFullscreen ? "bg-black" : "bg-muted/30"
     )}>
       {/* ツールバー */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-card">
+      <div className="flex items-center justify-between px-4 border-b border-border bg-card flex-shrink-0 h-[52px]">
         <div className="flex items-center gap-2">
           <h3 className="font-medium text-sm">{document.fileName}</h3>
           <span className="text-xs text-muted-foreground">
@@ -324,26 +324,22 @@ export default function OcrDocumentPreview({
       </div>
 
       {/* フッター情報 */}
-      <div className="px-4 py-2 border-t bg-card text-xs text-muted-foreground flex items-center gap-4">
+      <div className="px-4 py-3 border-t bg-card text-xs text-muted-foreground flex items-center gap-4">
         {document.ocrResult && document.ocrResult.fields && document.ocrResult.fields.length > 0 ? (
-          <>
-            <span>検出フィールド数: {document.ocrResult.fields.length}</span>
-            <span>全体信頼度: {(document.ocrResult.overallConfidence * 100).toFixed(0)}%</span>
-            <div className="flex items-center gap-2 ml-auto">
-              <div className="flex items-center gap-1">
-                <div className="w-2 h-2 rounded-full bg-green-500" />
-                <span>高</span>
-              </div>
-              <div className="flex items-center gap-1">
-                <div className="w-2 h-2 rounded-full bg-yellow-500" />
-                <span>中</span>
-              </div>
-              <div className="flex items-center gap-1">
-                <div className="w-2 h-2 rounded-full bg-red-500" />
-                <span>低</span>
-              </div>
+          <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1">
+              <div className="w-2 h-2 rounded-full bg-green-500" />
+              <span>高</span>
             </div>
-          </>
+            <div className="flex items-center gap-1">
+              <div className="w-2 h-2 rounded-full bg-yellow-500" />
+              <span>中</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <div className="w-2 h-2 rounded-full bg-red-500" />
+              <span>低</span>
+            </div>
+          </div>
         ) : (
           <span>画像: {document.fileName} ({imageSize.width} × {imageSize.height}px)</span>
         )}

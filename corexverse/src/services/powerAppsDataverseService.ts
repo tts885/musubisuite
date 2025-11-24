@@ -100,7 +100,7 @@ export class PowerAppsDataverseService {
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('Dataverse API Error:', errorText);
+
         
         // よくあるエラーのハンドリング
         if (response.status === 401) {
@@ -124,7 +124,7 @@ export class PowerAppsDataverseService {
 
       return entityId;
     } catch (error) {
-      console.error('Table creation failed:', error);
+
       throw error;
     }
   }

@@ -78,6 +78,7 @@ import type { Project, Client, ProjectStatus, ProjectPriority } from "@/types"
 import { djangoAPI } from "@/services/djangoAPI"
 import { toast } from "sonner"
 import { CodeMasterSelect } from "@/components/shared/CodeMasterSelect"
+import { PageHeader } from "@/components/shared/PageHeader"
 
 /**
  * プロジェクト一覧ページコンポーネント
@@ -197,7 +198,6 @@ export default function ProjectsPage() {
         setProjects(transformedProjects);
         
       } catch (error) {
-        console.error('データ取得エラー:', error);
         toast.error('データの取得に失敗しました');
       } finally {
         setIsLoading(false);
@@ -309,9 +309,6 @@ export default function ProjectsPage() {
       });
 
     } catch (error: any) {
-      console.error('案件作成エラー:', error);
-      console.error('エラーレスポンス:', error.response?.data);
-      
       // エラーメッセージを構築
       let errorMessage = '案件作成中にエラーが発生しました';
       if (error.response?.data) {
@@ -546,20 +543,23 @@ export default function ProjectsPage() {
     <div className="w-full h-full overflow-auto bg-background">
       {/* Wide表示のコンテナ */}
       <div className="px-8 py-8 space-y-8">
-        {/* Page Header - 現代的なヘッダーデザイン */}
-        <div className="flex items-start justify-between">
-          <div className="space-y-2">
-            <h1 className="text-4xl font-bold tracking-tight text-foreground">案件一覧</h1>
-            <p className="text-lg text-muted-foreground">
+        {/* Page Header - 共通コンポーネントを使用 */}
+        <PageHeader
+          title="案件一覧"
+          description={
+            <>
               全<span className="font-semibold text-foreground">{filteredData.length}</span>件の案件を管理
-            </p>
-          </div>
-          <Button size="lg" className="shadow-md hover:shadow-lg transition-shadow" onClick={handleOpenCreateDialog}>
-            <Plus className="mr-2 h-5 w-5" />
-            新規案件
-          </Button>
-          
-          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+            </>
+          }
+          action={
+            <Button size="lg" className="shadow-md hover:shadow-lg transition-shadow" onClick={handleOpenCreateDialog}>
+              <Plus className="mr-2 h-5 w-5" />
+              新規案件
+            </Button>
+          }
+        />
+        
+        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogContent className="sm:max-w-[600px]">
             <DialogHeader>
               <DialogTitle>{editingProject ? '案件編集' : '新規案件作成'}</DialogTitle>
@@ -697,7 +697,6 @@ export default function ProjectsPage() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
-      </div>
 
         {/* Filters - 現代的なフィルターデザイン */}
         <div className="flex flex-col sm:flex-row gap-4">

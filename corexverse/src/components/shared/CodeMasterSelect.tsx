@@ -48,7 +48,6 @@ export function CodeMasterSelect({
       const data = await codeMasterService.getCodesByCategory(category);
       setCodes(data);
     } catch (error) {
-      console.error('コードマスタの取得に失敗:', error);
     } finally {
       setLoading(false);
     }

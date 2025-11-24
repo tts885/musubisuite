@@ -11,6 +11,7 @@ import {
 } from "lucide-react"
 import AppSwitcher from "@/components/AppSwitcher"
 import { useRouteTracker } from "@/hooks/use-route-tracker"
+import { PageFooter } from "@/components/shared/PageFooter"
 
 type LayoutProps = { showHeader?: boolean }
 
@@ -150,12 +151,9 @@ export default function Layout({ showHeader = true }: LayoutProps) {
           </nav>
 
           {/* Footer - サイドバー下部の情報表示エリア */}
-          <div className="p-4 border-t border-sidebar-border">
+          <div className="px-4 py-3 border-t bg-card text-xs text-muted-foreground flex items-center gap-4">
             {!sidebarCollapsed && (
-              <div className="text-xs text-sidebar-foreground/50 space-y-1">
-                <p className="font-medium">CoreXverse v1.0</p>
-                <p>© 2025 All rights reserved</p>
-              </div>
+              <span>CoreXverse v1.0 © 2025 All rights reserved</span>
             )}
           </div>
         </div>
@@ -214,10 +212,11 @@ export default function Layout({ showHeader = true }: LayoutProps) {
           </header>
         )}
 
-        <main className="flex-1 overflow-auto bg-background">
-          <div className="w-full h-full">
+        <main className="flex-1 overflow-auto bg-background flex flex-col">
+          <div className="flex-1">
             <Outlet />
           </div>
+          <PageFooter />
         </main>
       </div>
     </div>

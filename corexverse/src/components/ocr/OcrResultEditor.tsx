@@ -33,10 +33,7 @@ import { useState } from "react"
 import { Edit2, Check, X, AlertCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
-import { Card, CardContent, CardHeader } from "@/components/ui/card"
-import { ScrollArea } from "@/components/ui/scroll-area"
 import { cn } from "@/lib/utils"
 import type { OcrResult, OcrField } from "@/types"
 
@@ -128,152 +125,157 @@ export default function OcrResultEditor({
 
   return (
     <div className="h-full flex flex-col bg-background">
-      {/* ヘッダー */}
-      <div className="px-4 py-3 border-b border-border">
-        <h3 className="font-semibold text-sm">OCR結果</h3>
-        <p className="text-xs text-muted-foreground mt-1">
-          {ocrResult.fields.length}個のフィールドを検出
-        </p>
+      {/* ヘッダー - 固定 */}
+      <div className="flex items-center justify-between px-4 border-b border-border bg-card flex-shrink-0 h-[52px]">
+        <div className="flex items-center gap-2">
+          <h3 className="font-medium text-sm">OCR結果</h3>
+          <span className="text-xs text-muted-foreground">
+            {ocrResult.fields.length}個のフィールドを検出
+          </span>
+        </div>
       </div>
 
-      {/* フィールドリスト */}
-      <ScrollArea className="flex-1">
-        <div className="p-4 space-y-3">
-          {ocrResult.fields.map((field) => {
-            const isSelected = selectedFieldId === field.id
-            const isEditing = editingFieldId === field.id
+      {/* テーブル - スクロール可能 */}
+      <div className="flex-1 overflow-auto">
+        <table className="w-full text-sm table-fixed border-collapse">
+          <colgroup>
+            <col style={{ width: '20%' }} />
+            <col style={{ width: '35%' }} />
+            <col style={{ width: '15%' }} />
+            <col style={{ width: '15%' }} />
+            <col style={{ width: '15%' }} />
+          </colgroup>
+          <thead className="sticky top-0 bg-muted/95 z-10">
+            <tr>
+              <th className="px-4 py-2 text-left font-medium text-muted-foreground border border-border">項目名</th>
+              <th className="px-4 py-2 text-left font-medium text-muted-foreground border border-border">項目値</th>
+              <th className="px-4 py-2 text-left font-medium text-muted-foreground border border-border">属性</th>
+              <th className="px-4 py-2 text-center font-medium text-muted-foreground border border-border">信頼度</th>
+              <th className="px-4 py-2 text-center font-medium text-muted-foreground border border-border">操作</th>
+            </tr>
+          </thead>
+          <tbody>
+              {ocrResult.fields.map((field) => {
+                const isSelected = selectedFieldId === field.id
+                const isEditing = editingFieldId === field.id
 
-            return (
-              <Card
-                key={field.id}
-                className={cn(
-                  "transition-all duration-200 cursor-pointer",
-                  isSelected && "ring-2 ring-primary shadow-md",
-                  "hover:shadow-md"
-                )}
-                onClick={() => !isEditing && onFieldSelect(field.id)}
-              >
-                <CardHeader className="p-3 pb-2">
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="flex-1">
-                      <Label className="text-sm font-medium">
+                return (
+                  <tr
+                    key={field.id}
+                    className={cn(
+                      "border-b hover:bg-muted/30 transition-colors cursor-pointer",
+                      isSelected && "bg-primary/10 hover:bg-primary/15"
+                    )}
+                    onClick={() => !isEditing && onFieldSelect(field.id)}
+                  >
+                    {/* 項目名 */}
+                    <td className="px-4 py-1 font-medium text-sm border border-border">
+                      <div className="flex items-center gap-2">
                         {field.label}
-                      </Label>
-                      <div className="flex items-center gap-2 mt-1">
-                        <Badge 
-                          variant={getConfidenceBadgeVariant(field.confidence)}
-                          className="text-xs"
-                        >
-                          信頼度: {(field.confidence * 100).toFixed(0)}%
-                        </Badge>
-                        <span className="text-xs text-muted-foreground">
-                          {getFieldTypeLabel(field.type)}
-                        </span>
                         {field.isEdited && (
-                          <Badge variant="outline" className="text-xs">
-                            編集済み
-                          </Badge>
+                          <Badge variant="outline" className="text-xs">編集済</Badge>
                         )}
                       </div>
-                    </div>
+                    </td>
 
-                    {!isEditing && (
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-7 w-7 flex-shrink-0"
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          handleStartEdit(field)
-                        }}
-                      >
-                        <Edit2 className="h-3 w-3" />
-                      </Button>
-                    )}
-                  </div>
-                </CardHeader>
-
-                <CardContent className="p-3 pt-0">
-                  {isEditing ? (
-                    // 編集モード
-                    <div className="space-y-2">
-                      <Input
-                        value={editValue}
-                        onChange={(e) => setEditValue(e.target.value)}
-                        className="text-sm"
-                        autoFocus
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') {
-                            handleConfirmEdit(field.id)
-                          } else if (e.key === 'Escape') {
-                            handleCancelEdit()
-                          }
-                        }}
-                        onClick={(e) => e.stopPropagation()}
-                      />
-                      <div className="flex items-center gap-1">
-                        <Button
-                          size="sm"
-                          variant="default"
-                          className="h-7 text-xs flex-1"
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            handleConfirmEdit(field.id)
-                          }}
-                        >
-                          <Check className="h-3 w-3 mr-1" />
-                          確定
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="h-7 text-xs flex-1"
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            handleCancelEdit()
-                          }}
-                        >
-                          <X className="h-3 w-3 mr-1" />
-                          キャンセル
-                        </Button>
-                      </div>
-                    </div>
-                  ) : (
-                    // 表示モード
-                    <div
-                      className={cn(
-                        "text-sm p-2 rounded bg-muted/50 font-mono break-all",
-                        field.isEdited && "bg-primary/5 border border-primary/20"
+                    {/* 項目値 */}
+                    <td className="px-4 py-1 text-sm border border-border">
+                      {isEditing ? (
+                        <div className="flex items-center gap-2">
+                          <Input
+                            value={editValue}
+                            onChange={(e) => setEditValue(e.target.value)}
+                            className="text-sm h-8"
+                            autoFocus
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                handleConfirmEdit(field.id)
+                              } else if (e.key === 'Escape') {
+                                handleCancelEdit()
+                              }
+                            }}
+                            onClick={(e) => e.stopPropagation()}
+                          />
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            className="h-8 w-8 flex-shrink-0"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              handleConfirmEdit(field.id)
+                            }}
+                          >
+                            <Check className="h-4 w-4 text-green-600" />
+                          </Button>
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            className="h-8 w-8 flex-shrink-0"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              handleCancelEdit()
+                            }}
+                          >
+                            <X className="h-4 w-4 text-red-600" />
+                          </Button>
+                        </div>
+                      ) : (
+                        <div className={cn(
+                          "font-mono text-sm",
+                          field.isEdited && "text-primary font-semibold"
+                        )}>
+                          {field.value}
+                        </div>
                       )}
-                    >
-                      {field.value}
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            )
-          })}
-        </div>
-      </ScrollArea>
+                    </td>
 
-      {/* フッター統計 */}
-      <div className="px-4 py-3 border-t bg-muted/30">
-        <div className="grid grid-cols-2 gap-2 text-xs">
-          <div>
-            <span className="text-muted-foreground">処理日時:</span>
-            <div className="font-medium">
-              {new Date(ocrResult.processedAt).toLocaleString('ja-JP')}
-            </div>
-          </div>
-          <div>
-            <span className="text-muted-foreground">ステータス:</span>
-            <div className="font-medium">
-              {ocrResult.status === 'completed' ? '完了' :
-               ocrResult.status === 'processing' ? '処理中' :
-               ocrResult.status === 'failed' ? '失敗' : '待機中'}
-            </div>
-          </div>
-        </div>
+                    {/* 属性 */}
+                    <td className="px-4 py-1 text-muted-foreground text-sm border border-border">
+                      {getFieldTypeLabel(field.type)}
+                    </td>
+
+                    {/* 信頼度 */}
+                    <td className="px-4 py-1 text-center border border-border">
+                      <Badge 
+                        variant={getConfidenceBadgeVariant(field.confidence)}
+                        className="text-xs"
+                      >
+                        {(field.confidence * 100).toFixed(0)}%
+                      </Badge>
+                    </td>
+
+                    {/* 操作 */}
+                    <td className="px-4 py-1 text-center border border-border">
+                      {!isEditing && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            handleStartEdit(field)
+                          }}
+                        >
+                          <Edit2 className="h-4 w-4" />
+                        </Button>
+                      )}
+                    </td>
+                  </tr>
+                )
+              })}
+          </tbody>
+        </table>
+      </div>
+
+      {/* フッター統計 - 固定 */}
+      <div className="px-4 py-3 border-t bg-card text-xs text-muted-foreground flex items-center gap-4 flex-shrink-0">
+        <span>処理日時: {new Date(ocrResult.processedAt).toLocaleString('ja-JP')}</span>
+        <span>ステータス: {
+          ocrResult.status === 'completed' ? '完了' :
+          ocrResult.status === 'processing' ? '処理中' :
+          ocrResult.status === 'failed' ? '失敗' : '待機中'
+        }</span>
+        <span className="ml-auto">全体信頼度: {(ocrResult.overallConfidence * 100).toFixed(0)}%</span>
       </div>
     </div>
   )

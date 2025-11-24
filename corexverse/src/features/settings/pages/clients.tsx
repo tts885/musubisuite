@@ -91,11 +91,8 @@ export default function ClientsSettingsPage() {
   const fetchIndustries = async () => {
     try {
       const data = await codeMasterService.getCodesByCategory('INDUSTRY')
-      console.log("業種マスタデータ:", data)
       setIndustries(data.filter(item => item.is_active))
     } catch (error) {
-      console.error("業種マスタ取得エラー:", error)
-      // エラーが発生してもフォールバックとして空配列を設定
       setIndustries([])
     }
   }
@@ -107,7 +104,6 @@ export default function ClientsSettingsPage() {
       const response = await djangoAPI.getClients()
       setClients(response.results || [])
     } catch (error) {
-      console.error("クライアント取得エラー:", error)
       toast.error("クライアント情報の取得に失敗しました")
     } finally {
       setLoading(false)
@@ -164,7 +160,6 @@ export default function ClientsSettingsPage() {
       setFormData(formDataWithManYen)
       setIsEditDialogOpen(true)
     } catch (error) {
-      console.error("クライアント詳細取得エラー:", error)
       toast.error("クライアント詳細の取得に失敗しました")
     }
   }
@@ -190,7 +185,6 @@ export default function ClientsSettingsPage() {
       resetForm()
       fetchClients()
     } catch (error) {
-      console.error("クライアント作成エラー:", error)
       toast.error("クライアントの作成に失敗しました")
     }
   }
@@ -216,7 +210,7 @@ export default function ClientsSettingsPage() {
       resetForm()
       fetchClients()
     } catch (error) {
-      console.error("クライアント更新エラー:", error)
+
       toast.error("クライアント情報の更新に失敗しました")
     }
   }
@@ -232,7 +226,6 @@ export default function ClientsSettingsPage() {
       toast.success("クライアントを削除しました")
       fetchClients()
     } catch (error) {
-      console.error("クライアント削除エラー:", error)
       toast.error("クライアントの削除に失敗しました")
     }
   }
@@ -264,7 +257,7 @@ export default function ClientsSettingsPage() {
       
       toast.success(`AI情報取得完了 (信頼度: ${data.ai_confidence_score}%)`)
     } catch (error) {
-      console.error('AI取得エラー:', error)
+
       toast.error('AI情報の取得に失敗しました')
     } finally {
       setAiLoading(false)
@@ -295,7 +288,6 @@ export default function ClientsSettingsPage() {
         toast.info('変更はありませんでした')
       }
     } catch (error) {
-      console.error('AI更新エラー:', error)
       toast.error('AI情報の更新に失敗しました')
     } finally {
       setAiLoading(false)

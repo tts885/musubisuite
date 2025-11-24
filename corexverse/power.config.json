@@ -1,5 +1,5 @@
 {
-  "appId": "ac04adc4-6898-4d24-b59d-e10e0a7f22d8",
+  "appId": "5f25ccd3-2d86-4942-9569-db43361b989f",
   "appDisplayName": "CoreXverse",
   "description": null,
   "environmentId": "84b2150b-4384-eee2-b20e-ee25b862d314",
@@ -10,9 +10,7 @@
   "connectionReferences": {},
   "databaseReferences": {
     "default.cds": {
-      "state": "Configured",
-      "instanceUrl": "https://org288e66ae.crm.dynamics.com/",
-      "webApiVersion": "v9.0",
+      "databaseDetails": null,
       "dataSources": {
         "____": {
           "entitySetName": "mdi_project_lists",
@@ -35,8 +33,7 @@
           "isHidden": false
         }
       },
-      "version": "v9.0",
-      "environmentVariableName": ""
+      "actions": null
     }
   }
 }

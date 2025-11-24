@@ -141,7 +141,6 @@ export default function OcrPage() {
       setCurrentDocument(mockDocument)
       toast.success('OCR処理が完了しました')
     } catch (error) {
-      console.error('OCR処理エラー:', error)
       toast.error('OCR処理に失敗しました')
     } finally {
       setIsProcessing(false)
@@ -205,7 +204,6 @@ export default function OcrPage() {
       setHasUnsavedChanges(false)
       toast.success('OCRデータを保存しました')
     } catch (error) {
-      console.error('保存エラー:', error)
       toast.error('保存に失敗しました')
     }
   }
@@ -227,7 +225,6 @@ export default function OcrPage() {
       await new Promise(resolve => setTimeout(resolve, 2000))
       toast.success('OCR再処理が完了しました')
     } catch (error) {
-      console.error('再処理エラー:', error)
       toast.error('再処理に失敗しました')
     } finally {
       setIsProcessing(false)

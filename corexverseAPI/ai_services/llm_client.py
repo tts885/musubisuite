@@ -115,6 +115,58 @@ class AIClient:
             logger.error(error_msg, exc_info=True)
             raise APICallError(error_msg) from e
     
+    def generate_with_image(
+        self,
+        text_prompt: str,
+        image_base64: str,
+        max_tokens: int = 2000,
+        temperature: float = 0.1
+    ) -> str:
+        """
+        画像とテキストプロンプトから応答を生成（マルチモーダル）
+        
+        Args:
+            text_prompt: テキストプロンプト
+            image_base64: Base64エンコードされた画像データ
+            max_tokens: 最大トークン数
+            temperature: 温度パラメータ
+        
+        Returns:
+            生成されたテキスト
+        
+        Raises:
+            APICallError: API呼び出しに失敗
+        """
+        try:
+            logger.info(
+                f"Generating with image using {self.provider.provider_type}: "
+                f"model={self.provider.model_name}, "
+                f"image_size={len(image_base64)} bytes"
+            )
+            
+            # プロバイダータイプに応じて処理を分岐
+            if self.provider.provider_type == 'google':
+                return self._generate_with_image_google(
+                    text_prompt, image_base64, max_tokens, temperature
+                )
+            elif self.provider.provider_type in ['azure_openai', 'openai']:
+                return self._generate_with_image_openai(
+                    text_prompt, image_base64, max_tokens, temperature
+                )
+            elif self.provider.provider_type == 'anthropic':
+                return self._generate_with_image_anthropic(
+                    text_prompt, image_base64, max_tokens, temperature
+                )
+            else:
+                raise APICallError(
+                    f"プロバイダー '{self.provider.provider_type}' は画像入力に対応していません"
+                )
+        
+        except Exception as e:
+            error_msg = f"画像付きテキスト生成エラー: {type(e).__name__}: {str(e)}"
+            logger.error(error_msg, exc_info=True)
+            raise APICallError(error_msg) from e
+    
     def generate_stream(self, prompt: str, **kwargs) -> Generator[str, None, None]:
         """
         テキストをストリーミング生成
@@ -137,8 +189,8 @@ class AIClient:
         """
         try:
             # パラメータのマージ（デフォルト + 引数）
-            max_tokens = kwargs.get('max_tokens', self.provider.max_tokens)
-            temperature = kwargs.get('temperature', self.provider.temperature)
+            max_tokens = kwargs.pop('max_tokens', self.provider.max_tokens)
+            temperature = kwargs.pop('temperature', self.provider.temperature)
             
             logger.debug(
                 f"Streaming with {self.provider.provider_type}: "
@@ -296,6 +348,214 @@ class AIClient:
         
         except Exception as e:
             raise APICallError(f"Google Gemini API エラー: {str(e)}") from e
+    
+    def _generate_with_image_google(
+        self,
+        text_prompt: str,
+        image_base64: str,
+        max_tokens: int,
+        temperature: float
+    ) -> str:
+        """Google Gemini で画像付き生成"""
+        try:
+            import base64
+            
+            logger.debug(f"Google Gemini 画像生成開始: model={self.provider.model_name}")
+            
+            # Base64データをバイト列に変換
+            image_bytes = base64.b64decode(image_base64)
+            logger.debug(f"画像デコード成功: {len(image_bytes)} bytes")
+            
+            # 新しいSDKを試す
+            try:
+                from google import genai
+                from google.genai import types
+                
+                client = genai.Client(api_key=self.api_key)
+                
+                # 画像パートを作成
+                image_part = types.Part.from_bytes(
+                    data=image_bytes,
+                    mime_type="image/jpeg"
+                )
+                
+                # コンテンツ生成
+                logger.debug("Gemini API呼び出し中（新SDK）...")
+                response = client.models.generate_content(
+                    model=self.provider.model_name,
+                    contents=[text_prompt, image_part],
+                    config=types.GenerateContentConfig(
+                        max_output_tokens=max_tokens,
+                        temperature=temperature,
+                    )
+                )
+                
+            except ImportError:
+                # 古いSDKにフォールバック
+                logger.debug("新SDKが見つからないため、google-generativeai を使用")
+                import google.generativeai as genai
+                
+                genai.configure(api_key=self.api_key)
+                model = genai.GenerativeModel(self.provider.model_name)
+                
+                # 画像データを準備
+                image_parts = [
+                    {
+                        "mime_type": "image/jpeg",
+                        "data": image_bytes
+                    }
+                ]
+                
+                logger.debug("Gemini API呼び出し中（旧SDK）...")
+                response = model.generate_content(
+                    [text_prompt, image_parts[0]],
+                    generation_config={
+                        "max_output_tokens": max_tokens,
+                        "temperature": temperature,
+                    }
+                )
+            
+            logger.debug(f"Gemini API応答受信: {type(response)}")
+            
+            # レスポンスからテキストを取得
+            result_text = None
+            
+            # まず response.text を試す（最も一般的）
+            try:
+                if hasattr(response, 'text'):
+                    result_text = response.text
+                    if result_text:
+                        logger.debug(f"response.text から取得: {len(result_text)} 文字")
+            except Exception as e:
+                logger.debug(f"response.text 取得エラー: {e}")
+            
+            # response.textが空の場合、candidatesから取得を試みる
+            if not result_text and hasattr(response, 'candidates') and len(response.candidates) > 0:
+                candidate = response.candidates[0]
+                logger.debug(f"candidate.finish_reason: {getattr(candidate, 'finish_reason', 'N/A')}")
+                
+                if hasattr(candidate, 'content') and candidate.content:
+                    if hasattr(candidate.content, 'parts') and candidate.content.parts:
+                        if len(candidate.content.parts) > 0:
+                            part = candidate.content.parts[0]
+                            if hasattr(part, 'text'):
+                                result_text = part.text
+                                logger.debug(f"candidates から取得: {len(result_text)} 文字")
+            
+            if not result_text:
+                # finish_reasonを確認
+                finish_reason = None
+                if hasattr(response, 'candidates') and len(response.candidates) > 0:
+                    finish_reason = getattr(response.candidates[0], 'finish_reason', None)
+                
+                if finish_reason == 'MAX_TOKENS':
+                    raise APICallError(
+                        f"Gemini APIのトークン数制限に達しました。max_tokensを増やしてください（現在: {max_tokens}）"
+                    )
+                
+                logger.error(f"予期しないレスポンス形式")
+                logger.error(f"response.text: {getattr(response, 'text', 'N/A')}")
+                logger.error(f"finish_reason: {finish_reason}")
+                raise APICallError("Gemini APIから有効なテキストが返されませんでした")
+            
+            logger.info(f"Gemini 画像処理成功: {len(result_text)} 文字")
+            return result_text
+        
+        except Exception as e:
+            logger.error(f"Google Gemini 画像処理エラー: {str(e)}", exc_info=True)
+            raise APICallError(f"Google Gemini 画像処理エラー: {str(e)}") from e
+    
+    def _generate_with_image_openai(
+        self,
+        text_prompt: str,
+        image_base64: str,
+        max_tokens: int,
+        temperature: float
+    ) -> str:
+        """OpenAI GPT-4 Vision で画像付き生成"""
+        try:
+            from openai import OpenAI
+            
+            if self.provider.provider_type == 'azure_openai':
+                from openai import AzureOpenAI
+                client = AzureOpenAI(
+                    api_key=self.api_key,
+                    api_version=self.provider.api_version or "2024-02-15-preview",
+                    azure_endpoint=self.provider.endpoint_url
+                )
+            else:
+                client = OpenAI(api_key=self.api_key)
+            
+            # メッセージを構築
+            messages = [
+                {
+                    "role": "user",
+                    "content": [
+                        {"type": "text", "text": text_prompt},
+                        {
+                            "type": "image_url",
+                            "image_url": {
+                                "url": f"data:image/jpeg;base64,{image_base64}"
+                            }
+                        }
+                    ]
+                }
+            ]
+            
+            response = client.chat.completions.create(
+                model=self.provider.model_name,
+                messages=messages,
+                max_tokens=max_tokens,
+                temperature=temperature
+            )
+            
+            return response.choices[0].message.content
+        
+        except Exception as e:
+            raise APICallError(f"OpenAI Vision 画像処理エラー: {str(e)}") from e
+    
+    def _generate_with_image_anthropic(
+        self,
+        text_prompt: str,
+        image_base64: str,
+        max_tokens: int,
+        temperature: float
+    ) -> str:
+        """Anthropic Claude で画像付き生成"""
+        try:
+            import anthropic
+            
+            client = anthropic.Anthropic(api_key=self.api_key)
+            
+            message = client.messages.create(
+                model=self.provider.model_name,
+                max_tokens=max_tokens,
+                temperature=temperature,
+                messages=[
+                    {
+                        "role": "user",
+                        "content": [
+                            {
+                                "type": "image",
+                                "source": {
+                                    "type": "base64",
+                                    "media_type": "image/jpeg",
+                                    "data": image_base64,
+                                },
+                            },
+                            {
+                                "type": "text",
+                                "text": text_prompt
+                            }
+                        ],
+                    }
+                ],
+            )
+            
+            return message.content[0].text
+        
+        except Exception as e:
+            raise APICallError(f"Anthropic Claude 画像処理エラー: {str(e)}") from e
     
     @property
     def info(self) -> Dict[str, Any]:

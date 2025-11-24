@@ -104,10 +104,6 @@ const environmentSettingSchema: EnvironmentSettingSchema = {
  * @returns テーブル作成結果
  */
 export async function createEnvironmentSettingsTable(): Promise<TableCreationResult> {
-  console.log('='.repeat(80));
-  console.log('🏗️  環境設定テーブル作成開始');
-  console.log('='.repeat(80));
-
   try {
     // Power Apps コンテキストを取得
     const context = getContext();
@@ -120,55 +116,24 @@ export async function createEnvironmentSettingsTable(): Promise<TableCreationRes
       };
     }
 
-    console.log('\n📋 テーブル情報:');
-    console.log(`  表示名: ${environmentSettingSchema.displayName}`);
-    console.log(`  複数形名: ${environmentSettingSchema.pluralName}`);
-    console.log(`  説明: ${environmentSettingSchema.description}`);
-    console.log(`  主キー属性: ${environmentSettingSchema.primaryNameAttribute}`);
+
+
+
+
+
     
-    console.log('\n📊 カラム定義:');
-    environmentSettingSchema.columns.forEach((column, index) => {
-      console.log(`  ${index + 1}. ${column.displayName} (${column.name})`);
-      console.log(`     型: ${column.type}`);
-      console.log(`     説明: ${column.description}`);
-      console.log(`     必須: ${column.required ? 'はい' : 'いいえ'}`);
-      if (column.maxLength) {
-        console.log(`     最大長: ${column.maxLength}`);
-      }
-    });
 
-    console.log('\n⚠️  注意: テーブル作成にはPower Platform管理センターを使用してください');
-    console.log('\n📝 テーブル作成手順 (方法1: Power Platform管理センター - 推奨):');
-    console.log('  1. Power Platform管理センターにアクセス:');
-    console.log('     https://admin.powerplatform.microsoft.com/');
-    console.log('\n  2. 環境を選択 → Dataverse → テーブル → 「新しいテーブル」をクリック');
-    console.log('\n  3. テーブル情報を入力:');
-    console.log(`     - 表示名: ${environmentSettingSchema.displayName}`);
-    console.log(`     - 複数形の名前: ${environmentSettingSchema.pluralName}`);
-    console.log(`     - 説明: ${environmentSettingSchema.description}`);
-    console.log(`     - 主列の名前: mdi_name`);
-    console.log('\n  4. 以下の列を追加:');
-    environmentSettingSchema.columns.forEach((column, index) => {
-      if (index > 0) { // mdi_nameは主列として自動作成される
-        console.log(`     ${index}. ${column.displayName} (${column.name})`);
-        console.log(`        - 型: ${column.type === 'memo' ? 'Multiple lines of text' : column.type === 'boolean' ? 'Yes/No' : 'Single line of text'}`);
-        console.log(`        - 必須: ${column.required ? 'はい' : 'いいえ'}`);
-        if (column.maxLength) {
-          console.log(`        - 最大長: ${column.maxLength}`);
-        }
-      }
-    });
-    console.log('\n  5. テーブル作成後、PAC CLIでデータソースとして追加:');
-    console.log('     pac code add-data-source -a dataverse -t mdi_environment_settings');
-    console.log('\n📝 テーブル作成手順 (方法2: Power Apps Maker Portal):');
-    console.log('  1. Power Apps (https://make.powerapps.com/) にアクセス');
-    console.log('  2. 左メニュー → テーブル → 新しいテーブル → テーブルを作成');
-    console.log('  3. 上記の方法1と同じ情報を入力して作成');
 
-    console.log('\n' + '='.repeat(80));
-    console.log('ℹ️  現在のSDKバージョンでは、プログラムからのテーブル作成はサポートされていません');
-    console.log('💡 Power Platform管理センターまたはPower Appsポータルを使用してテーブルを作成してください');
-    console.log('='.repeat(80));
+
+
+
+
+
+
+
+
+
+
 
     // 実際の作成処理はPower Platform管理センターで行う必要があるため、
     // ここでは情報のみ表示して、手動作成を促す
@@ -180,13 +145,6 @@ export async function createEnvironmentSettingsTable(): Promise<TableCreationRes
     };
 
   } catch (error) {
-    console.error('❌ エラーが発生しました:', error);
-    console.error('エラー詳細:', error instanceof Error ? error.message : String(error));
-    
-    if (error instanceof Error && error.stack) {
-      console.error('スタックトレース:', error.stack);
-    }
-    
     return {
       success: false,
       message: 'テーブル作成の準備中にエラーが発生しました',
@@ -250,7 +208,6 @@ export async function copyTableCreationCommandsToClipboard(): Promise<boolean> {
     await navigator.clipboard.writeText(commands);
     return true;
   } catch (error) {
-    console.error('クリップボードへのコピーに失敗しました:', error);
     return false;
   }
 }

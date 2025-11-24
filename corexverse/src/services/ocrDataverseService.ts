@@ -292,21 +292,112 @@ export class OcrDataverseService {
   }
 
   /**
-   * ドキュメント一覧を取得
+   * ドキュメント一覧を取得(カーソルページング対応)
+   * @param folderId - フォルダID(オプション)
+   * @param options - 取得オプション
+   * @param options.top - 取得する件数
+   * @param options.before - この日時より前のデータを取得(カーソルページング)
+   * 
+   * 注意: Dataverseは$skipをサポートしていないため、
+   * 日付ベースのカーソルページングを使用します。
+   * 
+   * パフォーマンス最適化:
+   * - 一覧表示に必要な最小限のフィールドのみ取得($selectで指定)
+   * - 画像データ(cx_filedata)は除外(詳細画面で個別取得)
+   * - サーバー側でソート処理(createdon desc)
    */
-  async getDocuments(folderId?: string): Promise<OcrDocument[]> {
+  async getDocuments(
+    folderId?: string, 
+    options?: { 
+      top?: number; 
+      before?: Date;
+      keyword?: string;
+      statuses?: string[];
+      dateFrom?: string;
+      dateTo?: string;
+      tags?: string;
+    }
+  ): Promise<OcrDocument[]> {
     try {
-      const options: any = {
-        orderBy: ['createdon desc']
-        // 注意: cx_filedata_fullqualityはカスタム列のため、自動的に含まれる
-        // select オプションで明示的に指定するとエラーになる
+      const queryOptions: any = {
+        orderBy: ['createdon desc'],
+        // 一覧表示に必要な最小限のフィールドのみ取得(パフォーマンス最適化)
+        // cx_filedata(画像列)は除外 → 詳細画面で個別取得
+        select: [
+          'cx_ocrdocumentsid',
+          'cx_name',
+          'cx_filename',
+          'cx_filetype',
+          'cx_filesize',
+          'cx_fileurl',
+          'cx_thumbnailurl',
+          '_cx_folderid_value',
+          'cx_status',
+          'cx_tags',
+          'cx_description',
+          '_cx_uploadedby_value',
+          'cx_uploadeddate',
+          'createdon',
+          'modifiedon'
+        ]
       };
 
+      // フィルタ条件を構築
+      const filters: string[] = []
+      
       if (folderId) {
-        options.filter = `_cx_folderid_value eq '${folderId}'`;
+        filters.push(`_cx_folderid_value eq '${folderId}'`)
       }
 
-      const result = await Cx_ocrdocumentsesService.getAll(options);
+      // カーソルページング: before指定時は、その日時より前のデータを取得
+      if (options?.before) {
+        const beforeISO = options.before.toISOString()
+        filters.push(`createdon lt ${beforeISO}`)
+      }
+
+      // キーワード検索 (ファイル名での部分一致)
+      if (options?.keyword) {
+        const keyword = options.keyword.trim()
+        if (keyword) {
+          filters.push(`contains(cx_filename, '${keyword}')`)
+        }
+      }
+
+      // ステータスフィルター
+      if (options?.statuses && options.statuses.length > 0) {
+        const statusFilters = options.statuses.map(s => `cx_status eq '${s}'`).join(' or ')
+        filters.push(`(${statusFilters})`)
+      }
+
+      // 日付範囲フィルター (アップロード日)
+      if (options?.dateFrom) {
+        const fromDate = new Date(options.dateFrom).toISOString()
+        filters.push(`cx_uploadeddate ge ${fromDate}`)
+      }
+      if (options?.dateTo) {
+        const toDate = new Date(options.dateTo)
+        toDate.setHours(23, 59, 59, 999)
+        filters.push(`cx_uploadeddate le ${toDate.toISOString()}`)
+      }
+
+      // タグ検索 (部分一致)
+      if (options?.tags) {
+        const tag = options.tags.trim()
+        if (tag) {
+          filters.push(`contains(cx_tags, '${tag}')`)
+        }
+      }
+
+      if (filters.length > 0) {
+        queryOptions.filter = filters.join(' and ')
+      }
+
+      // 取得件数を指定
+      if (options?.top) {
+        queryOptions.top = options.top
+      }
+
+      const result = await Cx_ocrdocumentsesService.getAll(queryOptions);
 
       if (result.success === false) {
         logger.warn('ドキュメント取得失敗、空配列を返します', result.error);
@@ -324,6 +415,10 @@ export class OcrDataverseService {
 
   /**
    * 特定のドキュメントを取得
+   * 
+   * パフォーマンス最適化:
+   * - 詳細画面でのみ呼ばれるため、画像データ(cx_filedata)も含めて全フィールドを取得
+   * - Base64→Blob変換は詳細表示に必要なため実行
    */
   async getDocumentById(documentId: string): Promise<OcrDocument | null> {
     try {
@@ -469,7 +564,7 @@ export class OcrDataverseService {
       
       // Base64デコード
       const byteCharacters = atob(base64Data);
-      const byteArrays: Uint8Array[] = [];
+      const byteArrays: BlobPart[] = [];
       
       // 大きなファイルのため、チャンク単位で処理
       const sliceSize = 8192;
@@ -653,6 +748,54 @@ export class OcrDataverseService {
   }
 
   /**
+   * ドキュメントを更新
+   */
+  async updateDocument(documentId: string, updates: Partial<OcrDocument>): Promise<OcrDocument> {
+    try {
+      const record: any = {};
+      
+      if (updates.name !== undefined) record.cx_name = updates.name;
+      if (updates.fileName !== undefined) record.cx_filename = updates.fileName;
+      if (updates.description !== undefined) record.cx_description = updates.description;
+      if (updates.tags !== undefined) record.cx_tags = updates.tags.join(',');
+      if (updates.status !== undefined) {
+        // ステータスを数値に変換
+        const statusMap: Record<string, number> = {
+          'uploaded': 0,
+          'pending': 1,
+          'processing': 2,
+          'completed': 3,
+          'error': 4
+        };
+        record.cx_status = statusMap[updates.status] ?? 0;
+      }
+      
+      // フォルダIDをLookup形式で設定
+      if (updates.folderId !== undefined) {
+        record['cx_folderid@odata.bind'] = `/cx_ocrfolders(${updates.folderId})`;
+      }
+
+      const result = await Cx_ocrdocumentsesService.update(documentId, record);
+
+      if (result.success === false) {
+        const errorMsg = result.error?.message || 'ドキュメントの更新に失敗しました';
+        throw new Error(errorMsg);
+      }
+
+      // 更新後のドキュメントを取得
+      const updatedDoc = await this.getDocumentById(documentId);
+      if (!updatedDoc) {
+        throw new Error('更新後のドキュメント取得に失敗しました');
+      }
+      
+      return updatedDoc;
+    } catch (error) {
+      logger.error('ドキュメント更新エラー', error);
+      throw error;
+    }
+  }
+
+  /**
    * ドキュメントを削除
    */
   async deleteDocument(documentId: string): Promise<void> {
@@ -660,6 +803,133 @@ export class OcrDataverseService {
       await Cx_ocrdocumentsesService.delete(documentId);
     } catch (error) {
       logger.error('ドキュメント削除エラー', error);
+      throw error;
+    }
+  }
+
+  /**
+   * OCR結果をドキュメントに保存
+   * 
+   * 注意: 現在cx_ocrresultフィールドがDataverseに存在しないため、
+   * ステータスのみを更新します。OCR結果はローカルメモリで管理されます。
+   * 
+   * @param documentId - ドキュメントID
+   * @param ocrResult - OCR処理結果
+   */
+  async saveOcrResult(documentId: string, ocrResult: OcrDocument['ocrResult']): Promise<void> {
+    try {
+      logger.info('OCR結果の保存開始（ステータスのみ）', {
+        documentId,
+        fieldCount: ocrResult?.fields?.length || 0,
+        overallConfidence: ocrResult?.overallConfidence
+      });
+
+      // TODO: Dataverseにcx_ocrresult列を追加後に以下を有効化
+      // const ocrResultJson = JSON.stringify(ocrResult);
+      
+      // ドキュメントレコードを更新（ステータスのみ）
+      const updateData: any = {
+        cx_status: 3, // completed
+      };
+
+      await Cx_ocrdocumentsesService.update(documentId, updateData);
+
+      logger.info('OCR結果の保存成功（ステータスのみ更新）', { documentId });
+      logger.warn('OCR結果の実データはDataverseに保存されていません（cx_ocrresultフィールドが未実装）');
+    } catch (error) {
+      logger.error('OCR結果の保存エラー', { documentId, error });
+      throw error;
+    }
+  }
+
+  /**
+   * ドキュメントのOCR結果を取得
+   * 
+   * 注意: 現在cx_ocrresultフィールドがDataverseに存在しないため、
+   * この機能は実装されていません。
+   * OCR結果はローカルメモリで管理されます。
+   * 
+   * @param documentId - ドキュメントID
+   * @returns OCR処理結果
+   */
+  async getOcrResult(documentId: string): Promise<OcrDocument['ocrResult'] | null> {
+    try {
+      logger.warn('getOcrResult: cx_ocrresultフィールドが未実装のため、nullを返します', { documentId });
+      
+      // TODO: Dataverseにcx_ocrresult列を追加後に実装
+      // const result = await Cx_ocrdocumentsesService.get(documentId);
+      // if (result.success === false) {
+      //   logger.warn('ドキュメント取得失敗', result.error);
+      //   return null;
+      // }
+      // const record = result.data || (result as any);
+      // if (!record || !record.cx_ocrresult) {
+      //   return null;
+      // }
+      // const ocrResult = JSON.parse(record.cx_ocrresult);
+      // return ocrResult;
+      
+      return null;
+    } catch (error) {
+      logger.error('OCR結果の取得エラー', { documentId, error });
+      return null;
+    }
+  }
+
+  /**
+   * OCR処理を実行してDataverseに保存
+   * 
+   * 注意: 現在cx_ocrresultフィールドがDataverseに存在しないため、
+   * ステータスのみを更新します。OCR結果データは返しますが、
+   * Dataverseには保存されません。
+   * 
+   * @param documentId - ドキュメントID
+   * @param imageBase64 - Base64エンコードされた画像データ
+   * @param documentType - ドキュメントタイプ
+   * @returns OCR処理結果
+   */
+  async processAndSaveOcr(
+    documentId: string,
+    imageBase64: string,
+    documentType: string = 'invoice'
+  ): Promise<any> {
+    try {
+      logger.info('OCR処理とDataverse保存を開始', { documentId, documentType });
+
+      // ステータスを「処理中」に更新
+      await Cx_ocrdocumentsesService.update(documentId, {
+        cx_status: 2, // processing
+      });
+
+      // OCR API呼び出し（動的インポート）
+      const { default: ocrApiService } = await import('./ocrApiService');
+      const ocrResult = await ocrApiService.processDocument(imageBase64, documentType);
+
+      // ステータスを更新（cx_ocrresultフィールドがないため、データは保存されない）
+      await Cx_ocrdocumentsesService.update(documentId, {
+        cx_status: 3, // completed
+      });
+
+      logger.info('OCR処理が完了（結果はローカルメモリのみ）', {
+        documentId,
+        fieldCount: ocrResult.fields.length,
+        overallConfidence: ocrResult.overallConfidence
+      });
+      logger.warn('OCR結果データはDataverseに保存されていません（cx_ocrresultフィールドが未実装）');
+
+      return ocrResult;
+    } catch (error) {
+      logger.error('OCR処理エラー', { documentId, error });
+      
+      // エラー時はステータスを「エラー」に更新
+      try {
+        await Cx_ocrdocumentsesService.update(documentId, {
+          cx_status: 4, // error
+        });
+      } catch (updateError) {
+        logger.error('ステータス更新エラー', updateError);
+      }
+      
       throw error;
     }
   }

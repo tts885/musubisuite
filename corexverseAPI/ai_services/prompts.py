@@ -223,3 +223,73 @@ class PromptTemplates:
 }}
 """
         return prompt
+    
+    @staticmethod
+    def ocr_field_extraction(image_base64: str, document_type: str = "invoice") -> dict:
+        """
+        OCRフィールド抽出用プロンプト（マルチモーダル対応）
+        
+        Args:
+            image_base64: Base64エンコードされた画像データ
+            document_type: ドキュメントタイプ (invoice, receipt, contract等)
+            
+        Returns:
+            プロンプト辞書（textとimageを含む）
+        """
+        document_types_ja = {
+            "invoice": "請求書",
+            "receipt": "領収書",
+            "contract": "契約書",
+            "form": "申込書",
+            "other": "その他の文書"
+        }
+        
+        doc_type_name = document_types_ja.get(document_type, "文書")
+        
+        text_prompt = f"""あなたはOCR(光学文字認識)の専門家です。提供された画像から{doc_type_name}の重要なフィールドを抽出し、構造化されたJSON形式で出力してください。
+
+# タスク
+
+1. 画像内のテキストを正確に認識してください
+2. 重要なフィールド(項目名と値のペア)を特定してください
+3. 各フィールドの画像内の位置座標(x, y, width, height)をピクセル単位で検出してください
+4. 各フィールドの認識信頼度を評価してください
+
+# 出力形式
+
+以下のJSON形式で出力してください。他のテキストや説明は含めないでください。
+
+{{
+  "fields": [
+    {{
+      "label": "フィールド名(日本語)",
+      "value": "認識したテキスト",
+      "confidence": 信頼度(0.0-1.0の小数),
+      "boundingBox": {{
+        "x": X座標(ピクセル、画像左上が原点),
+        "y": Y座標(ピクセル、画像左上が原点),
+        "width": 幅(ピクセル),
+        "height": 高さ(ピクセル)
+      }}
+    }}
+  ],
+  "overallConfidence": 全体の信頼度(0.0-1.0の小数)
+}}
+
+# 注意事項
+
+- label: 「請求書番号」「発行日」「宛先会社名」「発行元会社名」「合計金額」「請求金額」「小計」など、わかりやすい日本語のフィールド名を使用
+- value: 画像内で認識したテキストを正確に記録（スペースや改行も保持）
+- confidence: テキストの明瞭さ、フォントの判読性、コントラストなどから総合的に判断
+- boundingBox: 実際のテキスト位置を正確に検出（画像の左上を(0,0)とするピクセル座標系）
+- overallConfidence: 全フィールドの平均信頼度
+- 金額フィールドは数値と通貨記号(¥、円など)を含めて抽出
+- 日付フィールドは元の表記形式を保持(例: 2024年7月15日、2024-07-15など)
+- 表形式のデータも正確に抽出してください
+- 出力は必ずJSON形式のみとし、```json```などのマークダウン記法や説明文は含めないでください
+"""
+        
+        return {
+            "text": text_prompt,
+            "image_base64": image_base64
+        }

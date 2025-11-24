@@ -16,7 +16,7 @@
  * @see {@link https://reactrouter.com/en/main/routers/create-browser-router}
  */
 
-import { createBrowserRouter, Navigate } from "react-router-dom"
+import { createBrowserRouter } from "react-router-dom"
 import Layout from "@/pages/_layout"
 import ProjectManagementLayout from "@/pages/_layout-project-management"
 import ToolPortalLayout from "@/pages/_layout-tool-portal"

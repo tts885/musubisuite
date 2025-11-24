@@ -88,7 +88,7 @@ class OcrService {
         updatedAt: new Date(),
       }
     } catch (error) {
-      console.error('タスク作成エラー:', error)
+
       throw new Error('タスクの作成に失敗しました')
     }
   }
@@ -108,7 +108,7 @@ class OcrService {
    * const tasks = await ocrService.listTasks({ search: '請求書' })
    * ```
    */
-  async listTasks(params?: ListTasksParams): Promise<OcrTask[]> {
+  async listTasks(_params?: ListTasksParams): Promise<OcrTask[]> {
     try {
       // TODO: Backend実装後にコメントを解除
       // const response = await apiClient.get('/api/ocr/tasks/', { params })
@@ -116,10 +116,9 @@ class OcrService {
 
       // モック実装
       await new Promise(resolve => setTimeout(resolve, 500))
-      console.log('Listing tasks:', params)
       return []
     } catch (error) {
-      console.error('タスク一覧取得エラー:', error)
+
       throw new Error('タスク一覧の取得に失敗しました')
     }
   }
@@ -158,7 +157,7 @@ class OcrService {
         updatedAt: new Date(),
       }
     } catch (error) {
-      console.error('タスク取得エラー:', error)
+
       throw new Error('タスクの取得に失敗しました')
     }
   }
@@ -179,9 +178,9 @@ class OcrService {
    * ```
    */
   async updateTaskDocument(
-    taskId: string,
+    _taskId: string,
     documentId: string,
-    updates: Partial<OcrResult>
+    _updates: Partial<OcrResult>
   ): Promise<OcrResult> {
     try {
       // TODO: Backend実装後にコメントを解除
@@ -194,7 +193,6 @@ class OcrService {
       // モック実装
       await new Promise(resolve => setTimeout(resolve, 500))
 
-      console.log('Updating task document:', { taskId, documentId, updates })
       return {
         id: `result_${documentId}`,
         documentId,
@@ -205,7 +203,6 @@ class OcrService {
         processedAt: new Date(),
       }
     } catch (error) {
-      console.error('ドキュメント更新エラー:', error)
       throw new Error('ドキュメントの更新に失敗しました')
     }
   }
@@ -218,7 +215,7 @@ class OcrService {
    * @param {Partial<OcrResult>} updates - 更新内容
    * @returns {Promise<OcrResult>} 更新されたOCR結果
    */
-  async updateOcrResult(resultId: string, updates: Partial<OcrResult>): Promise<OcrResult> {
+  async updateOcrResult(resultId: string, _updates: Partial<OcrResult>): Promise<OcrResult> {
     try {
       // TODO: Backend実装後にコメントを解除
       // const response = await apiClient.patch(`/api/ocr/results/${resultId}/`, updates)
@@ -227,7 +224,6 @@ class OcrService {
       // モック実装
       await new Promise(resolve => setTimeout(resolve, 500))
 
-      console.log('Updating OCR result:', resultId, updates)
       return {
         id: resultId,
         documentId: 'mock',
@@ -238,7 +234,6 @@ class OcrService {
         processedAt: new Date(),
       }
     } catch (error) {
-      console.error('OCR結果更新エラー:', error)
       throw new Error('OCR結果の更新に失敗しました')
     }
   }
@@ -254,15 +249,13 @@ class OcrService {
    * await ocrService.saveTaskChanges('task_123')
    * ```
    */
-  async saveTaskChanges(taskId: string): Promise<void> {
+  async saveTaskChanges(_taskId: string): Promise<void> {
     try {
       // TODO: Backend実装後にコメントを解除
       // await apiClient.post(`/api/ocr/tasks/${taskId}/save/`)
 
       await new Promise(resolve => setTimeout(resolve, 500))
-      console.log('Saving task changes:', taskId)
     } catch (error) {
-      console.error('変更保存エラー:', error)
       throw new Error('変更の保存に失敗しました')
     }
   }
@@ -278,15 +271,13 @@ class OcrService {
    * await ocrService.deleteTask('task_123')
    * ```
    */
-  async deleteTask(taskId: string): Promise<void> {
+  async deleteTask(_taskId: string): Promise<void> {
     try {
       // TODO: Backend実装後にコメントを解除
       // await apiClient.delete(`/api/ocr/tasks/${taskId}/`)
 
       await new Promise(resolve => setTimeout(resolve, 500))
-      console.log('Deleting task:', taskId)
     } catch (error) {
-      console.error('タスク削除エラー:', error)
       throw new Error('タスクの削除に失敗しました')
     }
   }
@@ -302,15 +293,13 @@ class OcrService {
    * await ocrService.reprocessTask('task_123')
    * ```
    */
-  async reprocessTask(taskId: string): Promise<void> {
+  async reprocessTask(_taskId: string): Promise<void> {
     try {
       // TODO: Backend実装後にコメントを解除
       // await apiClient.post(`/api/ocr/tasks/${taskId}/reprocess/`)
 
       await new Promise(resolve => setTimeout(resolve, 500))
-      console.log('Reprocessing task:', taskId)
     } catch (error) {
-      console.error('タスク再処理エラー:', error)
       throw new Error('タスクの再処理に失敗しました')
     }
   }
@@ -326,15 +315,13 @@ class OcrService {
    * await ocrService.cancelTask('task_123')
    * ```
    */
-  async cancelTask(taskId: string): Promise<void> {
+  async cancelTask(_taskId: string): Promise<void> {
     try {
       // TODO: Backend実装後にコメントを解除
       // await apiClient.post(`/api/ocr/tasks/${taskId}/cancel/`)
 
       await new Promise(resolve => setTimeout(resolve, 500))
-      console.log('Cancelling task:', taskId)
     } catch (error) {
-      console.error('タスクキャンセルエラー:', error)
       throw new Error('タスクのキャンセルに失敗しました')
     }
   }
@@ -385,9 +372,8 @@ class OcrService {
   /**
    * @deprecated deleteTask()を使用してください
    */
-  async deleteDocument(documentId: string): Promise<void> {
+  async deleteDocument(_documentId: string): Promise<void> {
     await new Promise(resolve => setTimeout(resolve, 500))
-    console.log('Deleting document:', documentId)
   }
 }
 

@@ -95,7 +95,6 @@ export default function CodeMastersPage() {
         setSelectedCategory(categoryList[0].code);
       }
     } catch (error) {
-      console.error('カテゴリ取得エラー:', error);
       toast({
         variant: 'destructive',
         title: 'エラー',
@@ -113,7 +112,6 @@ export default function CodeMastersPage() {
       const codeList = Array.isArray(data) ? data : ((data as any).results || []);
       setCodes(codeList);
     } catch (error) {
-      console.error('コード取得エラー:', error);
       toast({
         variant: 'destructive',
         title: 'エラー',

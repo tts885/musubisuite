@@ -24,7 +24,6 @@ import { toast } from "sonner";
 import { testFetchMdiProjects, testCreateMdiProject } from "@/services/testMdiProjectList";
 import {
   createEnvironmentSettingsTable,
-  getTableCreationCommands,
   copyTableCreationCommandsToClipboard
 } from "@/services/tableCreationService";
 import {
@@ -166,17 +165,12 @@ export default function DataverseSettingsPage() {
     setIsFetchingProjects(true);
     try {
       toast.info("mdi_project_listレコードを取得中...");
-      console.log("\n" + "=".repeat(80));
-      console.log("🚀 MDI Project List データ取得を開始します");
-      console.log("=".repeat(80));
 
       const projects = await testFetchMdiProjects();
 
       toast.success(`${projects?.length || 0}件のレコードを取得しました。コンソールを確認してください。`);
-      console.log("\n💡 ヒント: ブラウザの開発者ツール(F12)のコンソールタブで詳細を確認できます");
     } catch (err: any) {
       toast.error("レコード取得に失敗しました");
-      console.error("\n❌ エラー:", err);
       setError({
         type: getErrorType(err),
         message: "mdi_project_listレコードの取得に失敗しました",
@@ -191,9 +185,6 @@ export default function DataverseSettingsPage() {
     setIsCreatingTestData(true);
     try {
       toast.info("テストデータを作成中...");
-      console.log("\n" + "=".repeat(80));
-      console.log("✨ MDI Project List テストデータ作成を開始します");
-      console.log("=".repeat(80));
 
       const createdProject = await testCreateMdiProject();
 
@@ -202,14 +193,12 @@ export default function DataverseSettingsPage() {
           `テストデータを作成しました\n名前: ${createdProject.mdi_name}`,
           { duration: 5000 }
         );
-        console.log("\n💡 ヒント: 'MDI Project List テスト'ボタンで作成されたデータを確認できます");
       } else {
         toast.error("テストデータの作成に失敗しました");
       }
 
     } catch (err: any) {
       toast.error("テストデータ作成に失敗しました");
-      console.error("\n❌ エラー:", err);
       setError({
         type: getErrorType(err),
         message: "テストデータの作成に失敗しました",
@@ -224,18 +213,10 @@ export default function DataverseSettingsPage() {
     setIsCreatingTable(true);
     try {
       toast.info("環境設定テーブルの作成準備中...");
-      console.log("\n" + "=".repeat(80));
-      console.log("🏗️  環境設定テーブル作成処理を開始します");
-      console.log("=".repeat(80));
 
       const result = await createEnvironmentSettingsTable();
 
       if (!result.success) {
-        // PAC CLIコマンドをコンソールに表示
-        console.log("\n📋 テーブル作成手順:");
-        const commands = getTableCreationCommands();
-        commands.forEach(cmd => console.log(cmd));
-
         // クリップボードにコピー
         const copied = await copyTableCreationCommandsToClipboard();
 
@@ -244,25 +225,18 @@ export default function DataverseSettingsPage() {
             "PAC CLIコマンドをクリップボードにコピーしました。\nターミナルで実行してください。",
             { duration: 5000 }
           );
-          console.log("\n✅ コマンドをクリップボードにコピーしました");
         } else {
           toast.warning(
             "コンソールに表示されたPAC CLIコマンドを\nターミナルで実行してください。",
             { duration: 5000 }
           );
         }
-
-        console.log("\n💡 ヒント:");
-        console.log("  1. 上記のコマンドをコピーしてターミナルで実行");
-        console.log("  2. テーブル作成後、データソースとして追加");
-        console.log("  3. アプリを再起動して新しいテーブルを使用");
       } else {
         toast.success("環境設定テーブルを作成しました");
       }
 
     } catch (err: any) {
       toast.error("テーブル作成処理に失敗しました");
-      console.error("\n❌ エラー:", err);
       setError({
         type: getErrorType(err),
         message: "環境設定テーブルの作成に失敗しました",

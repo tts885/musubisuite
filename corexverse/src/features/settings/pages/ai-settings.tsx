@@ -92,7 +92,7 @@ export default function AISettingsPage() {
         loadAISettings()
       ]);
     } catch (error) {
-      console.error('データ読み込みエラー:', error);
+
     } finally {
       setLoading(false);
     }
@@ -105,7 +105,7 @@ export default function AISettingsPage() {
       const providers = Array.isArray(data) ? data : (data?.results || []);
       setAIProviders(providers);
     } catch (error) {
-      console.error('Error loading AI providers:', error);
+
       toast.error('AI Provider一覧の読み込みに失敗しました');
       setAIProviders([]);
     }
@@ -118,7 +118,6 @@ export default function AISettingsPage() {
       const engines = Array.isArray(data) ? data : (data?.results || []);
       setSearchEngines(engines);
     } catch (error) {
-      console.error('Error loading search engines:', error);
       toast.error('検索エンジン一覧の読み込みに失敗しました');
       setSearchEngines([]);
     }
@@ -131,7 +130,6 @@ export default function AISettingsPage() {
         setAISettings(data[0]);
       }
     } catch (error) {
-      console.error('Error loading AI settings:', error);
       toast.error('AI設定の読み込みに失敗しました。デフォルト値を使用します。');
       // Keep default values already set in useState
     }
@@ -188,7 +186,6 @@ export default function AISettingsPage() {
       await loadAIProviders();
       setEditingProvider(null);
     } catch (error) {
-      console.error('Error saving AI provider:', error);
       toast.error('AI Providerの保存に失敗しました');
     }
   };
@@ -200,7 +197,6 @@ export default function AISettingsPage() {
       toast.success('AI Providerを削除しました');
       await loadAIProviders();
     } catch (error) {
-      console.error('Error deleting AI provider:', error);
       toast.error('AI Providerの削除に失敗しました');
     }
   };
@@ -249,7 +245,6 @@ export default function AISettingsPage() {
         }
       );
     } catch (error: any) {
-      console.error('Error testing AI connection:', error);
       setTestResponse(`❌ エラー: ${error?.message || '接続に失敗しました'}`);
       toast.error('AI接続テスト失敗: ' + (error?.message || '接続に失敗しました'));
       setTestLoading(false);
@@ -267,7 +262,6 @@ export default function AISettingsPage() {
       await loadSearchEngines();
       setEditingSearchEngine(null);
     } catch (error) {
-      console.error('Error saving search engine:', error);
       toast.error('検索エンジンの保存に失敗しました');
     }
   };
@@ -279,7 +273,6 @@ export default function AISettingsPage() {
       toast.success('検索エンジンを削除しました');
       await loadSearchEngines();
     } catch (error) {
-      console.error('Error deleting search engine:', error);
       toast.error('検索エンジンの削除に失敗しました');
     }
   };
@@ -289,7 +282,6 @@ export default function AISettingsPage() {
       await djangoAPI.updateAISettings(aiSettings);
       toast.success('AI設定を保存しました');
     } catch (error) {
-      console.error('Error saving AI settings:', error);
       toast.error('AI設定の保存に失敗しました');
     }
   };

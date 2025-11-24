@@ -29,6 +29,7 @@ import {
   ChartTooltip, 
   ChartTooltipContent 
 } from "@/components/ui/chart"
+import { PageHeader } from "@/components/shared/PageHeader"
 import { 
   BarChart, 
   Bar, 
@@ -89,13 +90,11 @@ export default function DashboardPage() {
     <div className="w-full h-full overflow-auto bg-background">
       {/* Wide表示のコンテナ - 最大幅なしで全幅使用 */}
       <div className="px-8 py-8 space-y-8">
-        {/* Page Header - 現代的なヘッダーデザイン */}
-        <div className="space-y-2">
-          <h1 className="text-4xl font-bold tracking-tight text-foreground">ダッシュボード</h1>
-          <p className="text-lg text-muted-foreground">
-            案件管理システムの概要と統計情報
-          </p>
-        </div>
+        {/* Page Header - 共通コンポーネントを使用 */}
+        <PageHeader
+          title="ダッシュボード"
+          description="案件管理システムの概要と統計情報"
+        />
 
         {/* Stats Cards - 現代的なカードデザイン */}
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">

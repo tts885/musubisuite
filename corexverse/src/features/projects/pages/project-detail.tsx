@@ -166,7 +166,6 @@ export default function ProjectDetailPage() {
         })
         
       } catch (error) {
-        console.error('プロジェクト取得エラー:', error)
         toast.error('プロジェクトの取得に失敗しました')
       } finally {
         setIsLoading(false)
@@ -220,9 +219,6 @@ export default function ProjectDetailPage() {
       toast.success('案件を更新しました')
       
     } catch (error: any) {
-      console.error('案件更新エラー:', error)
-      console.error('エラーレスポンス:', error.response?.data)
-      
       let errorMessage = '案件更新中にエラーが発生しました'
       if (error.response?.data) {
         const data = error.response.data

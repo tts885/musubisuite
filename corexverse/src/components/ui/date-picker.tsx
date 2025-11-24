@@ -69,7 +69,7 @@ export function DatePicker({
           onSelect={handleSelect}
           captionLayout="dropdown"
           fromYear={1900}
-          toYear={new Date().getFullYear()}
+          toYear={new Date().getFullYear() + 10}
           locale={ja}
           initialFocus
         />

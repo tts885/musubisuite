@@ -105,11 +105,8 @@ export default function AppSwitcher() {
    * ホーム画面への遷移時には明示的なフラグを設定します
    */
   const handleAppClick = (app: Application) => {
-    console.log('[AppSwitcher] App clicked:', app.name, app.path)
     if (app.path === "/") {
-      console.log('[AppSwitcher] Setting explicit home navigation flag')
       setExplicitHomeNavigation()
-      console.log('[AppSwitcher] Flag set, localStorage check:', localStorage.getItem('app-explicit-home'))
     }
   }
 

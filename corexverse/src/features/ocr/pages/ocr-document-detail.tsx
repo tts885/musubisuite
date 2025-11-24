@@ -13,6 +13,18 @@ import type { OcrDocument } from '@/types'
 import { logger } from '@/lib/logger'
 
 /**
+ * BlobをBase64文字列に変換するヘルパー関数
+ */
+const blobToBase64 = (blob: Blob): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onloadend = () => resolve(reader.result as string)
+    reader.onerror = reject
+    reader.readAsDataURL(blob)
+  })
+}
+
+/**
  * OCRドキュメント詳細ページ
  * OCR結果の確認と編集
  */
@@ -25,7 +37,7 @@ export default function OcrDocumentDetailPage() {
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
   const [fileName, setFileName] = useState('')
   const [isEditingFileName, setIsEditingFileName] = useState(false)
-  // const [loading, setLoading] = useState(false) // Unused
+  const [isProcessing, setIsProcessing] = useState(false)
 
   // ドキュメントデータの読み込み
   useEffect(() => {
@@ -35,76 +47,6 @@ export default function OcrDocumentDetailPage() {
         try {
           const doc = await ocrDataverseService.getDocumentById(documentId)
           if (doc) {
-            // テスト用のOCRフィールドデータを追加
-            if (!doc.ocrResult || !doc.ocrResult.fields || doc.ocrResult.fields.length === 0) {
-              doc.ocrResult = {
-                id: 'ocr-result-test',
-                documentId: doc.id,
-                fileName: doc.fileName,
-                status: 'completed',
-                fields: [
-                  {
-                    id: 'field-1',
-                    label: '請求書番号',
-                    value: 'INV-123457',
-                    confidence: 0.95,
-                    boundingBox: { x: 450, y: 150, width: 150, height: 25 },
-                    isEdited: false
-                  },
-                  {
-                    id: 'field-2',
-                    label: '発行日',
-                    value: '2019年10月31日',
-                    confidence: 0.92,
-                    boundingBox: { x: 450, y: 185, width: 120, height: 20 },
-                    isEdited: false
-                  },
-                  {
-                    id: 'field-3',
-                    label: '会社名',
-                    value: '株式会社〇〇〇〇',
-                    confidence: 0.88,
-                    boundingBox: { x: 460, y: 207, width: 130, height: 30 },
-                    isEdited: false
-                  },
-                  {
-                    id: 'field-4',
-                    label: '合計金額',
-                    value: '¥ 5,520,000',
-                    confidence: 0.96,
-                    boundingBox: { x: 320, y: 510, width: 120, height: 25 },
-                    isEdited: false
-                  },
-                  {
-                    id: 'field-5',
-                    label: '小計',
-                    value: '¥ 3,700,000',
-                    confidence: 0.91,
-                    boundingBox: { x: 320, y: 535, width: 120, height: 20 },
-                    isEdited: false
-                  },
-                  {
-                    id: 'field-6',
-                    label: '消費税',
-                    value: '¥ 370,000',
-                    confidence: 0.93,
-                    boundingBox: { x: 320, y: 555, width: 100, height: 20 },
-                    isEdited: false
-                  },
-                  {
-                    id: 'field-7',
-                    label: '担当者',
-                    value: '●●●●●●',
-                    confidence: 0.85,
-                    boundingBox: { x: 250, y: 650, width: 100, height: 20 },
-                    isEdited: false
-                  }
-                ],
-                overallConfidence: 0.91,
-                processedAt: new Date()
-              }
-            }
-            
             setDocument(doc)
             setFileName(doc.fileName)
           } else {
@@ -173,18 +115,120 @@ export default function OcrDocumentDetailPage() {
     }
   }
 
+  // OCR処理実行
+  const handleProcessOcr = async () => {
+    if (!document) return
+
+    setIsProcessing(true)
+    const toastId = toast.loading('OCR処理を実行中...')
+
+    try {
+      logger.info('OCR処理開始', { 
+        documentId: document.id,
+        fileUrl: document.fileUrl,
+        fileUrlType: document.fileUrl.startsWith('blob:') ? 'blob' : 
+                     document.fileUrl.startsWith('data:') ? 'data' : 'unknown'
+      })
+
+      // ドキュメントから画像データを取得
+      let imageBase64 = ''
+      
+      if (!document.fileUrl) {
+        throw new Error('画像データが見つかりません。ドキュメントを再アップロードしてください。')
+      }
+      
+      if (document.fileUrl.startsWith('blob:')) {
+        // Blob URLから画像データを取得
+        logger.debug('Blob URLから画像データを取得', { blobUrl: document.fileUrl })
+        
+        try {
+          const response = await fetch(document.fileUrl)
+          if (!response.ok) {
+            throw new Error(`Blob fetch failed: ${response.status} ${response.statusText}`)
+          }
+          const blob = await response.blob()
+          logger.debug('Blob取得成功', { blobSize: blob.size, blobType: blob.type })
+          imageBase64 = await blobToBase64(blob)
+        } catch (fetchError) {
+          logger.error('Blob URL fetch エラー', { error: fetchError, blobUrl: document.fileUrl })
+          // Blob URLが無効な場合は、Dataverseから再取得を試みる
+          logger.info('Dataverseからドキュメントを再取得します...')
+          const freshDoc = await ocrDataverseService.getDocumentById(document.id)
+          if (freshDoc && freshDoc.fileUrl) {
+            logger.info('再取得成功、新しいfileUrlを使用', { newFileUrl: freshDoc.fileUrl })
+            setDocument(freshDoc)
+            if (freshDoc.fileUrl.startsWith('blob:')) {
+              const response = await fetch(freshDoc.fileUrl)
+              const blob = await response.blob()
+              imageBase64 = await blobToBase64(blob)
+            } else if (freshDoc.fileUrl.startsWith('data:')) {
+              imageBase64 = freshDoc.fileUrl
+            } else {
+              throw new Error('再取得後も画像データが無効です')
+            }
+          } else {
+            throw new Error('Dataverseからの再取得に失敗しました')
+          }
+        }
+      } else if (document.fileUrl.startsWith('data:')) {
+        // Data URLの場合はそのまま使用
+        logger.debug('Data URLを使用', { dataUrlLength: document.fileUrl.length })
+        imageBase64 = document.fileUrl
+      } else {
+        logger.error('サポートされていない画像形式', { fileUrl: document.fileUrl })
+        throw new Error('サポートされていない画像形式です')
+      }
+
+      // OCR API呼び出し（画面表示用）
+      const { default: ocrApiService } = await import('@/services/ocrApiService')
+      const result = await ocrApiService.processDocument(imageBase64, 'invoice')
+
+      if (!result) {
+        throw new Error('OCR処理結果が取得できませんでした')
+      }
+
+      // 画面に即座に結果を表示
+      setDocument(prev => {
+        if (!prev) return prev
+        return {
+          ...prev,
+          status: 'completed',
+          ocrResult: {
+            id: `ocr-result-${prev.id}`,
+            documentId: prev.id,
+            fileName: prev.fileName,
+            status: 'completed',
+            fields: result.fields,
+            overallConfidence: result.overallConfidence,
+            processedAt: new Date()
+          }
+        }
+      })
+
+      toast.success(`OCR処理が完了しました（${result.fields.length}フィールド検出）`, { id: toastId })
+      logger.info('OCR処理完了', {
+        documentId: document.id,
+        fieldCount: result.fields.length,
+        overallConfidence: result.overallConfidence
+      })
+
+      // TODO: Dataverseへの保存は後で実装
+      // await ocrDataverseService.saveOcrResult(document.id, result)
+    } catch (error) {
+      logger.error('OCR処理エラー', error)
+      toast.error('OCR処理に失敗しました', { id: toastId })
+    } finally {
+      setIsProcessing(false)
+    }
+  }
+
   // 再処理
   const handleReprocess = async () => {
     if (!document) return
 
     try {
-      // TODO: API呼び出し
-      // await ocrService.reprocessDocument(document.id)
-
-      toast.success('再処理を開始しました')
-      navigate('/ocr')
+      await handleProcessOcr()
     } catch (error) {
-      toast.error('再処理の開始に失敗しました')
       logger.error('再処理エラー', error)
     }
   }
@@ -202,8 +246,8 @@ export default function OcrDocumentDetailPage() {
   return (
     <div className="flex flex-col h-full bg-background">
       {/* ヘッダー */}
-      <div className="border-b border-border bg-card p-4">
-        <div className="flex items-center justify-between">
+      <div className="border-b border-border bg-card h-16 px-4 flex items-center">
+        <div className="flex items-center justify-between w-full">
           <div className="flex items-center gap-4">
             <Button
               variant="ghost"
@@ -242,27 +286,11 @@ export default function OcrDocumentDetailPage() {
                   </h1>
                 )}
               </div>
-              <p className="text-sm text-muted-foreground">
-                {hasOcrResult && document.ocrResult ? (
-                  <>
-                    信頼度: {((document.ocrResult.overallConfidence ?? 0) * 100).toFixed(1)}% |
-                    フィールド数: {document.ocrResult.fields?.length ?? 0}
-                  </>
-                ) : (
-                  <>
-                    ステータス: {
-                      document.status === 'uploaded' ? 'アップロード済み' :
-                      document.status === 'pending' ? '処理待ち' :
-                      document.status === 'processing' ? '処理中' : '不明'
-                    }
-                  </>
-                )}
-              </p>
             </div>
           </div>
 
           <div className="flex gap-2">
-            {hasOcrResult && (
+            {hasOcrResult ? (
               <>
                 <Button
                   variant="outline"
@@ -281,6 +309,16 @@ export default function OcrDocumentDetailPage() {
                   保存
                 </Button>
               </>
+            ) : (
+              <Button
+                variant="default"
+                size="sm"
+                onClick={handleProcessOcr}
+                disabled={isProcessing || document?.status === 'processing'}
+              >
+                <RotateCw className={`w-4 h-4 mr-2 ${isProcessing ? 'animate-spin' : ''}`} />
+                {isProcessing ? 'OCR処理中...' : 'OCR処理を開始'}
+              </Button>
             )}
           </div>
         </div>
@@ -317,11 +355,11 @@ export default function OcrDocumentDetailPage() {
                 </div>
                 <Button
                   variant="outline"
-                  onClick={handleReprocess}
-                  disabled={document?.status === 'processing'}
+                  onClick={handleProcessOcr}
+                  disabled={isProcessing || document?.status === 'processing'}
                 >
-                  <RotateCw className="w-4 h-4 mr-2" />
-                  OCR処理を開始
+                  <RotateCw className={`w-4 h-4 mr-2 ${isProcessing ? 'animate-spin' : ''}`} />
+                  {isProcessing ? 'OCR処理中...' : 'OCR処理を開始'}
                 </Button>
               </div>
             </div>

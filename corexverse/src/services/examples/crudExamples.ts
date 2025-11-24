@@ -9,7 +9,6 @@
 import { DataverseCrudService, createCrudHelper } from '@/services/dataverseCrudService';
 import type { Mdi_project_lists } from '@/generated/models/Mdi_project_listsModel';
 import React from 'react';
-import { logger } from '@/lib/logger';
 
 // ============================================================================
 // パターン1: 汎用サービスを直接使用 (すべてのテーブルに対応)
@@ -27,13 +26,6 @@ export async function example1_CreateRecord() {
     mdi_workload_mm: '12'
   });
 
-  if (result.success) {
-    logger.info('✅ 作成成功:', result.data);
-    logger.info('メッセージ:', result.message);
-  } else {
-    logger.error('❌ 作成失敗:', result.error);
-  }
-
   return result;
 }
 
@@ -44,12 +36,6 @@ export async function example2_GetRecord(recordId: string) {
   const result = await DataverseCrudService.get('mdi_project_lists', recordId, {
     select: ['mdi_name', 'mdi_id', 'mdi_project_description', 'createdon']
   });
-
-  if (result.success) {
-    logger.info('✅ 取得成功:', result.data);
-  } else {
-    logger.error('❌ 取得失敗:', result.error);
-  }
 
   return result;
 }
@@ -65,15 +51,6 @@ export async function example3_GetAllRecords() {
     filter: "statecode eq 0" // アクティブなレコードのみ
   });
 
-  if (result.success) {
-    logger.info(`✅ 取得成功: ${result.data?.length}件`);
-    result.data?.forEach(record => {
-      logger.info(`  - ${record.mdi_name} (ID: ${record.mdi_id})`);
-    });
-  } else {
-    logger.error('❌ 取得失敗:', result.error);
-  }
-
   return result;
 }
 
@@ -86,12 +63,6 @@ export async function example4_UpdateRecord(recordId: string) {
     mdi_workload_mm: '24'
   });
 
-  if (result.success) {
-    logger.info('✅ 更新成功:', result.data);
-  } else {
-    logger.error('❌ 更新失敗:', result.error);
-  }
-
   return result;
 }
 
@@ -100,12 +71,6 @@ export async function example4_UpdateRecord(recordId: string) {
  */
 export async function example5_DeleteRecord(recordId: string) {
   const result = await DataverseCrudService.delete('mdi_project_lists', recordId);
-
-  if (result.success) {
-    logger.info('✅ 削除成功');
-  } else {
-    logger.error('❌ 削除失敗:', result.error);
-  }
 
   return result;
 }
@@ -118,12 +83,6 @@ export async function example6_CountRecords() {
     'mdi_project_lists',
     "statecode eq 0" // アクティブなレコードのみ
   );
-
-  if (result.success) {
-    logger.info(`✅ レコード数: ${result.data}件`);
-  } else {
-    logger.error('❌ カウント失敗:', result.error);
-  }
 
   return result;
 }
@@ -139,12 +98,6 @@ export async function example7_BatchCreate() {
   ];
 
   const result = await DataverseCrudService.createBatch('mdi_project_lists', records);
-
-  if (result.success) {
-    console.log(`✅ バッチ作成成功: ${result.data?.length}件`);
-  } else {
-    console.error('❌ バッチ作成失敗:', result.error);
-  }
 
   return result;
 }
@@ -168,12 +121,6 @@ export async function example8_TypeSafeCreate() {
     // 存在しないフィールドを指定するとコンパイルエラーになる
   });
 
-  if (result.success) {
-    console.log('✅ 型安全な作成成功:', result.data);
-    // result.data は Mdi_project_lists 型として扱える
-    console.log('プロジェクトID:', result.data?.mdi_project_listid);
-  }
-
   return result;
 }
 
@@ -186,14 +133,6 @@ export async function example9_TypeSafeGetAll() {
     top: 10,
     orderBy: ['createdon desc']
   });
-
-  if (result.success && result.data) {
-    // result.data は Mdi_project_lists[] 型
-    result.data.forEach(project => {
-      console.log(`${project.mdi_name} - ${project.mdi_id}`);
-      // TypeScriptの入力補完が効く
-    });
-  }
 
   return result;
 }
@@ -221,8 +160,6 @@ export function ExampleComponent() {
 
       if (result.success && result.data) {
         setProjects(result.data);
-      } else {
-        console.error('取得失敗:', result.error);
       }
     } finally {
       setLoading(false);
@@ -239,8 +176,6 @@ export function ExampleComponent() {
     if (result.success) {
       // 成功したら一覧を再取得
       await fetchProjects();
-    } else {
-      console.error('作成失敗:', result.error);
     }
   };
 
@@ -252,8 +187,6 @@ export function ExampleComponent() {
 
     if (result.success) {
       await fetchProjects();
-    } else {
-      console.error('更新失敗:', result.error);
     }
   };
 
@@ -263,8 +196,6 @@ export function ExampleComponent() {
 
     if (result.success) {
       await fetchProjects();
-    } else {
-      console.error('削除失敗:', result.error);
     }
   };
 
@@ -292,13 +223,6 @@ export async function example11_ComplexQuery() {
     top: 20
   });
 
-  if (result.success && result.data) {
-    console.log(`✅ 検索結果: ${result.data.length}件`);
-    result.data.forEach(project => {
-      console.log(`${project.mdi_name} - 工数: ${project.mdi_workload_mm}MM`);
-    });
-  }
-
   return result;
 }
 
@@ -313,16 +237,13 @@ export async function example12_ErrorHandling() {
     });
 
     if (result.success) {
-      console.log('✅ 成功:', result.message);
       return result.data;
     } else {
       // ビジネスロジックエラー
-      console.error('❌ エラー:', result.error);
       throw new Error(result.error);
     }
   } catch (error) {
     // 予期しないエラー
-    console.error('❌ 例外:', error);
     throw error;
   }
 }

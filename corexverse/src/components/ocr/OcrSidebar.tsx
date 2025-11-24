@@ -1,4 +1,4 @@
-import { ListChecks, Upload, ChevronDown, ChevronRight, Menu, FileText, Folder, FolderOpen, Plus, Edit2, Trash2, MoreVertical } from 'lucide-react'
+import { ListChecks, Upload, ChevronDown, ChevronRight, Menu, FileText, Folder, FolderOpen, Plus, Edit2, Trash2, MoreVertical, FolderInput } from 'lucide-react'
 import { useNavigate, useLocation, useSearchParams } from 'react-router-dom'
 import { useState, useEffect, useCallback } from 'react'
 import { Button } from '@/components/ui/button'
@@ -49,11 +49,12 @@ export default function OcrSidebar(_props: OcrSidebarProps) {
   const {
     expandedFolders,
     sidebarCollapsed,
-    sidebarOpen,
+    selectedFolderId: selectedFolderIdFromStore,
     toggleFolder: toggleFolderInStore,
     expandFolders,
     setSidebarCollapsed,
     setSidebarOpen,
+    setSelectedFolderId: setSelectedFolderIdInStore,
   } = useOcrStateStore()
 
   // Dataverseからメニューセクションとフォルダを取得
@@ -75,9 +76,13 @@ export default function OcrSidebar(_props: OcrSidebarProps) {
   // ダイアログの状態管理
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
+  const [isMoveFolderDialogOpen, setIsMoveFolderDialogOpen] = useState(false)
   const [currentParentId, setCurrentParentId] = useState<string | undefined>(undefined)
   const [currentMenuSection, setCurrentMenuSection] = useState<string>('all-docs')
   const [editingFolder, setEditingFolder] = useState<FolderTreeNode | null>(null)
+  const [movingFolder, setMovingFolder] = useState<FolderTreeNode | null>(null)
+  const [targetMenuSection, setTargetMenuSection] = useState<string>('')
+  const [targetParentFolder, setTargetParentFolder] = useState<string>('')
 
   // フォーム入力の状態
   const [folderName, setFolderName] = useState('')
@@ -130,10 +135,12 @@ export default function OcrSidebar(_props: OcrSidebarProps) {
   // ドキュメント数を取得
   const [documentCounts, setDocumentCounts] = useState<Record<string, number>>({})
 
-  // ドキュメント数を取得する関数
+  // ドキュメント数を取得する関数（遅延読み込みで必要な時のみ取得）
   const fetchDocumentCounts = useCallback(async () => {
     try {
-      const docs = await ocrDataverseService.getDocuments()
+      // バックグラウンドで全件取得（非同期、UIブロックしない）
+      // Note: この処理は重いため、初回表示後に実行される
+      const docs = await ocrDataverseService.getDocuments(undefined, { top: 9999 })
       const counts: Record<string, number> = {}
 
       docs.forEach(doc => {
@@ -144,13 +151,18 @@ export default function OcrSidebar(_props: OcrSidebarProps) {
 
       setDocumentCounts(counts)
     } catch (error) {
-      console.error('ドキュメント数取得エラー:', error)
+      // エラーは無視
     }
   }, [])
 
-  // 初回読み込み時にドキュメント数を取得
+  // 初回読み込み時にドキュメント数を取得（遅延実行でパフォーマンス改善）
   useEffect(() => {
-    fetchDocumentCounts()
+    // 1秒遅延させて初回画面表示を高速化
+    const timer = setTimeout(() => {
+      fetchDocumentCounts()
+    }, 1000)
+    
+    return () => clearTimeout(timer)
   }, [fetchDocumentCounts])
 
   // 定期的にドキュメント数を更新（30秒ごと）
@@ -196,7 +208,7 @@ export default function OcrSidebar(_props: OcrSidebarProps) {
   // フォルダツリーノードをレンダリング
   const renderFolderNode = (node: FolderTreeNode, depth: number = 0, menuSection: string = 'all-docs') => {
     const isExpanded = expandedFolders.has(node.folder.id)
-    const isSelected = selectedFolderId === node.folder.id
+    const isSelected = selectedFolderIdFromStore === node.folder.id
     const hasChildren = node.children && node.children.length > 0
     const stats = getFolderStats(node.folder.id)
 
@@ -234,6 +246,9 @@ export default function OcrSidebar(_props: OcrSidebarProps) {
           {/* フォルダアイコン */}
           <button
             onClick={() => {
+              // Zustand storeにフォルダIDを保存
+              setSelectedFolderIdInStore(node.folder.id)
+              // PowerApps環境ではURLパラメータも更新を試みる
               navigate(`/ocr?folder=${node.folder.id}`)
               setSidebarOpen(false)
             }}
@@ -269,6 +284,10 @@ export default function OcrSidebar(_props: OcrSidebarProps) {
                   サブフォルダを追加
                 </DropdownMenuItem>
               )}
+              <DropdownMenuItem onClick={() => handleMoveFolder(node)}>
+                <FolderInput className="w-4 h-4 mr-2" />
+                移動
+              </DropdownMenuItem>
               <DropdownMenuItem onClick={() => handleEditFolder(node)}>
                 <Edit2 className="w-4 h-4 mr-2" />
                 編集
@@ -326,7 +345,6 @@ export default function OcrSidebar(_props: OcrSidebarProps) {
       setIsAddMenuOpen(false)
       setMenuName('')
     } catch (error) {
-      console.error('メニュー追加エラー:', error)
       alert('メニューの追加に失敗しました')
     }
   }
@@ -365,7 +383,6 @@ export default function OcrSidebar(_props: OcrSidebarProps) {
       setEditingMenuId(null)
       setMenuName('')
     } catch (error) {
-      console.error('メニュー更新エラー:', error)
       alert('メニューの更新に失敗しました')
     }
   }
@@ -392,7 +409,6 @@ export default function OcrSidebar(_props: OcrSidebarProps) {
 
         toggleFolderInStore(menuId) // 削除されたメニューの展開状態を解除
       } catch (error) {
-        console.error('メニュー削除エラー:', error)
         alert('メニューの削除に失敗しました')
       }
     }
@@ -483,7 +499,6 @@ export default function OcrSidebar(_props: OcrSidebarProps) {
 
       setIsAddDialogOpen(false)
     } catch (error) {
-      console.error('フォルダ追加エラー:', error)
       alert('フォルダの追加に失敗しました')
     }
   }
@@ -546,10 +561,88 @@ export default function OcrSidebar(_props: OcrSidebarProps) {
       })
 
       setIsEditDialogOpen(false)
-      console.log('フォルダを編集:', { id: editingFolder.folder.id, name: folderName })
     } catch (error) {
-      console.error('フォルダ更新エラー:', error)
       alert('フォルダの更新に失敗しました')
+    }
+  }
+
+  // フォルダが指定フォルダの子孫かチェック
+  const isDescendantOf = (folderId: string, ancestorId: string): boolean => {
+    const folder = folders.find(f => f.id === folderId)
+    if (!folder || !folder.parentId) return false
+    if (folder.parentId === ancestorId) return true
+    return isDescendantOf(folder.parentId, ancestorId)
+  }
+
+  // フォルダ移動ハンドラー
+  const handleMoveFolder = (node: FolderTreeNode) => {
+    setMovingFolder(node)
+    setTargetMenuSection(node.folder.menuSection || 'all-docs')
+    setTargetParentFolder('')
+    setIsMoveFolderDialogOpen(true)
+  }
+
+  // フォルダ移動実行
+  const executeMoveFolder = async () => {
+    if (!movingFolder) return
+
+    try {
+      // 移動先の親フォルダが移動対象フォルダの子孫でないかチェック
+      if (targetParentFolder) {
+        const isDescendant = (folderId: string, ancestorId: string): boolean => {
+          const folder = folders.find(f => f.id === folderId)
+          if (!folder || !folder.parentId) return false
+          if (folder.parentId === ancestorId) return true
+          return isDescendant(folder.parentId, ancestorId)
+        }
+
+        if (isDescendant(targetParentFolder, movingFolder.folder.id)) {
+          alert('フォルダを自分の子孫フォルダ配下には移動できません')
+          return
+        }
+      }
+
+      // 階層制限チェック: 移動先が2階層目以降になる場合はエラー
+      if (targetParentFolder) {
+        const targetDepth = getFolderDepth(targetParentFolder)
+        if (targetDepth >= 1) {
+          alert('フォルダは2階層までしか作成できません')
+          return
+        }
+      }
+
+      // 新しいパスを構築
+      let newPath: string
+      if (targetParentFolder) {
+        const parentFolder = folders.find(f => f.id === targetParentFolder)
+        newPath = `${parentFolder?.path}/${movingFolder.folder.name}`
+      } else {
+        newPath = `/${movingFolder.folder.name}`
+      }
+
+      // フォルダを更新
+      await updateFolder(movingFolder.folder.id, {
+        menuSection: targetMenuSection,
+        parentId: targetParentFolder || null,
+        path: newPath,
+      })
+
+      // 子フォルダのパスも再帰的に更新
+      const updateChildPaths = async (parentId: string, parentPath: string) => {
+        const children = folders.filter(f => f.parentId === parentId)
+        for (const child of children) {
+          const childPath = `${parentPath}/${child.name}`
+          await updateFolder(child.id, { path: childPath })
+          await updateChildPaths(child.id, childPath)
+        }
+      }
+
+      await updateChildPaths(movingFolder.folder.id, newPath)
+
+      setIsMoveFolderDialogOpen(false)
+      setMovingFolder(null)
+    } catch (error) {
+      alert('フォルダの移動に失敗しました')
     }
   }
 
@@ -582,10 +675,7 @@ export default function OcrSidebar(_props: OcrSidebarProps) {
         if (idsToDelete.includes(selectedFolderId || '')) {
           navigate('/ocr')
         }
-
-        console.log('フォルダを削除:', idsToDelete)
       } catch (error) {
-        console.error('フォルダ削除エラー:', error)
         alert('フォルダの削除に失敗しました')
       }
     }
@@ -594,19 +684,9 @@ export default function OcrSidebar(_props: OcrSidebarProps) {
 
 
   return (
-    <aside
-      className={`
-        bg-sidebar border-r border-sidebar-border
-        transition-all duration-300 ease-in-out
-        flex-shrink-0
-        ${sidebarCollapsed ? 'w-16' : 'w-72'}
-        fixed inset-y-0 left-16 z-40 lg:static
-        ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
-      `}
-    >
-      <div className="flex flex-col h-full">
-        {/* Header with Menu Button - 展開/折りたたみに対応 */}
-        <div className={`border-b border-sidebar-border flex items-center ${sidebarCollapsed ? 'h-16 justify-center' : 'h-16 px-4 gap-3'}`}>
+    <>
+      {/* Header with Menu Button - 展開/折りたたみに対応 */}
+      <div className={`border-b border-sidebar-border flex items-center ${sidebarCollapsed ? 'h-16 justify-center' : 'h-16 px-4 gap-3'}`}>
           <Button
             variant="ghost"
             size="icon"
@@ -681,10 +761,7 @@ export default function OcrSidebar(_props: OcrSidebarProps) {
                       className={`
                         flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors flex-1 min-w-0
                         ${sidebarCollapsed ? 'justify-center' : ''}
-                        ${(isActive('/ocr') || isActive('/ocr/documents')) && !selectedFolderId
-                          ? 'bg-sidebar-accent text-sidebar-accent-foreground shadow-sm'
-                          : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
-                        }
+                        text-muted-foreground hover:bg-accent hover:text-accent-foreground
                       `}
                     >
                       {!sidebarCollapsed && expandedFolders.has(section.id) && (
@@ -757,17 +834,6 @@ export default function OcrSidebar(_props: OcrSidebarProps) {
             </button>
           )}
         </nav>
-
-        {/* Footer - サイドバー下部の情報表示エリア */}
-        <div className="p-4 border-t border-sidebar-border">
-          {!sidebarCollapsed && (
-            <div className="text-xs text-sidebar-foreground/50 space-y-1">
-              <p className="font-medium">OCR Engine</p>
-              <p>Azure AI Document Intelligence</p>
-            </div>
-          )}
-        </div>
-      </div>
 
       {/* メニューセクション追加ダイアログ */}
       <Dialog open={isAddMenuOpen} onOpenChange={setIsAddMenuOpen}>
@@ -949,6 +1015,90 @@ export default function OcrSidebar(_props: OcrSidebarProps) {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </aside>
+
+      {/* フォルダ移動ダイアログ */}
+      <Dialog open={isMoveFolderDialogOpen} onOpenChange={setIsMoveFolderDialogOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>フォルダを移動</DialogTitle>
+            <DialogDescription>
+              フォルダとその配下のすべてのサブフォルダ・ドキュメントを移動します
+            </DialogDescription>
+          </DialogHeader>
+          {movingFolder && (
+            <div className="space-y-4 py-4">
+              <div className="flex items-center gap-2 p-3 bg-muted/50 rounded-lg">
+                <Folder className="w-5 h-5 text-muted-foreground" />
+                <span className="font-medium">{movingFolder.folder.name}</span>
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="target-menu">移動先メニュー</Label>
+                <select
+                  id="target-menu"
+                  value={targetMenuSection}
+                  onChange={(e) => {
+                    setTargetMenuSection(e.target.value)
+                    setTargetParentFolder('')
+                  }}
+                  className="w-full px-3 py-2 border border-border rounded-md bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
+                >
+                  {menuSections.map(menu => (
+                    <option key={menu.id} value={menu.id}>
+                      {menu.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="target-parent">移動先親フォルダ（任意）</Label>
+                <select
+                  id="target-parent"
+                  value={targetParentFolder}
+                  onChange={(e) => setTargetParentFolder(e.target.value)}
+                  className="w-full px-3 py-2 border border-border rounded-md bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
+                >
+                  <option value="">（ルート）</option>
+                  {folders
+                    .filter(f => {
+                      // 移動先メニューに属するフォルダのみ
+                      const belongsToMenu = !f.menuSection || f.menuSection === 'all-docs'
+                        ? targetMenuSection === 'all-docs'
+                        : f.menuSection === targetMenuSection
+                      
+                      // 自分自身と自分の子孫は除外
+                      const isNotSelfOrDescendant = f.id !== movingFolder.folder.id && 
+                        !isDescendantOf(f.id, movingFolder.folder.id)
+                      
+                      // 親フォルダのみ（階層制限: 1階層目まで）
+                      const isValidParent = !f.parentId
+                      
+                      return belongsToMenu && isNotSelfOrDescendant && isValidParent
+                    })
+                    .map(folder => (
+                      <option key={folder.id} value={folder.id}>
+                        {folder.name}
+                      </option>
+                    ))
+                  }
+                </select>
+                <p className="text-xs text-muted-foreground">
+                  フォルダは最大2階層まで作成できます
+                </p>
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsMoveFolderDialogOpen(false)}>
+              キャンセル
+            </Button>
+            <Button onClick={executeMoveFolder}>
+              移動
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   )
 }

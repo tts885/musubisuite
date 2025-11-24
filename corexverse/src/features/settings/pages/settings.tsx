@@ -7,7 +7,7 @@
  * @module pages/settings
  */
 
-import { useState, useEffect } from "react"
+import { useEffect } from "react"
 import { Link, Outlet, useLocation } from "react-router-dom"
 import { 
   Settings as SettingsIcon,

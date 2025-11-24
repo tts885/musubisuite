@@ -101,7 +101,6 @@ export class DataverseAdminService {
         details: result.details
       };
     } catch (error) {
-      console.error('🧪 接続テストエラー:', error);
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error',
