@@ -1,60 +1,16 @@
-import { Outlet, NavLink, useLocation } from "react-router-dom"
+import { Outlet, useLocation } from "react-router-dom"
 import { useState, useEffect } from "react"
-import { Button } from "@/components/ui/button"
-import { 
-  Calendar,
-  ListTodo,
-  Users,
-  GitBranch,
-  FolderKanban,
-  Menu,
-  X,
-  ChevronRight
-} from "lucide-react"
-import AppSwitcher from "@/components/AppSwitcher"
+import MainLayout from "@/layouts/MainLayout"
+import ProjectManagementSidebar from "@/components/ProjectManagementSidebar"
 import { useRouteTracker } from "@/hooks/use-route-tracker"
-import { PageFooter } from "@/components/shared/PageFooter"
 
 type LayoutProps = { showHeader?: boolean }
 
 /**
- * プロジェクト管理アプリ用のナビゲーションアイテム
- * 現代的なUIデザインを採用
- */
-const navItems = [
-  { 
-    path: "/project-management", 
-    label: "スプリント", 
-    description: "スプリント管理とタイムライン",
-    icon: Calendar 
-  },
-  { 
-    path: "/project-management/tasks", 
-    label: "タスクボード", 
-    description: "カンバンボードで管理",
-    icon: ListTodo 
-  },
-  { 
-    path: "/project-management/team", 
-    label: "チーム", 
-    description: "チームメンバー一覧",
-    icon: Users 
-  },
-  { 
-    path: "/project-management/repositories", 
-    label: "リポジトリ", 
-    description: "Git連携と管理",
-    icon: GitBranch 
-  },
-]
-
-/**
  * プロジェクト管理レイアウトコンポーネント
- * 現代的なWebUIデザインを採用
- * Wide表示を基本とし、コンパクト表示は使用しない
+ * MainLayoutを使用した統一されたレイアウト
  */
 export default function ProjectManagementLayout({ showHeader = true }: LayoutProps) {
-  const [sidebarOpen, setSidebarOpen] = useState(false)
   // localStorageから初期状態を読み込み、デフォルトはfalse(展開)
   // 全アプリで共通のキーを使用
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
@@ -102,141 +58,21 @@ export default function ProjectManagementLayout({ showHeader = true }: LayoutPro
   const breadcrumbs = getBreadcrumbs()
 
   return (
-    <div className="h-screen flex overflow-hidden bg-background">
-      {/* App Switcher - 縦型アプリ切り替え */}
-      <AppSwitcher />
-
-      {/* Sidebar - 現代的なサイドバー (折りたたみ時はAppSwitcherと同じ幅) */}
-      <aside 
-        className={`
-          bg-sidebar border-r border-sidebar-border
-          transition-all duration-300 ease-in-out
-          flex-shrink-0
-          ${sidebarCollapsed ? 'w-16' : 'w-72'}
-          fixed inset-y-0 left-16 z-40 lg:static
-          ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
-        `}
-      >
-        <div className="flex flex-col h-full">
-          {/* Header with Menu Button - 展開/折りたたみに対応 */}
-          <div className={`border-b border-sidebar-border flex items-center ${sidebarCollapsed ? 'h-16 justify-center' : 'h-16 px-4 gap-3'}`}>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-              title={sidebarCollapsed ? "サイドバーを展開" : "サイドバーを折りたたむ"}
-              className="flex-shrink-0 hover:bg-sidebar-accent"
-            >
-              <Menu className="h-5 w-5" />
-            </Button>
-            {!sidebarCollapsed && (
-              <>
-                <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
-                  <FolderKanban className="w-4 h-4 text-primary" />
-                </div>
-                <h1 className="text-lg font-bold text-foreground">プロジェクト管理</h1>
-              </>
-            )}
-          </div>
-          
-          {/* Navigation - ナビゲーション */}
-          <nav className="flex-1 px-4 py-6 space-y-1 overflow-y-auto">
-            {navItems.map((item) => {
-              const Icon = item.icon
-              const isActive = location.pathname === item.path
-              return (
-                <NavLink
-                  key={item.path}
-                  to={item.path}
-                  title={sidebarCollapsed ? `${item.label} - ${item.description}` : undefined}
-                  className={`
-                    flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors
-                    ${sidebarCollapsed ? 'justify-center' : ''}
-                    ${isActive 
-                      ? 'bg-sidebar-accent text-sidebar-accent-foreground shadow-sm' 
-                      : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
-                    }
-                  `}
-                  onClick={() => setSidebarOpen(false)}
-                >
-                  <Icon className="w-4 h-4 flex-shrink-0" />
-                  {!sidebarCollapsed && <span>{item.label}</span>}
-                </NavLink>
-              )
-            })}
-          </nav>
-
-          {/* Footer - サイドバー下部の情報表示エリア */}
-          <div className="px-4 py-3 border-t bg-card text-xs text-muted-foreground flex items-center gap-4">
-            {!sidebarCollapsed && (
-              <span>Project Management: スプリントとタスク管理</span>
-            )}
-          </div>
-        </div>
-      </aside>
-
-      {/* Mobile overlay - モバイル表示時のオーバーレイ */}
-      {sidebarOpen && (
-        <div 
-          className="fixed inset-0 bg-black/50 z-30 lg:hidden"
-          onClick={() => setSidebarOpen(false)}
+    <MainLayout
+      sidebar={
+        <ProjectManagementSidebar
+          sidebarCollapsed={sidebarCollapsed}
+          setSidebarCollapsed={setSidebarCollapsed}
         />
-      )}
-
-      {/* Main Content - メインコンテンツエリア */}
-      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-        {showHeader && (
-          <header className="h-16 border-b border-border flex items-center bg-background sticky top-0 z-30 shadow-sm">
-            <div className="w-full px-8 flex items-center justify-between gap-4">
-              <div className="flex items-center gap-4 flex-1">
-                {/* Mobile menu button */}
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="lg:hidden hover:bg-accent"
-                  onClick={() => setSidebarOpen(!sidebarOpen)}
-                >
-                  {sidebarOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-                </Button>
-
-                {/* Breadcrumbs - パンくずリスト */}
-                <nav className="flex items-center gap-2 text-sm flex-1">
-                  {breadcrumbs.map((crumb, index) => (
-                    <div key={crumb.path} className="flex items-center gap-2">
-                      {index > 0 && <ChevronRight className="h-4 w-4 text-muted-foreground" />}
-                      {index === breadcrumbs.length - 1 ? (
-                        <span className="font-semibold text-foreground">{crumb.name}</span>
-                      ) : (
-                        <NavLink 
-                          to={crumb.path}
-                          className="text-muted-foreground hover:text-foreground transition-colors font-medium"
-                        >
-                          {crumb.name}
-                        </NavLink>
-                      )}
-                    </div>
-                  ))}
-                </nav>
-              </div>
-
-              {/* Right section - ユーザーメニューなどの将来拡張用 */}
-              <div className="flex items-center gap-2">
-                {/* Placeholder for user menu */}
-              </div>
-            </div>
-          </header>
-        )}
-
-        <main className="flex-1 overflow-auto bg-background flex flex-col">
-          <div className="flex-1">
-            <Outlet />
-          </div>
-          <PageFooter
-            leftContent={<span>© 2025 CoreXverse - プロジェクト管理システム</span>}
-            rightContent={<span>Powered by CoreXverse</span>}
-          />
-        </main>
-      </div>
-    </div>
+      }
+      sidebarCollapsed={sidebarCollapsed}
+      sidebarFooter={<span>Project Management: スプリントとタスク管理</span>}
+      showHeader={showHeader}
+      breadcrumbs={breadcrumbs}
+      footerLeftContent={<span>© 2025 CoreXverse - プロジェクト管理システム</span>}
+      footerRightContent={<span>Powered by CoreXverse</span>}
+    >
+      <Outlet />
+    </MainLayout>
   )
 }

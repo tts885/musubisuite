@@ -152,10 +152,10 @@ export default function ClientsSettingsPage() {
       // 完全な詳細データを取得
       const fullClientData = await djangoAPI.getClient(String(client.id))
       setSelectedClient(fullClientData)
-      // 資本金を円から万円に変換（表示用）
+      // 資本金を円から円に変換（表示用）
       const formDataWithManYen = {
         ...fullClientData,
-        capital: fullClientData.capital ? Math.round(fullClientData.capital / 10000) : undefined
+        capital: fullClientData.capital
       }
       setFormData(formDataWithManYen)
       setIsEditDialogOpen(true)
@@ -172,12 +172,12 @@ export default function ClientsSettingsPage() {
         return
       }
       
-      // 資本金を万円から円に変換（DB保存用）
+      // 資本金を円から円に変換（DB保存用）
       const clientData = {
         ...formData,
         company_name: formData.company_name,
         email: formData.email || '',
-        capital: formData.capital ? formData.capital * 10000 : undefined
+        capital: formData.capital
       }
       await djangoAPI.createClient(clientData)
       toast.success("クライアントを作成しました")
@@ -199,10 +199,10 @@ export default function ClientsSettingsPage() {
         return
       }
       
-      // 資本金を万円から円に変換（DB保存用）
+      // 資本金を円から円に変換（DB保存用）
       const updateData = {
         ...formData,
-        capital: formData.capital ? formData.capital * 10000 : undefined
+        capital: formData.capital
       }
       await djangoAPI.updateClient(String(selectedClient.id), updateData)
       toast.success("クライアント情報を更新しました")
@@ -334,11 +334,6 @@ export default function ClientsSettingsPage() {
         aiData.industry = mapIndustryToCode(aiData.industry)
       }
       
-      // 資本金を円から万円に変換
-      if (aiData.capital) {
-        aiData.capital = Math.round(aiData.capital / 10000)
-      }
-      
       // 既存のフォームデータを保持しつつAIデータを適用
       setFormData(prev => ({ 
         ...prev, 
@@ -354,10 +349,7 @@ export default function ClientsSettingsPage() {
       const updatedData = { ...formData };
       aiPreviewData.changes.forEach((change: any) => {
         let value = change.new_value;
-        // 資本金の場合、円から万円に変換
-        if (change.field === 'capital' && value) {
-          value = Math.round(value / 10000);
-        }
+        // データをそのまま適用
         (updatedData as any)[change.field] = value;
       });
       setFormData(updatedData);
@@ -502,7 +494,7 @@ export default function ClientsSettingsPage() {
                     />
                   </div>
                   <div className="space-y-2 col-span-2">
-                    <Label htmlFor="capital">資本金（万円）</Label>
+                    <Label htmlFor="capital">資本金（円）</Label>
                     <div className="relative">
                       <Input 
                         id="capital" 
@@ -515,7 +507,7 @@ export default function ClientsSettingsPage() {
                         placeholder="0"
                         className="pr-12"
                       />
-                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">万円</span>
+                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">円</span>
                     </div>
                   </div>
                   <div className="space-y-2 col-span-2">
@@ -804,7 +796,7 @@ export default function ClientsSettingsPage() {
               />
             </div>
             <div className="space-y-2 col-span-2">
-              <Label htmlFor="edit_capital">資本金（万円）</Label>
+              <Label htmlFor="edit_capital">資本金（円）</Label>
               <div className="relative">
                 <Input 
                   id="edit_capital" 
@@ -817,7 +809,7 @@ export default function ClientsSettingsPage() {
                   placeholder="0"
                   className="pr-12"
                 />
-                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">万円</span>
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">円</span>
               </div>
             </div>
             <div className="space-y-2 col-span-2">

@@ -29,31 +29,27 @@ interface FolderTreeNode {
 }
 
 interface OcrSidebarProps {
-  // Zustandストアから状態を取得するため、propsは不要
-  // 後方互換性のため残すが、内部ではストアを使用
+  sidebarCollapsed: boolean
+  setSidebarCollapsed: (collapsed: boolean) => void
 }
 
 /**
  * OCRアプリケーションのサイドバー
  * 現代的なサイドバーデザイン
  * 
- * Zustandストアを使用して状態を永続化し、
- * ページリロード後も展開状態を保持します。
+ * localStorageを使用して全アプリで状態を共有します。
  */
-export default function OcrSidebar(_props: OcrSidebarProps) {
+export default function OcrSidebar({ sidebarCollapsed, setSidebarCollapsed }: OcrSidebarProps) {
   const navigate = useNavigate()
   const location = useLocation()
   const [searchParams] = useSearchParams()
   
-  // Zustandストアから状態を取得
+  // Zustandストアから展開状態のみ取得（フォルダ固有の状態）
   const {
     expandedFolders,
-    sidebarCollapsed,
     selectedFolderId: selectedFolderIdFromStore,
     toggleFolder: toggleFolderInStore,
     expandFolders,
-    setSidebarCollapsed,
-    setSidebarOpen,
     setSelectedFolderId: setSelectedFolderIdInStore,
   } = useOcrStateStore()
 
@@ -250,7 +246,6 @@ export default function OcrSidebar(_props: OcrSidebarProps) {
               setSelectedFolderIdInStore(node.folder.id)
               // PowerApps環境ではURLパラメータも更新を試みる
               navigate(`/ocr?folder=${node.folder.id}`)
-              setSidebarOpen(false)
             }}
             className="flex items-center gap-2 flex-1 min-w-0"
           >
@@ -687,27 +682,27 @@ export default function OcrSidebar(_props: OcrSidebarProps) {
     <>
       {/* Header with Menu Button - 展開/折りたたみに対応 */}
       <div className={`border-b border-sidebar-border flex items-center ${sidebarCollapsed ? 'h-16 justify-center' : 'h-16 px-4 gap-3'}`}>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-            title={sidebarCollapsed ? "サイドバーを展開" : "サイドバーを折りたたむ"}
-            className="flex-shrink-0 hover:bg-sidebar-accent"
-          >
-            <Menu className="h-5 w-5" />
-          </Button>
-          {!sidebarCollapsed && (
-            <>
-              <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
-                <FileText className="w-4 h-4 text-primary" />
-              </div>
-              <h1 className="text-lg font-bold text-foreground">OCR管理</h1>
-            </>
-          )}
-        </div>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+          title={sidebarCollapsed ? "サイドバーを展開" : "サイドバーを折りたたむ"}
+          className="flex-shrink-0 hover:bg-sidebar-accent"
+        >
+          <Menu className="h-5 w-5" />
+        </Button>
+        {!sidebarCollapsed && (
+          <>
+            <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+              <FileText className="w-4 h-4 text-primary" />
+            </div>
+            <h1 className="text-lg font-bold text-foreground">OCR管理</h1>
+          </>
+        )}
+      </div>
 
-        {/* Navigation - ナビゲーション */}
-        <nav className="flex-1 px-4 py-6 space-y-1 overflow-y-auto">
+      {/* Navigation - ナビゲーション */}
+      <nav className="flex-1 px-4 py-6 space-y-1 overflow-y-auto">
           <button
             onClick={() => {
               // 選択中のフォルダがあれば、そのフォルダIDを渡す
@@ -715,7 +710,6 @@ export default function OcrSidebar(_props: OcrSidebarProps) {
                 ? `/ocr/upload?folder=${selectedFolderId}`
                 : '/ocr/upload'
               navigate(uploadPath)
-              setSidebarOpen(false)
             }}
             title={sidebarCollapsed ? "新規アップロード" : undefined}
             className={`
@@ -754,7 +748,6 @@ export default function OcrSidebar(_props: OcrSidebarProps) {
                           toggleFolder(section.id)
                         } else {
                           navigate('/ocr')
-                          setSidebarOpen(false)
                         }
                       }}
                       title={sidebarCollapsed ? section.name : undefined}
@@ -833,7 +826,7 @@ export default function OcrSidebar(_props: OcrSidebarProps) {
               <span>新しいメニューを追加</span>
             </button>
           )}
-        </nav>
+      </nav>
 
       {/* メニューセクション追加ダイアログ */}
       <Dialog open={isAddMenuOpen} onOpenChange={setIsAddMenuOpen}>

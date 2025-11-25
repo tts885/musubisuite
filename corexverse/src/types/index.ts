@@ -816,3 +816,56 @@ export type OcrTaskStatus =
   | 'completed'    // 完了: 全ドキュメント処理完了
   | 'failed'       // 失敗: 処理失敗
   | 'cancelled';   // キャンセル: ユーザーがキャンセル
+
+/**
+ * OCRエンジンタイプ
+ */
+export type OcrEngineType = 'azure-document-intelligence' | 'ai-builder';
+
+/**
+ * AIモデルタイプ
+ */
+export type AiModelType = 'gpt-4o' | 'gpt-4o-mini' | 'gpt-4-turbo' | 'gpt-3.5-turbo';
+
+/**
+ * OCRエンジン設定
+ */
+export interface OcrEngineConfig {
+  engineType: OcrEngineType;
+  azureDocumentIntelligence?: {
+    endpoint: string;
+    apiKey: string;
+    modelId?: string;
+    features?: string[];
+  };
+  aiBuilder?: {
+    environmentId: string;
+    modelId: string;
+  };
+}
+
+/**
+ * メニューごとのAIプロンプト設定
+ */
+export interface MenuPromptConfig {
+  menuSectionId: string;
+  menuSectionName: string;
+  aiModel: AiModelType;
+  systemPrompt: string;
+  userPromptTemplate: string;
+  temperature?: number;
+  maxTokens?: number;
+  enabled: boolean;
+}
+
+/**
+ * OCR全体設定
+ */
+export interface OcrSettings {
+  id?: string;
+  ocrEngine: OcrEngineConfig;
+  menuPrompts: MenuPromptConfig[];
+  createdAt?: Date;
+  updatedAt?: Date;
+  createdBy?: string;
+}

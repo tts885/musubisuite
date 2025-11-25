@@ -35,18 +35,9 @@ interface OcrStateStore {
   expandedFolders: Set<string>
   
   /**
-   * サイドバーの折りたたみ状態
-   * true: 折りたたみ(アイコンのみ表示)
-   * false: 展開(全体表示)
+   * サイドバーの折りたたみ状態はlocalStorageで全アプリ共通管理するため削除
+   * モバイルでのサイドバー表示状態もMainLayoutで管理するため削除
    */
-  sidebarCollapsed: boolean
-  
-  /**
-   * モバイルでのサイドバー表示状態
-   * true: サイドバー表示
-   * false: サイドバー非表示
-   */
-  sidebarOpen: boolean
   
   /**
    * 最後に選択されたフォルダID
@@ -106,19 +97,7 @@ interface OcrStateStore {
    */
   resetExpandedFolders: () => void
   
-  /**
-   * サイドバーの折りたたみ状態を設定する
-   * 
-   * @param collapsed - 折りたたみ状態
-   */
-  setSidebarCollapsed: (collapsed: boolean) => void
-  
-  /**
-   * サイドバーの表示/非表示を設定する(モバイル用)
-   * 
-   * @param open - 表示状態
-   */
-  setSidebarOpen: (open: boolean) => void
+
   
   /**
    * 選択中のフォルダIDを設定する
@@ -171,8 +150,6 @@ export const useOcrStateStore = create<OcrStateStore>()(
     (set) => ({
       // 初期状態: 「すべてのドキュメント」のみ展開
       expandedFolders: new Set(['all-docs']),
-      sidebarCollapsed: false,
-      sidebarOpen: false,
       selectedFolderId: null,
       lastOcrPath: null,
       cachedDocuments: null,
@@ -201,14 +178,6 @@ export const useOcrStateStore = create<OcrStateStore>()(
       // 展開状態をリセット
       resetExpandedFolders: () => 
         set({ expandedFolders: new Set(['all-docs']) }),
-      
-      // サイドバー折りたたみ状態設定
-      setSidebarCollapsed: (collapsed: boolean) => 
-        set({ sidebarCollapsed: collapsed }),
-      
-      // サイドバー表示状態設定
-      setSidebarOpen: (open: boolean) => 
-        set({ sidebarOpen: open }),
       
       // 選択フォルダID設定
       setSelectedFolderId: (folderId: string | null) => 
@@ -251,8 +220,6 @@ export const useOcrStateStore = create<OcrStateStore>()(
       reset: () => 
         set({
           expandedFolders: new Set(['all-docs']),
-          sidebarCollapsed: false,
-          sidebarOpen: false,
           selectedFolderId: null,
           lastOcrPath: null,
           cachedDocuments: null,
@@ -270,10 +237,8 @@ export const useOcrStateStore = create<OcrStateStore>()(
        */
       partialize: (state) => ({
         expandedFolders: Array.from(state.expandedFolders),
-        sidebarCollapsed: state.sidebarCollapsed,
         selectedFolderId: state.selectedFolderId,
         lastOcrPath: state.lastOcrPath,
-        // sidebarOpenはモバイル用のため永続化しない
       }),
       
       /**

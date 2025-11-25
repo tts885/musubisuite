@@ -219,7 +219,7 @@ class ClientEnrichmentService:
 - legal_name: 正式名称（登記上の名称）
 - representative: 代表者名（代表取締役社長等のフルネーム）
 - established_date: 設立年月日（YYYY-MM-DD形式、不明な場合はYYYY-MM-01やYYYY-01-01）
-- capital: 資本金（数値、単位は万円。円で取得した場合は10000で割って万円に変換してください）
+- capital: 資本金(数値、単位は円。万円や億円で表記されている場合は円に換算してください)
 - employee_count: 従業員数（数値、連結・単体のうち取得できる方）
 - industry: 業種（IT・通信、製造、金融、小売、サービス、建設、不動産、運輸、教育、医療・福祉、メディア、その他のいずれか）
 - website: 公式ウェブサイトURL（必須）
@@ -238,7 +238,7 @@ class ClientEnrichmentService:
 4. 日付は必ずYYYY-MM-DD形式にしてください
 5. 数値フィールド（capital, employee_count）は数値型で返してください（文字列不可）
 6. 業種は上記のカテゴリから最も近いものを選択してください
-7. **重要**: capitalは必ず万円単位で返してください（例: 1億円 → 10000、1000万円 → 1000）
+7. **重要**: capitalは必ず円単位で返してください(例: 1億円 → 100000000、1000万円 → 10000000)
 
 JSON形式例:
 {{
@@ -246,7 +246,7 @@ JSON形式例:
   "legal_name": "株式会社サンプル",
   "representative": "山田太郎",
   "established_date": "2000-04-01",
-  "capital": 10000,
+  "capital": 100000000,
   "employee_count": 500,
   "industry": "IT・通信",
   "website": "https://www.sample.co.jp",
@@ -282,15 +282,18 @@ JSON形式例:
         return self._clean_data(data)
     
     def _clean_data(self, data: Dict[str, Any]) -> Dict[str, Any]:
-        """データをクリーニング（型変換、空文字列処理など）"""
+        """データをクリーニング(型変換、空文字列処理など)"""
         cleaned = {}
         
         for key, value in data.items():
             # 空文字列またはNoneの場合
             if value in ('', None, 'null', 'NULL', 'None'):
                 cleaned[key] = None
-            # 数値フィールドの変換
-            elif key in ('capital', 'employee_count') and isinstance(value, str):
+            # 資本金の場合: 単位を判定して円に統一
+            elif key == 'capital':
+                cleaned[key] = self._normalize_capital(value)
+            # 従業員数の場合: 数値変換
+            elif key == 'employee_count' and isinstance(value, str):
                 try:
                     cleaned[key] = int(value.replace(',', ''))
                 except (ValueError, AttributeError):
@@ -299,6 +302,52 @@ JSON形式例:
                 cleaned[key] = value
         
         return cleaned
+    
+    def _normalize_capital(self, value: Any) -> Optional[int]:
+        """資本金の単位を判定して円に統一する
+        
+        AIが返す値の範囲から単位を推測:
+        - 1億円以上(100,000,000以上): 既に円単位 → そのまま
+        - 1万円以上1億円未満(10,000～99,999,999): 曖昧だが、一般的な企業の資本金を考慮して判定
+        - 10,000未満: 万円単位と判断 → 10,000倍して円に変換
+        
+        Args:
+            value: 資本金の値(int, float, str)
+        
+        Returns:
+            円単位の資本金(int) または None
+        """
+        if value in ('', None, 'null', 'NULL', 'None'):
+            return None
+        
+        # 数値に変換
+        try:
+            if isinstance(value, str):
+                # カンマを除去して数値化
+                capital = float(value.replace(',', ''))
+            else:
+                capital = float(value)
+        except (ValueError, AttributeError, TypeError):
+            logger.warning(f"資本金の値を数値に変換できません: {value}")
+            return None
+        
+        # 単位を判定して円に統一
+        # 10,000未満の場合は万円単位と判断(例: 1000万円 = 1000)
+        if capital < 10000:
+            result = int(capital * 10000)
+            logger.info(f"資本金を万円単位と判定して円に変換: {capital}万円 → {result}円")
+            return result
+        # 10,000以上100,000未満の場合も万円単位の可能性が高い
+        # (例: 5万円の企業は少ないが、5000万円の企業は多い)
+        elif 10000 <= capital < 100000:
+            result = int(capital * 10000)
+            logger.info(f"資本金を万円単位と判定して円に変換: {capital}万円 → {result}円")
+            return result
+        # 100,000以上の場合は円単位と判断
+        else:
+            result = int(capital)
+            logger.info(f"資本金を円単位と判定: {result}円")
+            return result
     
     def _calculate_confidence_score(self, data: Dict[str, Any]) -> int:
         """データの信頼度スコアを計算（0-100）"""
